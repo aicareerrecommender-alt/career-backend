@@ -1,0 +1,11 @@
+Flask==3.0.0
+Flask-Cors==4.0.0
+Flask-Mail==0.9.1
+Werkzeug==3.0.1
+groq==0.4.2
+google-genai==0.3.0
+beautifulsoup4==4.12.3
+duckduckgo-search==4.4.3
+requests==2.31.0
+gunicorn==21.2.0
+python-dotenv==1.0.1

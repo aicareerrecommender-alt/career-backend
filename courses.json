@@ -1,0 +1,197 @@
+    [
+    {
+        "course_name": "General Science",
+        "category": "General",
+        "min_requirements": {},
+        "keywords": [
+            "i enjoy making music"
+        ]
+    },
+    {
+        "course_name": "Bachelor of Music (Music Production)",
+        "category": "Creative Arts & Technology",
+        "min_requirements": {
+            "English": "B (70%)",
+            "Music": "B (70%)",
+            "Mathematics / Physics": "C (60%)"
+        },
+        "keywords": [
+            "i love making music"
+        ]
+    },
+    {
+        "course_name": "BSc (Hons) Music Production and Sound Engineering",
+        "category": "Creative Arts & Technology",
+        "min_requirements": {
+            "Music": "B",
+            "English": "C"
+        },
+        "keywords": [
+            "i love making music"
+        ]
+    },
+    {
+        "course_name": "Bachelor of Arts in Music Production & Technology",
+        "category": "Creative Industries",
+        "min_requirements": {
+            "English": "B",
+            "Mathematics": "C",
+            "Music (or Media Studies/IT)": "B"
+        },
+        "keywords": [
+            "i love making music"
+        ]
+    },
+    {
+        "course_name": "BA (Hons) Music Production and Sound Engineering",
+        "category": "Creative Arts & Technology",
+        "min_requirements": {
+            "A-Level Music or BTEC Music Technology": "Merit/Grade B",
+            "A-Level Physics/Maths/IT (or equivalent technical subject)": "Grade C",
+            "GCSE English Language": "Grade 4/C",
+            "GCSE Mathematics": "Grade 4/C"
+        },
+        "keywords": [
+            "i love making music"
+        ]
+    },
+    {
+        "course_name": "Bachelor of Arts in Music Technology & Production",
+        "category": "Music & Audio Production",
+        "min_requirements": {
+            "Music": "Grade B",
+            "Mathematics": "Grade C",
+            "Physics": "Grade C",
+            "English": "Grade C"
+        },
+        "keywords": [
+            "i love making music"
+        ]
+    },
+    {
+        "course_name": "Bachelor of Music (BMus)",
+        "category": "Arts & Entertainment",
+        "min_requirements": {
+            "Music": "A",
+            "English": "B",
+            "Another Academic Subject": "B"
+        },
+        "keywords": [
+            "i love music"
+        ]
+    },
+    {
+        "course_name": "Bachelor of Music Production & Sound Engineering",
+        "category": "Arts, Media & Entertainment",
+        "min_requirements": {
+            "Music": "Grade B",
+            "Mathematics": "Grade C",
+            "English": "Grade C"
+        },
+        "keywords": [
+            "i love  making music"
+        ]
+    },
+    {
+        "course_name": "Bachelor of Music, Kenyatta University",
+        "category": "Creative Arts & Entertainment",
+        "min_requirements": {
+            "English": "B-",
+            "Kiswahili": "C+",
+            "History and Government": "C+",
+            "Christian Religious Education": "C+"
+        },
+        "keywords": [
+            "i love making music"
+        ]
+    },
+    {
+        "course_name": "Bachelor of Music (Music Technology Option) - Kenyatta University",
+        "category": "Creative Arts & Technology",
+        "min_requirements": {
+            "English": "C+",
+            "Kiswahili": "C+",
+            "Music": "B",
+            "Mathematics": "C"
+        },
+        "keywords": [
+            " i love making music"
+        ]
+    },
+    {
+        "course_name": "Bachelor of Arts (Music Option) - University of Nairobi",
+        "category": "Creative Arts & Technology",
+        "min_requirements": {
+            "English": "B",
+            "Kiswahili": "C+",
+            "Mathematics": "C",
+            "Any Group III Subject": "B"
+        },
+        "keywords": [
+            "i love making music"
+        ]
+    },
+    {
+        "course_name": "Bachelor of Music (Technology) at Kenyatta University",
+        "category": "Creative Arts & Technology",
+        "min_requirements": {
+            "English": "C+",
+            "Music": "C+",
+            "Mathematics": "C+",
+            "History": "C+"
+        },
+        "keywords": [
+            "i love making music"
+        ]
+    },
+    {
+        "course_name": "Bachelor of Music (Technology) - Kenyatta University",
+        "category": "Creative Arts & Digital Media",
+        "min_requirements": {
+            "English": "C+",
+            "Mathematics": "C+",
+            "Music": "B"
+        },
+        "keywords": [
+            "i love making music"
+        ]
+    },
+    {
+        "course_name": "Bachelor of Music (Technology), Kenyatta University",
+        "category": "Creative Arts & Media",
+        "min_requirements": {
+            "English": "C+",
+            "Kiswahili": "C+",
+            "Music": "C+"
+        },
+        "keywords": [
+            "i love making music"
+        ]
+    },
+    {
+        "course_name": "Bachelor of Arts in Design (University of Nairobi)",
+        "category": "Creative Arts & Design",
+        "min_requirements": {
+            "English": "C+",
+            "Mathematics": "C",
+            "Art and Design": "C+"
+        },
+        "keywords": [
+            "i love to draw"
+        ]
+    },
+    {
+        "course_name": "Bachelor of Science in Aeronautical Engineering (Moi University)",
+        "category": "Engineering & Aviation",
+        "min_requirements": {
+            "Mathematics": "A-",
+            "Physics": "A-",
+            "Chemistry": "B+",
+            "English": "B"
+        },
+        "keywords": [
+            "i am amazed by flight"
+        ]
+    }
+]
+    

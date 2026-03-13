@@ -1,0 +1,15 @@
+# Python caches
+__pycache__/
+*.pyc
+
+# Environment variables (Never push local secrets!)
+.env
+
+# Local Databases & Caches (Let the cloud host create fresh ones)
+users.json
+student_logs.json
+university_portals/
+
+# Virtual Environments
+venv/
+env/
