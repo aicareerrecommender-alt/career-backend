@@ -7,8 +7,8 @@ import urllib3
 import concurrent.futures
 from urllib.parse import urlparse
 from bs4 import BeautifulSoup
-from ddgs import DDGS
-from .ai_engines import client_groq 
+from duckduckgo_search import DDGS
+from .ai_engines import client_groq
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 logging.getLogger("httpx").setLevel(logging.WARNING)
