@@ -11,6 +11,8 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from flask_mail import Mail, Message
 from werkzeug.security import generate_password_hash, check_password_hash
+from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy.orm.attributes import flag_modified
 
 # --- IMPORT OUR MODULAR UTILS ---
 from utils.database import load_json, save_json, USER_FILE, LOGS_FILE
@@ -21,6 +23,48 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - [%(levelname)s]: %
 
 app = Flask(__name__)
 CORS(app)
+
+# --- NEW: POSTGRESQL DATABASE CONFIGURATION ---
+db_url = os.environ.get("DATABASE_URL", "sqlite:///local_test.db")
+if db_url.startswith("postgres://"):
+    db_url = db_url.replace("postgres://", "postgresql://", 1)
+
+app.config['SQLALCHEMY_DATABASE_URI'] = db_url
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+db = SQLAlchemy(app)
+
+class User(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(80), unique=True, nullable=False)
+    password_hash = db.Column(db.String(255), nullable=False)
+    email = db.Column(db.String(120), nullable=False)
+
+class StudentLog(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    student_name = db.Column(db.String(80), nullable=False)
+    interest = db.Column(db.String(120))
+    grades = db.Column(db.JSON)
+    points = db.Column(db.Integer)
+    ai_response = db.Column(db.JSON)
+    history = db.Column(db.JSON)
+    timestamp = db.Column(db.String(50))
+
+with app.app_context():
+    db.create_all()
+
+# --- DATABASE BRIDGE FUNCTIONS (Preserves your exact dictionary logic!) ---
+def get_all_users_as_dicts():
+    users = User.query.all()
+    return {u.username: {"hash": u.password_hash, "email": u.email} for u in users}
+
+def get_all_logs_as_dicts():
+    logs = StudentLog.query.all()
+    return [{
+        "student_name": l.student_name, "interest": l.interest,
+        "grades": l.grades, "points": l.points,
+        "ai_response": l.ai_response, "history": l.history, "timestamp": l.timestamp
+    } for l in logs]
+# -------------------------------------------------------------------------
 
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
 app.config['MAIL_PORT'] = 587
@@ -41,11 +85,16 @@ def register():
     username, password, email = data.get('username', '').strip(), data.get('password', '').strip(), data.get('email', '').strip() 
     if not username or not password or not email: return jsonify({"message": "Required fields missing"}), 400
     
-    users = load_json(USER_FILE)
+    # REPLACED load_json: Now loads from DB but keeps your dictionary format
+    users = get_all_users_as_dicts()
     if username in users: return jsonify({"message": "User already exists!"}), 409
     
     users[username] = {"hash": generate_password_hash(password), "email": email}
-    save_json(USER_FILE, users)
+    
+    # REPLACED save_json: Saves the new user directly to DB
+    new_user = User(username=username, password_hash=users[username]["hash"], email=email)
+    db.session.add(new_user)
+    db.session.commit()
     
     # Example Mail usage (Uncomment to activate)
     # try:
@@ -61,7 +110,10 @@ def register():
 def login():
     data = request.json
     username, password = data.get('username', '').strip(), data.get('password', '').strip()
-    users = load_json(USER_FILE)
+    
+    # REPLACED load_json: Now loads from DB
+    users = get_all_users_as_dicts()
+    
     user_data = users.get(username)
     if user_data and check_password_hash(user_data['hash'], password):
         return jsonify({"message": "Login successful", "user": username, "email": user_data['email']}), 200
@@ -70,7 +122,9 @@ def login():
 @app.route('/history', methods=['GET'])
 def get_history():
     username = request.args.get('username')
-    logs = load_json(LOGS_FILE)
+    
+    # REPLACED load_json: Now loads from DB
+    logs = get_all_logs_as_dicts()
     
     student_record = next((log for log in logs if isinstance(log, dict) and log.get("student_name") == username), None)
     
@@ -106,7 +160,9 @@ def recommend():
     elif calculated_points > 0: expected_level = "Artisan"
     else: expected_level = "Unknown"
 
-    student_logs = load_json(LOGS_FILE)
+    # REPLACED load_json: Now loads from DB
+    student_logs = get_all_logs_as_dicts()
+    
     popularity = sum(1 for log in student_logs if isinstance(log, dict) and log.get('interest', '').lower() == user_interest.lower())
     
     previous_unis_names, previous_unis_data = [], []
@@ -195,9 +251,22 @@ def recommend():
             
             if "history" not in student_record: student_record["history"] = []
             student_record["history"].append(ai_insight)
+            
+            # REPLACED save_json: Update existing DB record
+            db_record = StudentLog.query.filter_by(student_name=user_name).first()
+            if db_record:
+                db_record.timestamp = student_record["timestamp"]
+                db_record.interest = student_record["interest"]
+                db_record.grades = student_record["grades"]
+                db_record.points = student_record["points"]
+                db_record.ai_response = student_record["ai_response"]
+                db_record.history = student_record["history"]
+                flag_modified(db_record, "history") # Required for JSON arrays in Postgres
+                db.session.commit()
+                
         else:
             logging.info(f"🆕 Creating new record for student: {user_name}")
-            student_logs.append({
+            new_entry = {
                 "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
                 "student_name": user_name, 
                 "interest": user_interest,
@@ -205,11 +274,17 @@ def recommend():
                 "points": calculated_points, 
                 "ai_response": ai_insight,
                 "history": [ai_insight]
-            })
+            }
+            student_logs.append(new_entry)
             
-        save_json(LOGS_FILE, student_logs)
+            # REPLACED save_json: Insert new DB record
+            new_db_record = StudentLog(**new_entry)
+            db.session.add(new_db_record)
+            db.session.commit()
+            
     except Exception as e: 
         logging.error(f"Failed to save student log: {e}")
+        db.session.rollback()
 
     # 📈 Calculate Trending Careers
     career_counts = Counter()
