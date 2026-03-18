@@ -12,4 +12,4 @@ university_portals/
 
 # Virtual Environments
 venv/
-env/
+env/instance/

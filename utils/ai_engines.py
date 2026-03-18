@@ -24,13 +24,47 @@ try:
         client_gemini = genai.Client(api_key=GEMINI_API_KEY)
 except Exception as e: logging.error(f"Gemini Init Error: {e}")
 
+# ==========================================
+# 🧮 SMART GRADE CALCULATOR
+# ==========================================
 def grade_to_int(grade_str):
+    if not isinstance(grade_str, str): 
+        return 0
     mapping = {'A': 12, 'A-': 11, 'B+': 10, 'B': 9, 'B-': 8, 'C+': 7, 'C': 6, 'C-': 5, 'D+': 4, 'D': 3, 'D-': 2, 'E': 1}
-    return mapping.get(str(grade_str).upper(), 0)
+    # Clean the string just in case there are invisible spaces
+    clean_grade = grade_str.strip().upper()
+    return mapping.get(clean_grade, 0)
 
 def calculate_total_points(student_grades):
-    return sum(grade_to_int(grade) for grade in student_grades.values()) if isinstance(student_grades, dict) else 0
+    total = 0
+    
+    # 1. If frontend sends a normal dictionary: {"Math": "A", "English": "B"}
+    if isinstance(student_grades, dict):
+        for subject, grade_data in student_grades.items():
+            # Sometimes frontend sends nested dicts: {"Math": {"grade": "A"}}
+            if isinstance(grade_data, dict) and "grade" in grade_data:
+                total += grade_to_int(str(grade_data["grade"]))
+            else:
+                total += grade_to_int(str(grade_data))
+                
+    # 2. If frontend sends a list/array: [{"subject": "Math", "grade": "A"}]
+    elif isinstance(student_grades, list):
+        for item in student_grades:
+            if isinstance(item, dict):
+                # Check for common keys frontends use
+                grade_val = item.get("grade") or item.get("value") or "E"
+                total += grade_to_int(str(grade_val))
+            elif isinstance(item, str):
+                total += grade_to_int(item)
 
+    print(f"🧮 [MATH ENGINE] Frontend sent: {student_grades}")
+    print(f"🧮 [MATH ENGINE] Calculated Total Points: {total}/84")
+    
+    return total
+
+# ==========================================
+# 🛡️ VALIDATORS & AI FETCHERS
+# ==========================================
 def validate_ai_response(ai_data, user_grades, expected_level):
     errors = []
     course_name = ai_data.get("specific_course", "").lower()
@@ -38,17 +72,17 @@ def validate_ai_response(ai_data, user_grades, expected_level):
 
     if "degree" in recommended_level:
         if "engineer" in course_name or "mechatronic" in course_name:
-            if grade_to_int(user_grades.get("Mathematics", user_grades.get("Math", "E"))) < 7 or grade_to_int(user_grades.get("Physics", "E")) < 7:
+            if grade_to_int(str(user_grades.get("Mathematics", user_grades.get("Math", "E")))) < 7 or grade_to_int(str(user_grades.get("Physics", "E"))) < 7:
                 return ["CRITICAL ERROR: Engineering Degree requires C+ in Math and Physics. Downgrade to Diploma/Cert."]
         if "med" in course_name or "nurs" in course_name or "clinic" in course_name or "surg" in course_name:
-            if grade_to_int(user_grades.get("Biology", "E")) < 7 or grade_to_int(user_grades.get("Chemistry", "E")) < 7:
+            if grade_to_int(str(user_grades.get("Biology", "E"))) < 7 or grade_to_int(str(user_grades.get("Chemistry", "E"))) < 7:
                 return ["CRITICAL ERROR: Medical Degree requires C+ in Bio/Chem. Downgrade tier."]
         if "comput" in course_name or "software" in course_name or "it" in course_name:
-            if grade_to_int(user_grades.get("Mathematics", user_grades.get("Math", "E"))) < 7:
+            if grade_to_int(str(user_grades.get("Mathematics", user_grades.get("Math", "E")))) < 7:
                 return ["CRITICAL ERROR: IT Degree requires C+ in Math. Downgrade tier."]
     elif "diploma" in recommended_level:
         if "engineer" in course_name or "comput" in course_name or "software" in course_name or "it" in course_name:
-            if grade_to_int(user_grades.get("Mathematics", user_grades.get("Math", "E"))) < 5: 
+            if grade_to_int(str(user_grades.get("Mathematics", user_grades.get("Math", "E")))) < 5: 
                 return ["CRITICAL ERROR: STEM Diplomas require C- in Math. Downgrade to Certificate."]
 
     valid_unis = []
@@ -62,9 +96,10 @@ def validate_ai_response(ai_data, user_grades, expected_level):
             required_grade = req.get("required", "E")
             actual_grade = "E"
             
-            for user_subj, user_grade in user_grades.items():
+            # Extract actual grade intelligently based on our new math engine logic
+            for user_subj, user_grade in user_grades.items() if isinstance(user_grades, dict) else []:
                 if user_subj.lower().startswith(subject.lower()[:4]):
-                    actual_grade = user_grade
+                    actual_grade = user_grade.get("grade", "E") if isinstance(user_grade, dict) else str(user_grade)
                     break
             
             if grade_to_int(actual_grade) < grade_to_int(required_grade):
@@ -127,6 +162,9 @@ def fetch_from_gemini(system_instruction, base_prompt, grades, expected_level):
             retry_count += 1
     return None
 
+# ==========================================
+# 🧠 CORE HYBRID ENGINE
+# ==========================================
 def ask_hybrid_career_advice(student_name, interest, grades, calculated_points, expected_level, pop_count, prev_unis, failed_hallucinations=None):
     system_instruction = """
     You are a strict, factual Kenyan KUCCPS career advisor API. 
@@ -134,6 +172,7 @@ def ask_hybrid_career_advice(student_name, interest, grades, calculated_points, 
     2. OVER-GENERATE: Provide AT LEAST 8 DIFFERENT institutions.
     3. Output EXACTLY "PLACEHOLDER_FOR_HEALER" for website_url.
     4. NO GENERIC COURSES: Select specific branches (e.g., "Certificate in Electrical Engineering").
+    5. CRITICAL TECH OVERRIDE: If the student is at the Artisan or Certificate level, but their passion is Technology/Coding/IT, recommend tech-adjacent practical courses like 'Artisan in ICT', 'Computer Repair', or 'Certificate in IT' instead of standard manual trades like Plumbing.
     """
     
     base_prompt = f"Student: {student_name} | Points: {calculated_points}/84 | Tier: {expected_level} | Passion: {interest}\nSubject Grades: {json.dumps(grades)}"

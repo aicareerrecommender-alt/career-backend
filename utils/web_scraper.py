@@ -8,7 +8,7 @@ import concurrent.futures
 from urllib.parse import urlparse
 from bs4 import BeautifulSoup
 from duckduckgo_search import DDGS
-from .ai_engines import client_groq
+from .ai_engines import client_groq  # Adjust import based on your actual structure
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 logging.getLogger("httpx").setLevel(logging.WARNING)
@@ -20,11 +20,15 @@ def ai_kuccps_auditor(uni_name, course_name, scraped_text, source_url, verified=
     try:
         res = client_groq.chat.completions.create(
             response_format={"type": "json_object"},
-            messages=[{"role": "system", "content": "Output strictly JSON format: {'ai_approved': boolean, 'reason': 'string'}"}, {"role": "user", "content": prompt}],
+            messages=[
+                {"role": "system", "content": "Output strictly JSON format: {'ai_approved': boolean, 'reason': 'string'}"}, 
+                {"role": "user", "content": prompt}
+            ],
             model="llama-3.1-8b-instant", temperature=0.1
         )
         return json.loads(res.choices[0].message.content)
-    except Exception as e: return {"ai_approved": False, "reason": "AI offline"}
+    except Exception as e: 
+        return {"ai_approved": False, "reason": "AI offline"}
 
 class InstitutionValidator:
     def __init__(self):
@@ -65,62 +69,62 @@ class AutoHealer:
         return {}
 
     def _save_db(self):
-        with open(self.db_path, 'w', encoding='utf-8') as f: json.dump(self.url_cache, f, indent=4)
+        with open(self.db_path, 'w', encoding='utf-8') as f: 
+            json.dump(self.url_cache, f, indent=4)
 
-    def _is_alive(self, url):
-        if url == "PLACEHOLDER_FOR_HEALER": return False
-        try:
-            return self.session.get(url, timeout=5, verify=False).status_code in [200, 401, 403]
-        except: return False
-
-    def _hunt_for_url(self, uni_name, course_name):
+    def get_verified_url(self, uni_name, course_name):
+        """Swarm strategy: 3 Workers seek the course, then AI strictly audits the best result."""
         core = re.sub(r'^(Bachelor of Science in|Bachelor of Arts in|Bachelor of|Diploma in|Certificate in|Artisan in)\s+', '', course_name, flags=re.IGNORECASE).strip()
-        verified = False
         
-        try:
-            with DDGS() as ddgs:
-                if list(ddgs.text(f'site:students.kuccps.net "{uni_name}" "{core}"', max_results=3)): verified = True
-        except: pass
+        # 1. SWARM MISSIONS (Focus on depth: syllabus, department, overview)
+        search_queries = [
+            f'site:ac.ke "{uni_name}" "{core}" syllabus units',
+            f'site:ac.ke "{uni_name}" "{core}" department faculty',
+            f'site:ac.ke "{uni_name}" "{core}" program overview'
+        ]
 
-        urls_to_check = []
-        try:
-            with DDGS() as ddgs:
-                results = list(ddgs.text(f'site:ac.ke {uni_name} "{core}" (course details OR admission requirements)', max_results=8))
-                for r in results:
-                    url = r.get('href', '')
-                    if url and not any(bad in url.lower() for bad in ['/about', '/downloads', '/staff', '/news']):
-                        if self.validator.is_legitimate(url, uni_name)[0]: urls_to_check.append(url)
-        except: pass
-
-        if not urls_to_check: return "PLACEHOLDER_FOR_HEALER", False
-
-        def verify_single(target_url):
+        def search_worker(query):
             try:
-                text = self.session.get(f"https://r.jina.ai/{target_url}", timeout=8, verify=False).text
-                if ai_kuccps_auditor(uni_name, course_name, text, target_url, verified).get("ai_approved"): return target_url
+                with DDGS() as ddgs:
+                    results = list(ddgs.text(query, max_results=2))
+                    for r in results:
+                        url = r.get('href', '')
+                        # Secure Filter: Must be .ac.ke and NOT a login portal
+                        if url and ".ac.ke" in url and not any(x in url.lower() for x in ['login', 'portal', 'index']):
+                            return url
             except: pass
             return None
 
-        with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
-            future_to_url = {executor.submit(verify_single, u): u for u in urls_to_check}
-            for future in concurrent.futures.as_completed(future_to_url):
-                if res := future.result(): return res, True
-        
-        return "PLACEHOLDER_FOR_HEALER", False
+        # 2. DEPLOY THE 3-WORKER SWARM
+        best_candidates = []
+        with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
+            futures = {executor.submit(search_worker, q): q for q in search_queries}
+            for future in concurrent.futures.as_completed(futures):
+                if res := future.result(): 
+                    best_candidates.append(res)
 
-    def get_verified_url(self, uni_name, course_name):
-        cache_key = f"{uni_name}_{course_name}"
-        if cache_key in self.url_cache and "academic_portal" in self.url_cache[cache_key]:
-            cached_url = self.url_cache[cache_key]["academic_portal"]
-            is_verified = self.url_cache[cache_key].get("is_verified", False)
-            if self._is_alive(cached_url): return cached_url, is_verified
-        
-        new_url, is_verified = self._hunt_for_url(uni_name, course_name)
-        if cache_key not in self.url_cache: self.url_cache[cache_key] = {}
-        self.url_cache[cache_key] = {"academic_portal": new_url, "is_verified": is_verified}
-        self._save_db()
-        return new_url, is_verified
+        # 3. STRICT AI AUDIT (The Judge)
+        if best_candidates:
+            target_url = best_candidates[0] # Take the fastest/best result from the swarm
+            try:
+                # Read page via Jina AI
+                text = self.session.get(f"https://r.jina.ai/{target_url}", timeout=8, verify=True).text
+                ai_check = ai_kuccps_auditor(uni_name, course_name, text, target_url)
+                
+                if ai_check.get("ai_approved"):
+                    logging.info(f"✅ STRICT SUCCESS: AI verified {target_url}")
+                    return target_url, True # Fully Verified!
+            except Exception as e:
+                logging.warning(f"⚠️ AI Audit failed/timeout for {uni_name}: {e}")
 
-# Initialize AutoHealer target directory at the project root level
+            # 4. BACKUP STRATEGY (The Ducky Acts Alone)
+            # If the AI was too strict or failed, we STILL keep the URL to avoid dropping the uni.
+            logging.info(f"🔗 SWARM BACKUP: Returning unverified secure link for {uni_name}")
+            return target_url, False
+
+        # Total failure to find any link
+        return None, False
+
+# Initialize at the bottom (Left Margin)
 TARGET_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "university_portals")
 healer = AutoHealer(TARGET_DIR)
