@@ -6,7 +6,7 @@ gunicorn==21.2.0
 python-dotenv==1.0.1
 openai
 requests
-google-generativeai==0.8.6
+google-genai
 groq==1.1.1
 xhtml2pdf==0.2.17
 beautifulsoup4==4.12.3
