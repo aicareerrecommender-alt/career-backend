@@ -2,9 +2,10 @@ import os
 import json
 import threading
 import tempfile
-
 # Go up one level from 'utils' to the main directory
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if not os.path.exists(BASE_DIR):
+    os.makedirs(BASE_DIR, exist_ok=True)
 USER_FILE = os.path.join(BASE_DIR, 'users.json')
 LOGS_FILE = os.path.join(BASE_DIR, 'student_logs.json')
 db_lock = threading.Lock()
