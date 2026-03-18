@@ -20,7 +20,7 @@ from sqlalchemy.orm.attributes import flag_modified
 
 # --- IMPORT OUR MODULAR UTILS ---
 # Preserved student logs loading for historical JSON read fallback in Word Cloud
-from utils.database import load_json, save_json, USER_FILE, LOGS_FILE
+from utils.database import db, init_db, save_json,load_json, USER_FILE, LOGS_FILE
 from utils.ai_engines import ask_hybrid_career_advice, calculate_total_points, grade_to_int
 from utils.web_scraper import healer 
 
