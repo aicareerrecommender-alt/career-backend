@@ -84,7 +84,7 @@ class StudentLog(db.Model):
     history = db.Column(db.JSON, default=list)
 
 with app.app_context():
-    # db.drop_all() # Uncomment this temporarily if you ever need to completely wipe the database
+    db.drop_all() # Uncomment this temporarily if you ever need to completely wipe the database
     db.create_all()
 
 # Preserved student logs loading for historical JSON read fallback in Word Cloud
