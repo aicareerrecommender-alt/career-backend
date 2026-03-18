@@ -148,7 +148,7 @@ def fetch_from_gemini(system_instruction, base_prompt, grades, expected_level):
         current_prompt = base_prompt + (f"\n\n🚨 LAST RESPONSE FAILED:\n{error_feedback}\nFIX THIS." if error_feedback else "")
         try:
             res = client_gemini.models.generate_content(
-                model='gemini-2.5-flash', contents=current_prompt,
+                model='gemini-2.0-flash', contents=current_prompt,
                 config=types.GenerateContentConfig(system_instruction=system_instruction, response_mime_type="application/json", temperature=0.3)
             )
             data = json.loads(res.text)
