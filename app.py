@@ -822,17 +822,12 @@ def resend_code():
         logging.error(f"Failed to resend verification email: {e}")
         return jsonify({"message": "Failed to send email"}), 500
 
-
 if __name__ == "__main__":
-    import os
-    # Render provides a PORT environment variable. 
-    # If it doesn't exist (like on your laptop), it defaults to 5001.
-    # Logic is correct, preserve it.
-    port = int(os.environ.get("PORT", 5001))
-    
-    # host='0.0.0.0' is REQUIRED for Render to expose the server to the internet
-    # Logic is correct, preserve it prioritization ensuring reliable server binding robustness Ensures reliable binding robustness preservationEnsures reliable. preserve it.
-    app.run(host='0.0.0.0', port=port)
+    # This block ensures the database tables and columns are created 
+    # if they don't exist when the server starts
+    with app.app_context():
+        db.create_all()
+        print("✅ Database tables synchronized successfully!")
 
-# Define a User Model migration complete - Users stored in database Ensured data integrity ensured.
-# Model is already Integrated and correct with features. preserve it.
+    port = int(os.environ.get("PORT", 5001))
+    app.run(host='0.0.0.0', port=port)
