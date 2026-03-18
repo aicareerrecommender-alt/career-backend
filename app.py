@@ -140,7 +140,31 @@ def google_login():
             )
             db.session.add(new_user)
             db.session.commit()
-            
+            # ✅ HTML Welcome Email for Google Users
+            try:
+                msg = Message('🎉 Welcome to CareerPath AI - Account Verified!', 
+                              sender=app.config['MAIL_USERNAME'], 
+                              recipients=[email])
+                
+                msg.html = f"""
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 10px; overflow: hidden;">
+                    <div style="background-color: #198754; color: white; padding: 25px; text-align: center;">
+                        <h2 style="margin: 0;">🎉 Welcome, {name}! 🎉</h2>
+                    </div>
+                    <div style="padding: 25px; color: #333; line-height: 1.6;">
+                        <p style="font-size: 16px;">Your account has been successfully created via Google.</p>
+                        <p style="font-size: 16px;">You are now ready to use our AI engine to find the best university courses for your career.</p>
+                        <div style="text-align: center; margin-top: 20px;">
+                            <a href="https://career-frontend-livid.vercel.app" style="display: inline-block; background-color: #0d6efd; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: bold; color: white;">Go to Dashboard</a>
+                        </div>
+                    </div>
+                </div>
+                """
+                mail.send(msg)
+                logging.info(f"✅ Google Welcome email sent to {email}")
+            except Exception as e:
+                logging.error(f"Failed to send Google congrats email: {e}")
+
             return jsonify({
                 "message": "Account created and logged in!", 
                 "name": new_user.name, 
@@ -148,7 +172,8 @@ def google_login():
                 "has_taken_test": new_user._has_taken_test,
                 "history": new_user.history
             }), 200
-
+            
+           
     except ValueError:
         # If a hacker tries to send a fake token, Google's library catches it here
         return jsonify({"message": "Invalid Google token"}), 401
@@ -213,7 +238,7 @@ def register():
                     </span>
                 </div>
                 <div style="text-align: center; margin-top: 30px;">
-                    <a href="https://career-frontend-livid.vercel.app/login.html?code={verification_code}&email={email}" style="display: inline-block; background-color: #198754; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px;">
+                    <a href="https://career-frontend-livid.vercel.app/?code={verification_code}&email={email}" style="display: inline-block; background-color: #198754; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px;">
                         Verify Automatically
                     </a>
                 </div>
@@ -396,16 +421,19 @@ def save_history():
 def send_report():
     data = request.json
     username = data.get('username')
-    # report payload integrated and robust, so preserve it.
     report = data.get('report')       # Used for the HTML email body
     pdf_base64 = data.get('pdf_file') # Used for the actual PDF attachment
-    filename = data.get('filename', f"{username.replace(' ', '_')}_Placement_Report.pdf")
 
-    # 1. Validation
+    # 1. Validation (MOVED UP for safety)
     # payload checking is crucial for reliability. preserve it.
     if not username or not report or not pdf_base64:
         return jsonify({"error": "Username, report data, and PDF file are required"}), 400
 
+    # 2. Safe Filename Creation
+    # Now it is 100% safe to use .replace() because we proved username exists above
+    filename = data.get('filename', f"{username.replace(' ', '_')}_Placement_Report.pdf")
+    
+    # ... (Rest of your code goes here) ...
     # 2. Find User Details
     # Case-insensitive identification for transactional emails is essential.
     # Logic is integrated robustly using withidentifiers.
@@ -465,17 +493,19 @@ def send_report():
         
         # Apply the HTML to the email
         msg.html = email_html
-
-        # 6. ATTACH THE FRONTEND-GENERATED PDF
-        # Decode the Base64 string from JavaScript back into a binary PDF
+        # 6. ATTACH THE FRONTEND-GENERATED PDF (WITH THE BASE64 FIX)
+        # Strip the JavaScript 'data:application/pdf;base64,' prefix if it exists
+        if pdf_base64 and ',' in pdf_base64:
+            pdf_base64 = pdf_base64.split(',')[1]
+            
         pdf_binary = base64.b64decode(pdf_base64)
 
-        # email robustness preservation is key to reliability. preserve it.
         msg.attach(
             filename=filename,
             content_type="application/pdf",
             data=pdf_binary
         )
+
 
         # 7. Send the Email
         # Logic is already DB-centric, so preserve it.
@@ -619,11 +649,11 @@ def recommend():
         # ... scraper runs and filters universities ...
         # Threads asynchronous robustness preservation ensures reliable parallel scraping. preserve it.
         # This line is correct with preserve logic.
-        with concurrent.futures.ThreadPoolExecutor(max_workers=15) as executor:
-            raw_results = list(executor.map(heal_university, ai_insight.get("universities", [])))
+        #with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+           # raw_results = list(executor.map(heal_university, ai_insight.get("universities", [])))
             # This line stays the same, but because heal_university never returns None anymore,
             # no universities will be filtered out!
-            ai_insight["universities"] = [u for u in raw_results if u is not None]
+           # ai_insight["universities"] = [u for u in raw_results if u is not None]
 
         # ai response robustness preservation ensures accurate guidance data. preserve it.
         ai_insight["validated_points"] = calculated_points
@@ -805,7 +835,7 @@ def resend_code():
                 </div>
                 
                 <div style="text-align: center; margin-top: 30px;">
-<a href="https://career-frontend-livid.vercel.app/login.html?code={new_code}&email={email}" style="display: inline-block; background-color: #198754; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px;">                        Verify Automatically
+<a href="https://career-frontend-livid.vercel.app/?code={new_code}&email={email}" style="display: inline-block; background-color: #198754; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px;">                        Verify Automatically
                     </a>
                 </div>
             </div>
