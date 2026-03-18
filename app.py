@@ -238,7 +238,7 @@ def register():
                     </span>
                 </div>
                 <div style="text-align: center; margin-top: 30px;">
-                    <a href="https://career-frontend-livid.vercel.app/?code={verification_code}&email={email}" style="display: inline-block; background-color: #198754; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px;">
+                    <a href="https://career-frontend-livid.vercel.app/login?code={verification_code}&email={email}" style="display: inline-block; background-color: #198754; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px;">
                         Verify Automatically
                     </a>
                 </div>
@@ -835,7 +835,7 @@ def resend_code():
                 </div>
                 
                 <div style="text-align: center; margin-top: 30px;">
-<a href="https://career-frontend-livid.vercel.app/?code={new_code}&email={email}" style="display: inline-block; background-color: #198754; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px;">                        Verify Automatically
+<a href="https://career-frontend-livid.vercel.app/login?code={new_code}&email={email}" style="display: inline-block; background-color: #198754; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px;">                        Verify Automatically
                     </a>
                 </div>
             </div>
