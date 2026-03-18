@@ -13,3 +13,6 @@ google-auth==2.29.0
 duckduckgo-search
 flask-sqlalchemy
 psycopg2-binary
+google-api-python-client
+google-auth-httplib2
+google-auth-oauthlib

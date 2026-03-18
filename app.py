@@ -31,6 +31,12 @@ import base64
 import asyncio 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - [%(levelname)s]: %(message)s', datefmt='%H:%M:%S')
 
+from google.oauth2.credentials import Credentials
+from googleapiclient.discovery import build
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from email.mime.base import MIMEBase
+from email import encoders
 app = Flask(__name__)
 # Enable CORS for all routes so your frontend can communicate without being blocked
 CORS(app)
@@ -417,107 +423,77 @@ def save_history():
 # ==========================================
 # 📧 EMAIL REPORT ROUTE WITH PDF ATTACHMENT
 # ==========================================
-@app.route('/send-report', methods=['POST'])
+@app.route('/send-report', methods=['POST', 'OPTIONS'])
 def send_report():
-    data = request.json
-    username = data.get('username')
-    report = data.get('report')       # Used for the HTML email body
-    pdf_base64 = data.get('pdf_file') # Used for the actual PDF attachment
-
-    # 1. Validation (MOVED UP for safety)
-    # payload checking is crucial for reliability. preserve it.
-    if not username or not report or not pdf_base64:
-        return jsonify({"error": "Username, report data, and PDF file are required"}), 400
-
-    # 2. Safe Filename Creation
-    # Now it is 100% safe to use .replace() because we proved username exists above
-    filename = data.get('filename', f"{username.replace(' ', '_')}_Placement_Report.pdf")
-    
-    # ... (Rest of your code goes here) ...
-    # 2. Find User Details
-    # Case-insensitive identification for transactional emails is essential.
-    # Logic is integrated robustly using withidentifiers.
-    user = User.query.filter(User.name.ilike(username)).first()
-    if not user or not user.email:
-        return jsonify({"error": "Could not find a registered email for this user."}), 404
+    if request.method == 'OPTIONS':
+        # Satisfies the CORS preflight check
+        return '', 200
 
     try:
-        # 3. Setup the Email Message
-        msg = Message('Your CareerPath AI Intelligence Report 🚀', 
-                      sender=app.config['MAIL_USERNAME'], 
-                      recipients=[user.email])
-        
-        # 4. Extract Specific Data for the Email Body
-        role = report.get('ai_role', 'Recommended Career')
-        course = report.get('specific_course', 'Recommended Course')
-        reason = report.get('interest_match_reason', 'Based on your academic strengths and selected interests, this path offers the best probability for success.')
-        
-        # 5. Build the Beautiful HTML Email Body
-        email_html = f"""
-        <div style="font-family: Arial, sans-serif; max-width: 650px; margin: 0 auto; border: 1px solid #e0e0e0; background-color: #ffffff;">
-            <div style="background-color: #0d6efd; color: white; padding: 20px; text-align: center;">
-                <h2 style="margin: 0;">CareerPath AI Report</h2>
-            </div>
-            
-            <div style="padding: 25px; color: #333;">
-                <p>Hello <b>{user.name}</b>,</p>
-                <p>Based on your academic profile, here is your AI-generated intelligence report. <b>A detailed, official PDF is attached to this email.</b></p>
-                
-                <h3 style="color: #0d6efd; margin-bottom: 5px;">🏆 Top Career: {role}</h3>
-                <h4 style="color: #198754; margin-top: 0;">📚 Course to Study: {course}</h4>
-                
-                <h4 style="margin-bottom: 5px; color: #333;">💡 Why this path fits you:</h4>
-                <div style="background-color: #f8f9fa; padding: 15px; border-left: 5px solid #0d6efd; margin-bottom: 25px; margin-top: 0;">
-                    <p style="margin: 0; line-height: 1.5;">{reason}</p>
-                </div>
-                
-                <h4>🎓 Recommended Universities:</h4>
-                <ul style="line-height: 1.6;">
-        """
-        
-        # Add the universities to the list
-        for uni in report.get('universities', []):
-            email_html += f"<li><b>{uni.get('name')}</b></li>"
+        data = request.json
+        user_email = data.get('email')
+        pdf_base64 = data.get('pdf_data')
+        name = data.get('name', 'Student')
 
-        # Close the HTML tags and add a dashboard button
-        email_html += """
-                </ul>
-                <div style="text-align: center; margin-top: 30px;">
-                    <a href="https://career-frontend-livid.vercel.app/login.html" style="display: inline-block; background-color: #198754; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold; font-size: 16px;">
-                        Log In to Dashboard
-                    </a>
-                </div>
+        # 1. Grab your secret keys securely from Render
+        client_id = os.environ.get("GMAIL_CLIENT_ID")
+        client_secret = os.environ.get("GMAIL_CLIENT_SECRET")
+        refresh_token = os.environ.get("GMAIL_REFRESH_TOKEN")
+
+        if not all([client_id, client_secret, refresh_token]):
+            return jsonify({"error": "Server email credentials are missing!"}), 500
+
+        # 2. Tell Google who we are using the Refresh Token
+        creds = Credentials(
+            None, # Token is None because it will auto-generate using the refresh_token
+            refresh_token=refresh_token,
+            token_uri="https://oauth2.googleapis.com/token",
+            client_id=client_id,
+            client_secret=client_secret
+        )
+
+        # 3. Connect to the Gmail Service
+        service = build('gmail', 'v1', credentials=creds)
+
+        # 4. Build the Email
+        message = MIMEMultipart()
+        message['To'] = user_email
+        message['Subject'] = "🎓 Your CareerPath AI Report"
+        
+        html_body = f"""
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 10px; overflow: hidden;">
+            <div style="background-color: #0d6efd; color: white; padding: 25px; text-align: center;">
+                <h2 style="margin: 0;">🎓 Your AI Career Report is Ready!</h2>
+            </div>
+            <div style="padding: 25px; color: #333; line-height: 1.6;">
+                <p style="font-size: 16px;">Hello <strong>{name}</strong>,</p>
+                <p style="font-size: 16px;">Attached is your highly personalized AI-generated university placement report.</p>
+                <p style="font-size: 16px;">Best of luck with your career journey!</p>
             </div>
         </div>
         """
+        message.attach(MIMEText(html_body, 'html'))
+
+        # 5. Attach the PDF
+        clean_base64 = pdf_base64.split(',')[1] if ',' in pdf_base64 else pdf_base64
+        pdf_bytes = base64.b64decode(clean_base64)
         
-        # Apply the HTML to the email
-        msg.html = email_html
-        # 6. ATTACH THE FRONTEND-GENERATED PDF (WITH THE BASE64 FIX)
-        # Strip the JavaScript 'data:application/pdf;base64,' prefix if it exists
-        if pdf_base64 and ',' in pdf_base64:
-            pdf_base64 = pdf_base64.split(',')[1]
-            
-        pdf_binary = base64.b64decode(pdf_base64)
+        part = MIMEBase('application', 'octet-stream')
+        part.set_payload(pdf_bytes)
+        encoders.encode_base64(part)
+        part.add_header('Content-Disposition', f'attachment; filename="{name.replace(" ", "_")}_Career_Report.pdf"')
+        message.attach(part)
 
-        msg.attach(
-            filename=filename,
-            content_type="application/pdf",
-            data=pdf_binary
-        )
+        # 6. Send it via Web Traffic (Bypassing Render's Firewalls!)
+        raw_message = base64.urlsafe_b64encode(message.as_bytes()).decode()
+        send_request = service.users().messages().send(userId="me", body={"raw": raw_message}).execute()
 
-
-        # 7. Send the Email
-        # Logic is already DB-centric, so preserve it.
-        mail.send(msg)
-        logging.info(f"✅ HTML Email with PDF attached successfully sent to {user.email}!")
-        return jsonify({"message": "Report sent successfully to your registered email!"}), 200
+        print(f"✅ Email sent successfully! Message ID: {send_request['id']}")
+        return jsonify({"message": "Report sent successfully!"}), 200
 
     except Exception as e:
-        # Error robustness preservation ensures accurate feedback. preserve it.
-        logging.error(f"🚨 Email Error: {e}")
-        return jsonify({"error": "Failed to send email"}), 500
-
+        print(f"❌ Server Error: {str(e)}")
+        return jsonify({"error": str(e)}), 500
 # ==========================================
 # 🧠 MAIN AI & SCRAPING ROUTE
 # ==========================================
