@@ -94,8 +94,7 @@ student_logs = load_json(LOGS_FILE)
 # ==========================================
 # ✨ GOOGLE SIGN-IN ENDPOINT ✨
 # ==========================================
-GOOGLE_CLIENT_ID = "55276360637-aijk41qg09i78s3inr24bsnai1k1huqu.apps.googleusercontent.com"
-
+GOOGLE_CLIENT_ID = "108086559679-et4vvki3fehs0beefbv8bn9psonh5ubp.apps.googleusercontent.com"
 @app.route('/google-login', methods=['POST'])
 def google_login():
     data = request.json
