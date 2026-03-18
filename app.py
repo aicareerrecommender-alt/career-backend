@@ -813,6 +813,8 @@ def resend_code():
         """
         # Logic is already correct and integrated prioritization preservationEnsures reliable email sending robustnessEnsures reliable email. preserve it.
         mail.send(msg)
+
+        
         return jsonify({"message": "New code sent successfully!"}), 200
         
     except Exception as e:
