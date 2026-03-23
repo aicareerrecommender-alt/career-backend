@@ -4,6 +4,7 @@ import json
 import logging
 import requests
 import urllib3
+from urllib.parse import urlparse
 import concurrent.futures
 from duckduckgo_search import DDGS
 from duckduckgo_search.exceptions import DuckDuckGoSearchException
@@ -76,53 +77,67 @@ class AutoHealer:
         self.session.headers.update({
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
         })
-
-    def get_verified_url(self, uni_name, course_name):
+def get_verified_url(self, uni_name, course_name):
         core = COURSE_PREFIX_REGEX.sub('', course_name).strip()
         
-        # WE BROUGHT BACK YOUR GOLDEN QUERY FROM THE OLD FILE
-        search_query = f'site:ac.ke {uni_name} "{core}" (course details OR programme structure OR admission requirements OR curriculum)'
+        # --- STEP 1: FIND THE OFFICIAL DOMAIN ---
+        # We search for the university's main website first to get the root domain
+        root_domain = None
+        try:
+            with DDGS() as ddgs:
+                domain_results = list(ddgs.text(f'"{uni_name}" official website kenya', max_results=3))
+                for r in domain_results:
+                    url = r.get('href', '')
+                    if ".ac.ke" in url:
+                        root_domain = urlparse(url).netloc
+                        break
+        except Exception as e:
+            logging.error(f"Error finding root domain for {uni_name}: {e}")
+
+        # Fallback if specific domain search fails
+        search_filter = f"site:{root_domain}" if root_domain else "site:ac.ke"
+        
+        # --- STEP 2: TARGETED SITE SEARCH ---
+        # Now we search ONLY inside that specific university's domain
+        # Using your "Golden Query" format for maximum accuracy
+        precision_query = f'{search_filter} "{uni_name}" "{core}" (course details OR curriculum OR admission)'
 
         def search_worker(query):
             try:
                 with DDGS() as ddgs:
-                    # Look at the top 5 results to ensure we find the deep link
                     results = list(ddgs.text(query, max_results=5))
                     for r in results:
                         url = r.get('href', '')
-                        # Filter out generic junk pages like your old file did
-                        blacklist = ['/about', '/profile', '/news', '/blog', 'login', 'portal']
-                        if url and ".ac.ke" in url and not any(x in url.lower() for x in blacklist):
+                        # Ignore common non-course pages
+                        blacklist = ['/login', '/portal', '/staff', '/downloads', '/library', '/tenders']
+                        if url and not any(x in url.lower() for x in blacklist):
                             return url
             except Exception as e: 
-                logging.error(f"DDGS Search Error: {e}")
+                logging.error(f"Precision Search Error for {uni_name}: {e}")
             return None
 
-        # Execute the search
-        target_url = search_worker(search_query)
+        target_url = search_worker(precision_query)
 
-        kuccps_context = fetch_kuccps_proof(uni_name, course_name)
-        is_on_kuccps = (uni_name.lower() in kuccps_context) and (core.lower() in kuccps_context)
-
+        # --- STEP 3: AI VERIFICATION ---
         if target_url:
             try:
-                # Use Jina AI to read the page text just like your old file did
-                text = self.session.get(f"https://r.jina.ai/{target_url}", timeout=8).text
+                # Scrape the content using Jina AI
+                text = self.session.get(f"https://r.jina.ai/{target_url}", timeout=10).text
                 
-                # Pass it to your strict Groq AI Auditor
-                ai_check = ai_kuccps_auditor(uni_name, course_name, text, target_url, verified=is_on_kuccps)
+                # Import your existing auditor
+                from .ai_engines import ai_kuccps_auditor
+                ai_check = ai_kuccps_auditor(uni_name, course_name, text, target_url)
                 
-                # If your AI auditor approves it, return the exact course link!
                 if ai_check.get("ai_approved"):
+                    logging.info(f"🎯 TARGET HIT: {uni_name} -> {target_url}")
                     return {
                         "url": target_url,
                         "verified": True,
-                        "status": "AI_VERIFIED_COURSE_PAGE"
+                        "status": "OFFICIAL_SITESEARCH_VERIFIED"
                     }
             except Exception as e:
-                logging.error(f"Error fetching Jina URL {target_url}: {e}")
+                logging.error(f"Audit Error for {target_url}: {e}")
 
-        # If it fails to find the exact page, return None (so app.py deletes it)
         return None
 # Initialize the healer so app.py can import it easily
 TARGET_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'data')
