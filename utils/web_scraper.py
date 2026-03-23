@@ -78,71 +78,52 @@ class AutoHealer:
         })
 
     def get_verified_url(self, uni_name, course_name):
-        # Use the precompiled regex to strip prefixes like "Bachelor of Science in"
         core = COURSE_PREFIX_REGEX.sub('', course_name).strip()
         
-        search_queries = [
-            f'site:ac.ke "{uni_name}" "{core}" syllabus units',
-            f'site:ac.ke "{uni_name}" "{core}" program overview'
-        ]
+        # WE BROUGHT BACK YOUR GOLDEN QUERY FROM THE OLD FILE
+        search_query = f'site:ac.ke {uni_name} "{core}" (course details OR programme structure OR admission requirements OR curriculum)'
 
         def search_worker(query):
             try:
                 with DDGS() as ddgs:
-                    results = list(ddgs.text(query, max_results=2))
+                    # Look at the top 5 results to ensure we find the deep link
+                    results = list(ddgs.text(query, max_results=5))
                     for r in results:
                         url = r.get('href', '')
-                        # Ensure it's an educational domain and not a login portal
-                        if url and ".ac.ke" in url and not any(x in url.lower() for x in ['login', 'portal']):
+                        # Filter out generic junk pages like your old file did
+                        blacklist = ['/about', '/profile', '/news', '/blog', 'login', 'portal']
+                        if url and ".ac.ke" in url and not any(x in url.lower() for x in blacklist):
                             return url
-            except Exception: 
-                pass
+            except Exception as e: 
+                logging.error(f"DDGS Search Error: {e}")
             return None
 
-        target_url = None
-        
-        # 2. OPTIMIZATION: ThreadPool now breaks early. 
-        # Once the first worker finds a URL, we don't wait for the second worker to finish.
-        with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
-            futures = [executor.submit(search_worker, q) for q in search_queries]
-            for future in concurrent.futures.as_completed(futures):
-                if res := future.result(): 
-                    target_url = res
-                    break 
+        # Execute the search
+        target_url = search_worker(search_query)
 
-        # 3. AUDIT: Fetch KUCCPS Proof
         kuccps_context = fetch_kuccps_proof(uni_name, course_name)
         is_on_kuccps = (uni_name.lower() in kuccps_context) and (core.lower() in kuccps_context)
 
-        # 4. AI JUDGE
         if target_url:
             try:
-                # Scrape the actual university page text using Jina AI
+                # Use Jina AI to read the page text just like your old file did
                 text = self.session.get(f"https://r.jina.ai/{target_url}", timeout=8).text
+                
+                # Pass it to your strict Groq AI Auditor
                 ai_check = ai_kuccps_auditor(uni_name, course_name, text, target_url, verified=is_on_kuccps)
                 
-                # Assign a descriptive status based on AI strict check and KUCCPS status
-                if is_on_kuccps:
-                    final_status = "KUCCPS_OFFICIAL"
-                else:
-                    final_status = "AI_VERIFIED" if ai_check.get("ai_approved") else "AI_REJECTED"
-
-                return {
-                    "url": target_url,
-                    # If it's on KUCCPS, we treat it as verified regardless of what the AI says. 
-                    # If not on KUCCPS, we rely on the AI's approval.
-                    "verified": ai_check.get("ai_approved", False) or is_on_kuccps,
-                    "status": final_status
-                }
-            except requests.Timeout:
-                logging.warning(f"Jina AI Timeout for {target_url}")
-                return {"url": target_url, "verified": is_on_kuccps, "status": "FETCH_TIMEOUT"}
+                # If your AI auditor approves it, return the exact course link!
+                if ai_check.get("ai_approved"):
+                    return {
+                        "url": target_url,
+                        "verified": True,
+                        "status": "AI_VERIFIED_COURSE_PAGE"
+                    }
             except Exception as e:
                 logging.error(f"Error fetching Jina URL {target_url}: {e}")
-                return {"url": target_url, "verified": is_on_kuccps, "status": "FETCH_ERROR"}
 
+        # If it fails to find the exact page, return None (so app.py deletes it)
         return None
-
 # Initialize the healer so app.py can import it easily
 TARGET_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'data')
 healer = AutoHealer(target_folder=TARGET_DIR)
