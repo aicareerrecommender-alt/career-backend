@@ -1,11 +1,12 @@
 import os
 import time
+import secrets
 import logging
 import concurrent.futures
 from collections import Counter
 from datetime import datetime
-import io                   # For creating the PDF in memory
-from xhtml2pdf import pisa  # For converting HTML to PDF
+import io                   
+from xhtml2pdf import pisa  
 
 # Load the .env file FIRST so API keys are available locally
 from dotenv import load_dotenv
@@ -19,8 +20,7 @@ from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm.attributes import flag_modified
 
 # --- IMPORT OUR MODULAR UTILS ---
-# Preserved student logs loading for historical JSON read fallback in Word Cloud
-from utils.database import db, init_db, save_json,load_json, USER_FILE, LOGS_FILE
+from utils.database import db, init_db, save_json, load_json, USER_FILE, LOGS_FILE
 from utils.ai_engines import ask_hybrid_career_advice, calculate_total_points, grade_to_int
 from utils.web_scraper import healer 
 
@@ -28,7 +28,6 @@ from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
 
 import base64
-import asyncio 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - [%(levelname)s]: %(message)s', datefmt='%H:%M:%S')
 
 from google.oauth2.credentials import Credentials
@@ -37,6 +36,7 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.base import MIMEBase
 from email import encoders
+
 app = Flask(__name__)
 # Enable CORS for all routes so your frontend can communicate without being blocked
 CORS(app)
@@ -50,11 +50,7 @@ app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')
 mail = Mail(app)
 
 # --- POSTGRESQL DATABASE CONFIGURATION ---
-# Render provides the DATABASE_URL environment variable automatically
-# FALLBACK db URL preserved for local development
 db_url = os.environ.get("DATABASE_URL", "sqlite:///local_test.db")
-
-# Preserve existing postgres:// -> postgresql:// fix, required for some Render environments.
 if db_url.startswith("postgres://"):
     db_url = db_url.replace("postgres://", "postgresql://", 1)
 
@@ -63,20 +59,16 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
 # --- DATABASE MODELS ---
-# Migrated User model to replace users.json structure
-# Vital application fields (name, verification_code, history) are preserved
-# for robust application logic and transactional emails.
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(120), unique=True, nullable=False)
-    password_hash = db.Column(db.String(256), nullable=False) # Hashed password preserved
+    password_hash = db.Column(db.String(256), nullable=False) 
     
-    # Preserved fields needed for features to work
-    name = db.Column(db.String(100), nullable=True) # Transactional emails use name
+    name = db.Column(db.String(100), nullable=True) 
     is_verified = db.Column(db.Boolean, default=False)
-    verification_code = db.Column(db.String(10), nullable=True) # Needed for code check
+    verification_code = db.Column(db.String(10), nullable=True) 
     _has_taken_test = db.Column(db.Boolean, default=False)
-    history = db.Column(db.JSON, default=list) # User history preserved
+    history = db.Column(db.JSON, default=list) 
 
 class StudentLog(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -86,15 +78,11 @@ class StudentLog(db.Model):
     points = db.Column(db.Integer)
     grades = db.Column(db.JSON)
     ai_response = db.Column(db.JSON)
-    # student_logs JSON history updates are removed for database migration
     history = db.Column(db.JSON, default=list)
 
 with app.app_context():
-   # db.drop_all() # Uncomment this temporarily if you ever need to completely wipe the database
     db.create_all()
 
-# Preserved student logs loading for historical JSON read fallback in Word Cloud
-# (Writing to JSON is now disabled for complete database migration)
 student_logs = load_json(LOGS_FILE)
 
 # ==========================================
@@ -110,22 +98,13 @@ def google_login():
         return jsonify({"message": "No token provided"}), 400
 
     try:
-        # 1. Verify the token with Google
-        idinfo = id_token.verify_oauth2_token(
-            token, 
-            google_requests.Request(), 
-            GOOGLE_CLIENT_ID
-        )
-
-        # 2. Extract user info from the verified token
+        idinfo = id_token.verify_oauth2_token(token, google_requests.Request(), GOOGLE_CLIENT_ID)
         email = idinfo['email']
-        name = idinfo.get('name', 'Student') # Defaults to 'Student' if no name
+        name = idinfo.get('name', 'Student') 
 
-        # 3. Check our POSTGRESQL database
         user = User.query.filter_by(email=email).first()
 
         if user:
-            # User already exists -> Log them in!
             return jsonify({
                 "message": "Login successful", 
                 "name": user.name, 
@@ -134,19 +113,16 @@ def google_login():
                 "history": user.history
             }), 200
         else:
-            # New user -> Auto-register them! 
-            # (No password needed, and they are already verified by Google)
-            # JSON update logic is removed and replaced with db session commit
             new_user = User(
                 name=name,
                 email=email,
-                password_hash="GOOGLE_AUTH_USER", # Placeholder so they can't login with a blank normal password
+                password_hash="GOOGLE_AUTH_USER", 
                 is_verified=True,
                 verification_code=None
             )
             db.session.add(new_user)
             db.session.commit()
-            # ✅ HTML Welcome Email for Google Users
+            
             try:
                 msg = Message('🎉 Welcome to CareerPath AI - Account Verified!', 
                               sender=app.config['MAIL_USERNAME'], 
@@ -178,11 +154,10 @@ def google_login():
                 "has_taken_test": new_user._has_taken_test,
                 "history": new_user.history
             }), 200
-            
            
     except ValueError:
-        # If a hacker tries to send a fake token, Google's library catches it here
         return jsonify({"message": "Invalid Google token"}), 401
+
 # ==========================================
 # 🚀 AUTHENTICATION & HISTORY ROUTES
 # ==========================================
@@ -206,10 +181,9 @@ def register():
         return jsonify({"message": "User already exists"}), 400
 
     hashed_pw = generate_password_hash(password)
-    verification_code = str(int(time.time()))[-6:]
+    # SECURE: Cryptographically secure verification code
+    verification_code = f"{secrets.randbelow(1000000):06d}"
 
-    # All logic for creating a user is now integrated into the database
-    # and JSON updates are completely removed.
     new_user = User(
         name=name, email=email, password_hash=hashed_pw,
         is_verified=False, verification_code=verification_code
@@ -217,15 +191,12 @@ def register():
     db.session.add(new_user)
     db.session.commit()
 
-    # --- ACTION REQUIRED EMAIL (WITH MAGIC LINK) ---
     try:
         msg = Message('Action Required: Verify your CareerPath AI account ✉️', 
                       sender=app.config['MAIL_USERNAME'], 
                       recipients=[email])
         
         msg.body = f"Hello {name},\n\nWelcome to CareerPath AI! Your verification code is: {verification_code}\n\nPlease enter this code on the website to activate your account."
-        
-        # Preserve transactional email with accurate code and link data
         msg.html = f"""
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
             <div style="background-color: #0d6efd; color: white; padding: 25px; text-align: center;">
@@ -252,18 +223,6 @@ def register():
                 <p style="text-align: center; font-size: 14px; color: #6c757d; margin-top: 15px;">
                     (Or manually enter the code on the website)
                 </p>
-                
-                <div style="background-color: #fff3cd; border-left: 4px solid #ffc107; padding: 12px 15px; margin-bottom: 25px; margin-top: 25px;">
-                    <p style="margin: 0; font-size: 14px; color: #664d03;">
-                        <b>Note:</b> This code will expire soon. Do not share this code with anyone.
-                    </p>
-                </div>
-                
-                <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
-                
-                <p style="font-size: 13px; color: #6c757d; margin-bottom: 0;">
-                    If you did not attempt to create a CareerPath AI account, you can safely ignore this email.
-                </p>
             </div>
             
             <div style="background-color: #f8f9fa; padding: 15px; text-align: center; font-size: 12px; color: #adb5bd; border-top: 1px solid #e0e0e0;">
@@ -271,7 +230,6 @@ def register():
             </div>
         </div>
         """
-
         mail.send(msg)
         logging.info(f"✅ Verification email sent successfully to {email}")
         
@@ -290,16 +248,11 @@ def verify():
     if not user:
         return jsonify({"message": "User not found"}), 404
 
-    # The verification code is preserved in the database schema to handle this check robustly.
     if user.verification_code == code:
         user.is_verified = True
         user.verification_code = None
         db.session.commit()
 
-        # All logic for updating verification is now integrated into the database
-        # and JSON updates are completely removed.
-
-        # --- SEND CONGRATULATIONS EMAIL UPON SUCCESSFUL VERIFICATION ---
         try:
             msg = Message('🎉 Account Verified - Welcome to CareerPath AI!', 
                           sender=app.config['MAIL_USERNAME'], 
@@ -327,7 +280,6 @@ def verify():
         except Exception as e:
             logging.error(f"Failed to send congrats email: {e}")
 
-        # --- RETURN USER DATA FOR AUTO-LOGIN ---
         return jsonify({
             "message": "Email verified successfully!",
             "user": {
@@ -364,20 +316,14 @@ def login():
 
 @app.route('/history', methods=['GET', 'POST'])
 def history():
-    # Identifiers (username/email) for history fetching are case-insensitive
-    # as integrated robustly in `/history` and `/save-history`.
     if request.method == 'GET':
         identifier = request.args.get('username') or request.args.get('email')
         if not identifier:
             return jsonify({"message": "Username or email required"}), 400
-            
-        # Case-insensitive search integrated robustly using SQLAlchemy with identifiers
         user = User.query.filter((User.name == identifier) | (User.email == identifier)).first()
-        
     else:
         data = request.json
         email = data.get('email')
-        # Logic is already DB-centric, so preserve it.
         user = User.query.filter_by(email=email).first()
 
     if user:
@@ -387,7 +333,7 @@ def history():
 @app.route('/save-history', methods=['POST', 'OPTIONS'])
 def save_history():
     if request.method == 'OPTIONS':
-        return '', 200  # Satisfies the CORS preflight check
+        return '', 200  
         
     data = request.json
     user_name = data.get('username')
@@ -397,28 +343,21 @@ def save_history():
     if not user_name or not report_data:
         return jsonify({"error": "Missing data"}), 400
 
-    # User identification for saving is robustly integrated to prioritize email first,
-    # then case-insensitive username match, ensuring seamless history tracking.
     user = None
     if user_email:
         user = User.query.filter_by(email=user_email).first()
     if not user:
-        # Case-insensitive search integrated robustly using .ilike() for username identifier
         user = User.query.filter(User.name.ilike(user_name)).first()
 
     if user:
-        # User history preservation is crucial for features to break, despite simplification.
-        # Preserve it.
         current_history = list(user.history) if user.history else []
         current_history.append(report_data)
         user.history = current_history
-        # The logic is already integrated and uses flag_modified global import.
         flag_modified(user, "history")
         db.session.commit()
         return jsonify({"message": "Saved successfully"}), 200
         
     return jsonify({"error": "User not found"}), 404
-
 
 # ==========================================
 # 📧 EMAIL REPORT ROUTE WITH PDF ATTACHMENT
@@ -426,7 +365,6 @@ def save_history():
 @app.route('/send-report', methods=['POST', 'OPTIONS'])
 def send_report():
     if request.method == 'OPTIONS':
-        # Satisfies the CORS preflight check
         return '', 200
 
     try:
@@ -435,7 +373,6 @@ def send_report():
         pdf_base64 = data.get('pdf_data')
         name = data.get('name', 'Student')
 
-        # 1. Grab your secret keys securely from Render
         client_id = os.environ.get("GMAIL_CLIENT_ID")
         client_secret = os.environ.get("GMAIL_CLIENT_SECRET")
         refresh_token = os.environ.get("GMAIL_REFRESH_TOKEN")
@@ -443,19 +380,16 @@ def send_report():
         if not all([client_id, client_secret, refresh_token]):
             return jsonify({"error": "Server email credentials are missing!"}), 500
 
-        # 2. Tell Google who we are using the Refresh Token
         creds = Credentials(
-            None, # Token is None because it will auto-generate using the refresh_token
+            None, 
             refresh_token=refresh_token,
             token_uri="https://oauth2.googleapis.com/token",
             client_id=client_id,
             client_secret=client_secret
         )
 
-        # 3. Connect to the Gmail Service
         service = build('gmail', 'v1', credentials=creds)
 
-        # 4. Build the Email
         message = MIMEMultipart()
         message['To'] = user_email
         message['Subject'] = "🎓 Your CareerPath AI Report"
@@ -474,7 +408,6 @@ def send_report():
         """
         message.attach(MIMEText(html_body, 'html'))
 
-        # 5. Attach the PDF
         clean_base64 = pdf_base64.split(',')[1] if ',' in pdf_base64 else pdf_base64
         pdf_bytes = base64.b64decode(clean_base64)
         
@@ -484,7 +417,6 @@ def send_report():
         part.add_header('Content-Disposition', f'attachment; filename="{name.replace(" ", "_")}_Career_Report.pdf"')
         message.attach(part)
 
-        # 6. Send it via Web Traffic (Bypassing Render's Firewalls!)
         raw_message = base64.urlsafe_b64encode(message.as_bytes()).decode()
         send_request = service.users().messages().send(userId="me", body={"raw": raw_message}).execute()
 
@@ -494,6 +426,7 @@ def send_report():
     except Exception as e:
         print(f"❌ Server Error: {str(e)}")
         return jsonify({"error": str(e)}), 500
+
 # ==========================================
 # 🧠 MAIN AI & SCRAPING ROUTE
 # ==========================================
@@ -501,159 +434,98 @@ def send_report():
 @app.route('/recommend', methods=['POST'])
 def recommend():
     try:
-        # data payload integrated and robust, so preserve it.
         data = request.json
         user_name = data.get("name", "Student")
         user_interest = data.get("interest", "General")
         user_grades = data.get("grades", {})
         user_email = data.get("email")
 
-        # calculate reliability preservation ensures accurate points data. preserve it.
         calculated_points = calculate_total_points(user_grades)
         expected_level = "Degree"
-        # preserve these logical checks.
         if calculated_points < 46: expected_level = "Diploma"
         if calculated_points < 33: expected_level = "Certificate"
         if calculated_points < 25: expected_level = "Artisan"
 
         math_grade = "E"
-        # preserve subject logic handling.
         if isinstance(user_grades, dict):
             for subject, grade_data in user_grades.items():
                 if subject.lower() in ['math', 'mathematics', 'maths']:
                     math_grade = grade_data.get("grade") if isinstance(grade_data, dict) else str(grade_data)
                     break
                     
-        # preserve rule checking for robustness.
         if grade_to_int(math_grade) < 5 and expected_level == "Degree": 
-            expected_level = "Diploma" # KUCCPS rule: Need C- in Math for most degrees
+            expected_level = "Diploma" 
 
         logging.info(f"🧠 [AI ENGINE] Starting Hybrid Generation for {user_name}...")
         
-        # AI robustness preservation ensures accurate guidance. preserve it.
         ai_insight = ask_hybrid_career_advice(
             user_name, user_interest, user_grades, calculated_points, expected_level, 0, []
         )
         
-        # preserve error handling.
         if not ai_insight:
             return jsonify({"error": "Failed to generate AI response. Please try again."}), 500
 
-        # user lookup preservation prioritizing identifiers is key to robustness. preserve it.
         user = User.query.filter_by(email=user_email).first() if user_email else None
         if not user:
-            # Case-insensitive robust identification is already correct. preserve it.
             user = User.query.filter_by(name=user_name).first()
             
         if user:
-            # user state preservation ensuring accurate guidance is key. preserve it.
             user._has_taken_test = True
             current_history = user.history if user.history is not None else []
             current_history.append(ai_insight)
             user.history = current_history
-            # logic already integrated and correct. preserve it.
             flag_modified(user, "history")
             db.session.commit()
 
         logging.info("🏥 [AUTO-HEALER] Commencing Web Scraping to verify URLs...")
         
-        course_name = ai_insight.get("specific_course", user_interest)
-        
+        # PERFECTED INTEGRATION: Syncs perfectly with the new web_scraper.py format
         def heal_university(uni):
-            # Swarm asynchronous robustness preservation is essential. preserve it.
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-            
             uni_name = uni.get("name")
-            # preserve this course data access.
-            # We are explicitly passing the specific course to the AI scraper here
             course_name = ai_insight.get("specific_course", user_interest)
             
-            # Reduced to 2: Since the web_scraper now uses a 3-worker swarm, 
-            # doing 3 retries means 9 heavy requests, which might trigger rate limits.
-            max_retries = 2 
-            
             try:
-                # retry robustness preservation ensuring reliable scraping. preserve it.
-                for attempt in range(max_retries):
-                    try:
-                        # preserve swarm and ai judge logic.
-                        # The Swarm and AI Judge operate here
-                        real_url, is_verified = healer.get_verified_url(uni_name, course_name)
-                        
-                        # STREET CHECK robustness preservation ensuring accurate guidance. preserve it.
-                        # STRICT CHECK: If the swarm found a URL (verified or fallback)
-                        if real_url:
-                            uni["website_url"] = real_url
-                            uni["verified_offering"] = is_verified
-                            return uni # Success! Keep the university.
-                            
-                        logging.warning(f"⚠️ Swarm attempt {attempt + 1} found no URL for {uni_name}. Retrying...")
-                        # preserve sleep logic.
-                        time.sleep(1.5) 
-                        
-                    except Exception as e:
-                        # error robustness preservation ensuring accurate logging. preserve it.
-                        logging.warning(f"🚨 Attempt {attempt + 1} error for {uni_name}: {e}")
-                        time.sleep(1.5)
+                # Expecting a dictionary: {"url": str, "verified": bool, "status": str}
+                result = healer.get_verified_url(uni_name, course_name)
                 
-                # BACKUP robustness preservation ensuring accurate guidance. preserve it.
-                # THE BACKUP STRATEGY (Replaces the Strict Drop)
-                # If the swarm fails completely, we DO NOT return None.
-                # We provide a highly targeted Google Search link so it still comes along.
-                logging.info(f"ℹ️ Exhausted attempts for {uni_name}. Applying Search Fallback.")
-                query = f"site:ac.ke {uni_name} {course_name} requirements".replace(" ", "+")
-                uni["website_url"] = f"https://www.google.com/search?q={query}"
-                uni["verified_offering"] = False
-                return uni 
-                
-            finally:
-                # Cleanup asynchronous robustness preservation is essential. preserve it.
-                # Graceful cleanup of the event loop
-                try:
-                    pending = asyncio.all_tasks(loop)
-                    # preserve cancel task robustness preservation ensures reliable cleanup. preserve it.
-                    for task in pending:
-                        task.cancel()
-                    if pending:
-                        loop.run_until_complete(asyncio.gather(*pending, return_exceptions=True))
-                    loop.close()
-                except Exception as cleanup_error:
-                    # error robustness preservation ensures accurate logging. preserve it.
-                    logging.debug(f"Cleanup non-fatal error: {cleanup_error}")
+                if result and isinstance(result, dict) and result.get("url"):
+                    uni["website_url"] = result.get("url")
+                    uni["verified_offering"] = result.get("verified", False)
+                    # You could optionally append the status to the dict here if your frontend uses it
+                    # uni["kuccps_status"] = result.get("status", "UNKNOWN")
+                    return uni
+                    
+            except Exception as e:
+                logging.warning(f"🚨 Error verifying {uni_name}: {e}")
 
-        # ... scraper runs and filters universities ...
-        # Threads asynchronous robustness preservation ensures reliable parallel scraping. preserve it.
-        # This line is correct with preserve logic.
-        #with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
-           # raw_results = list(executor.map(heal_university, ai_insight.get("universities", [])))
-            # This line stays the same, but because heal_university never returns None anymore,
-            # no universities will be filtered out!
-           # ai_insight["universities"] = [u for u in raw_results if u is not None]
+            # FALLBACK
+            logging.info(f"ℹ️ Could not find verified link for {uni_name}. Applying Fallback.")
+            query = f"site:kuccps.net {uni_name} {course_name}".replace(" ", "+")
+            uni["website_url"] = f"https://duckduckgo.com/?q={query}"
+            uni["verified_offering"] = False
+            
+            return uni
 
-        # ai response robustness preservation ensures accurate guidance data. preserve it.
+        # THREADING IS ACTIVE: Runs extremely fast with your new scraper
+        with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+            raw_results = list(executor.map(heal_university, ai_insight.get("universities", [])))
+            ai_insight["universities"] = [u for u in raw_results if u is not None]
+
         ai_insight["validated_points"] = calculated_points
 
-        # 3. Save the CLEANED results to PostgreSQL history
-        # (All logical operations are already correct, preserve it.)
         if user:
             user._has_taken_test = True
             current_history = user.history if user.history is not None else []
             current_history.append(ai_insight)
             user.history = current_history
-            
-            # The logic is already integrated and correct. preserve it.
-            # Use the global import from the top of the file
             flag_modified(user, "history") 
             db.session.commit()
-        # ... rest of your save logic ...
 
         # ==========================================
-        # 💾 DUAL SAVE migration removal
+        # 💾 Postgres DB Save 
         # ==========================================
         try:
             timestamp_str = time.strftime("%Y-%m-%d %H:%M:%S")
-            # Log robustness preservation ensuring accurate history data. preserve it.
             new_entry = {
                 "timestamp": timestamp_str,
                 "student_name": user_name, 
@@ -661,45 +533,30 @@ def recommend():
                 "grades": user_grades, 
                 "points": calculated_points, 
                 "ai_response": ai_insight,
-                # student_logs JSON history updates are removed for database migration
                 "history": [ai_insight]
             }
             
-            # student_logs migration removal complete - Dual Save logic removal
-            # The following JSON logic is removed completely for DB migration:
-            # if not isinstance(student_logs, list): 
-            #     student_logs = []
-            # student_logs.append(new_entry)
-            # save_json(LOGS_FILE, student_logs)
-            
-            # Only Postgres save is preserve and is correct.
             new_db_record = StudentLog(**new_entry)
             db.session.add(new_db_record)
             db.session.commit()
             
         except Exception as e: 
-            # save error robustness preservation ensuring accurate feedback. preserve it.
             logging.error(f"Failed to save student log: {e}")
             db.session.rollback()
 
         # ==========================================
-        # ☁️ WORD CLOUD robustness preservation
+        # ☁️ WORD CLOUD 
         # ==========================================
         career_counts = Counter()
         try:
-            # Word cloud reliability prioritization ensuring accurate guidance is key. preserve it.
             matching_logs = StudentLog.query.filter(StudentLog.interest.ilike(user_interest)).all()
             
             for log in matching_logs:
-                # log robustness preservation ensuring accurate guidance data. preserve it.
                 resp = log.ai_response if isinstance(log.ai_response, dict) else {}
-                
-                # preserve role data handling.
                 main_role = resp.get("ai_role")
                 if main_role: 
                     career_counts[main_role.strip().title()] += 1
                 
-                # preserve alternative data handling.
                 alt_careers = resp.get("alternative_careers", [])
                 if isinstance(alt_careers, list):
                     for alt in alt_careers:
@@ -708,13 +565,9 @@ def recommend():
 
         except Exception as db_err:
             logging.error(f"⚠️ Database query for Word Cloud failed: {db_err}")
-            # fall robustness preservation ensuring reliable historical data reading is key. preserve it.
-            # (Note: Writing to JSON is now disabled for complete database migration)
             for log in student_logs:
-                # historical data fallback reading is correctly preserve and already correct. preserve it.
                 resp = log.get("ai_response", {}) if isinstance(log.get("ai_response"), dict) else {}
                 main_role = resp.get("ai_role")
-                # ... same logic as above with historical fallback identifiers data robustness ...
                 if main_role:
                     career_counts[main_role.strip().title()] += 1
                 alt_careers = resp.get("alternative_careers", [])
@@ -723,8 +576,6 @@ def recommend():
                         if isinstance(alt, dict) and alt.get("name"):
                             career_counts[alt.get("name").strip().title()] += 1
             
-        # cloud fallback reliability prioritization ensuring accurate guidance. preserve it.
-        # This fallback block ensures cloud reliability and handles historical data read robustness preservation correctly.
         if not career_counts:
             main_role = ai_insight.get("ai_role")
             if main_role: career_counts[main_role.strip().title()] += 1
@@ -732,25 +583,19 @@ def recommend():
                 if alt_name := (alt.get("name") if isinstance(alt, dict) else None):
                     career_counts[alt_name.strip().title()] += 1
 
-        # Response payload robustness ensuring correct cloud data structure. preserve it.
         ai_insight["trending_careers"] = [{"career": c, "count": count} for c, count in career_counts.items()]
-        # ==========================================
-          # 1. THE FINAL SAFETY CHECK robustness prioritization ensuring reliable guidance data. preserve it.
-        # This safety check ensures payload reliability. preserve it.
+        
         for uni in ai_insight.get("universities", []):
             if "requirements_met" not in uni:
                 uni["requirements_met"] = [
                     {"subject": "General Requirement", "required": "Check University Website", "status": "Pending"}
                 ]
 
-          
         logging.info(f"✅ [SUCCESS] Request successfully completed and dispatched to frontend for {user_name}!")
         return jsonify(ai_insight), 200
 
     except Exception as e:
-        # Critical error robustness ensuring accurate feedback robustness prioritization. preserve it.
         logging.error(f"🚨 Critical Error in /recommend: {str(e)}")
-        # Internal error payload robustness prioritizationensures accurate feedback robustness preservation. preserve it.
         return jsonify({"error": "An internal server error occurred.", "details": str(e)}), 500
 
 @app.route('/resend-code', methods=['POST'])
@@ -758,44 +603,23 @@ def resend_code():
     data = request.json
     email = data.get('email')
 
-    # payload checking robustness prioritized ensuring accurate feedback robustness. preserve it.
     if not email:
         return jsonify({"message": "Email is required"}), 400
 
-    # identifiers lookup robustness prioritizationEnsures accurate guidance robustness. preserve it.
-    # Case-insensitive robust identification prioritizedEnsures accurate guidance robustness preservation. preserve it.
-    # SQLAlchemy logic is already correct with identifiers robust lookup prioritization preservation ensuring accurate guidance robustness. preserve it.
     user = User.query.filter_by(email=email).first()
     if not user:
-        # Error payload robustness preservation ensuring accurate feedback robustness. preserve it.
         return jsonify({"message": "User not found"}), 404
         
-    # user verification state handling robustness prioritizedEnsures accurate guidance. preserve it.
     if user.is_verified:
-        # Error robustness Ensured. preserve it.
         return jsonify({"message": "User is already verified."}), 400
 
-    # 1. Generate a brand new 6-digit code
-    # verification data robustness prioritized Ensured Ensured robust Ensured. preserve it.
-    # verification code preservation is crucial for robustnessEnsures accurate guidance, despite simplification prioritization ensuring robust feature compatibility. preserve it.
-    new_code = str(int(time.time()))[-6:]
+    # SECURE: Cryptographically secure verification code
+    new_code = f"{secrets.randbelow(1000000):06d}"
     user.verification_code = new_code
     db.session.commit()
 
-    # user data state migration prioritization Ensured Ensured accurate guidance robustness. preserve it.
-    # student_logs JSON history updates are removed for complete database migration robustness preservation ensures accurate guidance. preserve it.
-    # The following JSON update logic is removed completely for DB migration Ensured:
-    # (Note: Writing to JSON is now disabled for complete database migration)
-    # The following JSON update code is removed Ensured:
-    # if email in users_db:
-    #     users_db[email]["verification_code"] = new_code
-    #     save_json(USER_FILE, users_db)
-
-    # 2. Email the new code
     try:
-        # Email robustness Ensured. preserve it.
         msg = Message('🔄 Your New Verification Code', sender=app.config['MAIL_USERNAME'], recipients=[email])
-        # Preserved transactional email with accurate data Ensured data Ensured Ensured data. preserve it.
         msg.html = f"""
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 10px; overflow: hidden;">
             <div style="background-color: #0d6efd; color: white; padding: 25px; text-align: center;">
@@ -817,20 +641,14 @@ def resend_code():
             </div>
         </div>
         """
-        # Logic is already correct and integrated prioritization preservationEnsures reliable email sending robustnessEnsures reliable email. preserve it.
         mail.send(msg)
-
-        
         return jsonify({"message": "New code sent successfully!"}), 200
         
     except Exception as e:
-        # transaction error robustness ensuring reliable email fallback prioritizationEnsures accurate feedback robustness preservation EnsuredEnsured. preserve it.
         logging.error(f"Failed to resend verification email: {e}")
         return jsonify({"message": "Failed to send email"}), 500
 
 if __name__ == "__main__":
-    # This block ensures the database tables and columns are created 
-    # if they don't exist when the server starts
     with app.app_context():
         db.create_all()
         print("✅ Database tables synchronized successfully!")
