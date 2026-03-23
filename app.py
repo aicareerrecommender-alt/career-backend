@@ -480,31 +480,36 @@ def recommend():
         logging.info("🏥 [AUTO-HEALER] Commencing Web Scraping to verify URLs...")
         
         # PERFECTED INTEGRATION: Syncs perfectly with the new web_scraper.py format
+    
         def heal_university(uni):
             uni_name = uni.get("name")
             course_name = ai_insight.get("specific_course", user_interest)
             
             try:
-                # Expecting a dictionary: {"url": str, "verified": bool, "status": str}
-                result = healer.get_verified_url(uni_name, course_name)
+                url, is_verified = healer._hunt_for_url(uni_name, course_name)
                 
-                if result and isinstance(result, dict) and result.get("url"):
-                    uni["website_url"] = result.get("url")
-                    uni["verified_offering"] = result.get("verified", False)
-                    # You could optionally append the status to the dict here if your frontend uses it
-                    # uni["kuccps_status"] = result.get("status", "UNKNOWN")
+                if url and url != "PLACEHOLDER_FOR_HEALER":
+                    uni["website_url"] = url
+                    uni["verified_offering"] = is_verified
                     return uni
-                    
             except Exception as e:
                 logging.warning(f"🚨 Error verifying {uni_name}: {e}")
 
-            # FALLBACK
-            logging.info(f"ℹ️ Could not find verified link for {uni_name}. Applying Fallback.")
-            query = f"site:kuccps.net {uni_name} {course_name}".replace(" ", "+")
-            uni["website_url"] = f"https://duckduckgo.com/?q={query}"
-            uni["verified_offering"] = False
-            
-            return uni
+            logging.info(f"🗑️ Deleting {uni_name} from recommendations (Course not verified).")
+            return None
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+            raw_results = list(executor.map(heal_university, ai_insight.get("universities", [])))
+            ai_insight["universities"] = [u for u in raw_results if u is not None]
+
+            if len(ai_insight["universities"]) == 0:
+                ai_insight["universities"] = [{
+                    "name": "KUCCPS Official Portal",
+                    "description": "Please search the official KUCCPS portal to find institutions offering this specific course.",
+                    "website_url": "https://students.kuccps.net/",
+                    "verified_offering": True,
+                    "requirements_met": [{"subject": "General Requirement", "required": "Check Website", "status": "Pending"}]
+                }]
 
         # THREADING IS ACTIVE: Runs extremely fast with your new scraper
         with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
