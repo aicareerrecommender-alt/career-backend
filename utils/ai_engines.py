@@ -165,7 +165,8 @@ def fetch_from_gemini(system_instruction, base_prompt, grades, expected_level):
 # ==========================================
 # 🧠 CORE HYBRID ENGINE
 # ==========================================
-def ask_hybrid_career_advice(student_name, interest, grades, calculated_points, expected_level, pop_count, prev_unis, failed_hallucinations=None):
+# 🔴 Updated signature to match the exactly 7 arguments app.py sends!
+def ask_hybrid_career_advice(student_name, interest, grades, calculated_points, expected_level, pop_count=0, exclude_unis=None):
     system_instruction = """
     You are a strict, factual Kenyan KUCCPS career advisor API. 
     1. Recommend courses that actually exist at REAL KENYAN institutions. Major Universities, Colleges, and TVETs/Polytechnics ALL offer Cert/Diploma programs.
@@ -175,11 +176,14 @@ def ask_hybrid_career_advice(student_name, interest, grades, calculated_points, 
     5. CRITICAL TECH OVERRIDE: If the student is at the Artisan or Certificate level, but their passion is Technology/Coding/IT, recommend tech-adjacent practical courses like 'Artisan in ICT', 'Computer Repair', or 'Certificate in IT' instead of standard manual trades like Plumbing.
     """
     
-    base_prompt = f"Student: {student_name} | Points: {calculated_points}/84 | Tier: {expected_level} | Passion: {interest}\nSubject Grades: {json.dumps(grades)}"
-    
-    if prev_unis: base_prompt += f"\n🚨 DO NOT recommend these universities again: {', '.join(prev_unis)}.\n"
-    if failed_hallucinations:
-        base_prompt += "\n🚨 CRITICAL VALIDATION ERROR: DO NOT suggest these failing combos again:\n" + "\n".join([f"- {h}" for h in failed_hallucinations]) + "\n"
+    # 🔴 Build the dynamic blacklist rule
+    exclusion_rule = ""
+    if exclude_unis:
+        bad_unis_str = ", ".join(exclude_unis)
+        exclusion_rule = f"\nCRITICAL RULE: The following institutions DO NOT offer this course or have broken links. YOU MUST NOT suggest any of these: {bad_unis_str}."
+
+    # 🔴 Inject the exclusion rule into the prompt
+    base_prompt = f"Student: {student_name} | Points: {calculated_points}/84 | Tier: {expected_level} | Passion: {interest}\nSubject Grades: {json.dumps(grades)}{exclusion_rule}"
 
     json_structure = """
     Respond ONLY with valid JSON matching this exact structure:
