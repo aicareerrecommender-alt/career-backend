@@ -8,21 +8,25 @@ from groq import Groq
 from google import genai
 from google.genai import types
 
+# Load API keys from environment variables
 GROQ_API_KEY = os.environ.get("GROQ_API_KEY") 
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 
 client_groq = None
 client_gemini = None
 
+# Initialize AI Clients
 try:
     if GROQ_API_KEY:
         client_groq = Groq(api_key=GROQ_API_KEY, timeout=90.0, max_retries=2)
-except Exception as e: logging.error(f"Groq Init Error: {e}")
+except Exception as e: 
+    logging.error(f"Groq Init Error: {e}")
 
 try:
     if GEMINI_API_KEY:
         client_gemini = genai.Client(api_key=GEMINI_API_KEY)
-except Exception as e: logging.error(f"Gemini Init Error: {e}")
+except Exception as e: 
+    logging.error(f"Gemini Init Error: {e}")
 
 # ==========================================
 # 🧮 SMART GRADE CALCULATOR
@@ -31,27 +35,22 @@ def grade_to_int(grade_str):
     if not isinstance(grade_str, str): 
         return 0
     mapping = {'A': 12, 'A-': 11, 'B+': 10, 'B': 9, 'B-': 8, 'C+': 7, 'C': 6, 'C-': 5, 'D+': 4, 'D': 3, 'D-': 2, 'E': 1}
-    # Clean the string just in case there are invisible spaces
     clean_grade = grade_str.strip().upper()
     return mapping.get(clean_grade, 0)
 
 def calculate_total_points(student_grades):
     total = 0
     
-    # 1. If frontend sends a normal dictionary: {"Math": "A", "English": "B"}
     if isinstance(student_grades, dict):
         for subject, grade_data in student_grades.items():
-            # Sometimes frontend sends nested dicts: {"Math": {"grade": "A"}}
             if isinstance(grade_data, dict) and "grade" in grade_data:
                 total += grade_to_int(str(grade_data["grade"]))
             else:
                 total += grade_to_int(str(grade_data))
                 
-    # 2. If frontend sends a list/array: [{"subject": "Math", "grade": "A"}]
     elif isinstance(student_grades, list):
         for item in student_grades:
             if isinstance(item, dict):
-                # Check for common keys frontends use
                 grade_val = item.get("grade") or item.get("value") or "E"
                 total += grade_to_int(str(grade_val))
             elif isinstance(item, str):
@@ -70,6 +69,7 @@ def validate_ai_response(ai_data, user_grades, expected_level):
     course_name = ai_data.get("specific_course", "").lower()
     recommended_level = ai_data.get("level", "").lower()
 
+    # Hardcoded statutory requirements for STEM and Medicine
     if "degree" in recommended_level:
         if "engineer" in course_name or "mechatronic" in course_name:
             if grade_to_int(str(user_grades.get("Mathematics", user_grades.get("Math", "E")))) < 7 or grade_to_int(str(user_grades.get("Physics", "E"))) < 7:
@@ -96,7 +96,6 @@ def validate_ai_response(ai_data, user_grades, expected_level):
             required_grade = req.get("required", "E")
             actual_grade = "E"
             
-            # Extract actual grade intelligently based on our new math engine logic
             for user_subj, user_grade in user_grades.items() if isinstance(user_grades, dict) else []:
                 if user_subj.lower().startswith(subject.lower()[:4]):
                     actual_grade = user_grade.get("grade", "E") if isinstance(user_grade, dict) else str(user_grade)
@@ -165,8 +164,7 @@ def fetch_from_gemini(system_instruction, base_prompt, grades, expected_level):
 # ==========================================
 # 🧠 CORE HYBRID ENGINE
 # ==========================================
-# 🔴 Updated signature to match the exactly 7 arguments app.py sends!
-def ask_hybrid_career_advice(student_name, interest, grades, calculated_points, expected_level, pop_count=0, exclude_unis=None):
+def ask_hybrid_career_advice(student_name, interest, grades, calculated_points, expected_level, pop_count=0, exclude_unis=None, successful_unis=None):
     system_instruction = """
     You are a strict, factual Kenyan KUCCPS career advisor API. 
     1. Recommend courses that actually exist at REAL KENYAN institutions. Major Universities, Colleges, and TVETs/Polytechnics ALL offer Cert/Diploma programs.
@@ -176,13 +174,16 @@ def ask_hybrid_career_advice(student_name, interest, grades, calculated_points, 
     5. CRITICAL TECH OVERRIDE: If the student is at the Artisan or Certificate level, but their passion is Technology/Coding/IT, recommend tech-adjacent practical courses like 'Artisan in ICT', 'Computer Repair', or 'Certificate in IT' instead of standard manual trades like Plumbing.
     """
     
-    # 🔴 Build the dynamic blacklist rule
+    # --- SMART AI FEEDBACK LOOP INJECTION ---
     exclusion_rule = ""
     if exclude_unis:
         bad_unis_str = ", ".join(exclude_unis)
-        exclusion_rule = f"\nCRITICAL RULE: The following institutions DO NOT offer this course or have broken links. YOU MUST NOT suggest any of these: {bad_unis_str}."
+        exclusion_rule += f"\n🚨 FAILED HALLUCINATIONS: The following institutions DO NOT offer this course or have broken links. YOU MUST NOT suggest any of these: {bad_unis_str}."
 
-    # 🔴 Inject the exclusion rule into the prompt
+    if successful_unis:
+        good_unis_str = ", ".join(successful_unis)
+        exclusion_rule += f"\n✅ ALREADY VERIFIED: You have already successfully recommended these institutions: {good_unis_str}. DO NOT output them again. Generate DIFFERENT institutions to complete the list."
+
     base_prompt = f"Student: {student_name} | Points: {calculated_points}/84 | Tier: {expected_level} | Passion: {interest}\nSubject Grades: {json.dumps(grades)}{exclusion_rule}"
 
     json_structure = """
@@ -199,6 +200,7 @@ def ask_hybrid_career_advice(student_name, interest, grades, calculated_points, 
     final_data = groq_data or gemini_data
     if not final_data: return None
 
+    # Merge results from both APIs if available
     if groq_data and gemini_data:
         seen_unis = {u.get("name", "").lower() for u in final_data.get("universities", [])}
         for uni in gemini_data.get("universities", []):
