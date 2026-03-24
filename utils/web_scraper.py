@@ -2,16 +2,13 @@ import os
 import re
 import json
 import logging
-import bs4
 import requests
 import urllib3
 import threading
 import concurrent.futures
 import warnings
-from urllib.parse import urlparse
+from urllib.parse import urlparse, urljoin
 from bs4 import BeautifulSoup
-from urllib.parse import urlparse, urljoin # Update your existing urlparse import
-
 
 # Suppress the DDGS renaming warning cluttering the logs
 warnings.filterwarnings("ignore", category=RuntimeWarning, module="duckduckgo_search")
@@ -65,6 +62,72 @@ def ai_course_validator(uni_name, course_name, scraped_text, source_url):
         logging.error(f"AI Validator Error: {e}")
         return False
 
+
+class LinkResolver:
+    def __init__(self, groq_client):
+        self.groq = groq_client
+        self.session = requests.Session()
+        self.session.headers.update({
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'
+        })
+
+    def resolve_deep_link(self, start_url, target_course):
+        """
+        Navigates from a root URL to a specific course page in max 3 hops.
+        """
+        current_url = start_url
+        history = []
+
+        for depth in range(3):
+            logging.info(f"🚀 Hop {depth + 1}: Analyzing {current_url}")
+            try:
+                # 1. Fetch clean markdown via Jina AI
+                res = self.session.get(f"https://r.jina.ai/{current_url}", timeout=20, verify=False)
+                markdown = res.text
+                
+                # 2. Ask AI to pick the next best link from the Markdown
+                next_link = self._ask_ai_for_next_step(markdown, target_course, current_url)
+                
+                if not next_link or next_link == current_url or "STAY" in next_link.upper():
+                    break # Found it or reached a dead end
+                
+                # 3. Validation: If the link contains keywords, it might be the final page
+                if any(k in next_link.lower() for k in ['programme', 'course', 'admission', 'bachelor']):
+                    return next_link
+                
+                current_url = next_link
+                history.append(current_url)
+                
+            except Exception as e:
+                logging.error(f"Navigation failed: {e}")
+                break
+                
+        return current_url
+
+    def _ask_ai_for_next_step(self, content, course, current_url):
+        prompt = f"""
+        Current Page: {current_url}
+        Goal: Find the official page for '{course}'.
+        
+        Analyze the links in this Markdown content:
+        {content[:5000]} 
+        
+        Pick the ONE absolute URL most likely to lead to the course. 
+        If you are already on the course page, return 'STAY'.
+        RETURN ONLY THE URL.
+        """
+        try:
+            res = self.groq.chat.completions.create(
+                messages=[{"role": "user", "content": prompt}],
+                model="llama-3.1-8b-instant",
+                temperature=0.1
+            )
+            return res.choices[0].message.content.strip()
+        except Exception as e:
+            logging.debug(f"LinkResolver AI Error: {e}")
+            return None
+
+
 class AutoHealer:
     def __init__(self, target_folder="data"):
         self.db_path = os.path.join(target_folder, "academic_urls.json")
@@ -83,7 +146,10 @@ class AutoHealer:
             "jomo kenyatta": "jkuat.ac.ke", "egerton": "egerton.ac.ke", "moi university": "mu.ac.ke",
             "maseno": "maseno.ac.ke", "strathmore": "strathmore.edu", "kisii": "kisiiuniversity.ac.ke",
             "masinde muliro": "mmust.ac.ke", "technical university of kenya": "tukenya.ac.ke",
-            "kca university": "kca.ac.ke", "mount kenya": "mku.ac.ke", "zetech": "zetech.ac.ke"
+            "kca university": "kca.ac.ke", "mount kenya": "mku.ac.ke", "zetech": "zetech.ac.ke",
+            "kabarak university": "kabarak.ac.ke", "kirinyaga university": "kyu.ac.ke",
+            "karatina university": "karu.ac.ke", "laikipia university": "laikipia.ac.ke",
+            "rongo university": "rongovarsity.ac.ke", "daystar university": "daystar.ac.ke"
         }
 
     def _load_db(self):
@@ -103,7 +169,7 @@ class AutoHealer:
 
     def _get_domain(self, university_name):
         """Resolves official domains by checking local map, then KUCCPS, then direct search."""
-        uni_lower = university_name.lower()
+        uni_lower = university_name.lower().strip()
         for name, domain in self.known_domains.items():
             if name in uni_lower: return domain
                 
@@ -138,7 +204,7 @@ class AutoHealer:
             logging.warning(f"⚠️ Could not isolate official domain for {university_name}.")
             return None, False
 
-        # 3. Precision Deep-Link Search (Removed -filetype:pdf constraint)
+        # 3. Precision Deep-Link Search
         precision_query = f'site:{root_domain} "{course_name}"'
         urls_to_check = []
         
@@ -156,7 +222,6 @@ class AutoHealer:
         if urls_to_check:
             def verify_single_url(target_url):
                 try:
-                    # Bumped timeout to 20s for slow university websites & Jina AI overhead
                     res = self.session.get(f"https://r.jina.ai/{target_url}", timeout=20, verify=False)
                     if ai_course_validator(university_name, course_name, res.text, target_url):
                         return target_url
@@ -171,8 +236,8 @@ class AutoHealer:
                         self.db[university_name][course_name] = approved_url
                         self._save_db()
                         return approved_url, True
-    # --- STEP 4.5: Internal Navigation Fallback ---
-        # RUNS ONLY IF STEP 4 FINISHED WITHOUT RETURNING
+
+        # 4.5: Internal Navigation Fallback
         logging.warning(f"🕵️ External search failed. Starting internal navigation...")
         internal_url = self._internal_navigation_crawl(root_domain, university_name, course_name)
         
@@ -182,11 +247,10 @@ class AutoHealer:
             self._save_db()
             return internal_url, True
              
-           # 5. SOFT-FAIL: Fallback to the main homepage
+        # 5. SOFT-FAIL: Fallback to the main homepage
         logging.warning(f"⚠️ Specific page for {course_name} not found.")
         homepage = f"https://{root_domain}"
         return homepage, False
-    
                 
     def _internal_navigation_crawl(self, root_domain, university_name, course_name):
         """
@@ -222,12 +286,13 @@ class AutoHealer:
         except Exception as e:
             logging.debug(f"Internal crawl failed: {e}")
         return None
-# Initialize
-# Replace your current TARGET_DIR and healer lines with this:
-TARGET_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'data')
 
-# Create the directory if it doesn't exist to stop the WARNING
+
+# Initialize Target Directory
+TARGET_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'data')
 if not os.path.exists(TARGET_DIR):
     os.makedirs(TARGET_DIR)
 
+# Initialize the instances
 healer = AutoHealer(target_folder=TARGET_DIR)
+resolver = LinkResolver(groq_client=client_groq)
