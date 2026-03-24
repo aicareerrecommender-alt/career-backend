@@ -17,4 +17,4 @@ google-api-python-client
 google-auth-httplib2
 google-auth-oauthlib
 pdfplumber==0.11.0
-ddgs==8.8.0
+ddgs>=9.11.0
