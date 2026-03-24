@@ -223,5 +223,11 @@ class AutoHealer:
             logging.debug(f"Internal crawl failed: {e}")
         return None
 # Initialize
+# Replace your current TARGET_DIR and healer lines with this:
 TARGET_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'data')
+
+# Create the directory if it doesn't exist to stop the WARNING
+if not os.path.exists(TARGET_DIR):
+    os.makedirs(TARGET_DIR)
+
 healer = AutoHealer(target_folder=TARGET_DIR)
