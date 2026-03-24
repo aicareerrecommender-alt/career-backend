@@ -150,7 +150,7 @@ class AutoHealer:
             return None, False
 
         # --- GATHER URLS (DEEP LINK SNIPER) ---
-        precision_query = f'site:{root_domain} "{course_name}"'
+        precision_query = f'site:{root_domain} {course_name} course program'
         urls_to_check = []
         
         try:
