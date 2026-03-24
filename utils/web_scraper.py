@@ -2,12 +2,16 @@ import os
 import re
 import json
 import logging
+import bs4
 import requests
 import urllib3
 import threading
 import concurrent.futures
 import warnings
 from urllib.parse import urlparse
+from bs4 import BeautifulSoup
+from urllib.parse import urlparse, urljoin # Update your existing urlparse import
+
 
 # Suppress the DDGS renaming warning cluttering the logs
 warnings.filterwarnings("ignore", category=RuntimeWarning, module="duckduckgo_search")
@@ -167,12 +171,57 @@ class AutoHealer:
                         self.db[university_name][course_name] = approved_url
                         self._save_db()
                         return approved_url, True
-
-        # 5. SOFT-FAIL: Fallback to the main homepage instead of deleting the university
-        logging.warning(f"⚠️ Specific page for {course_name} not found strictly inside {root_domain}. Linking to homepage.")
+    # --- STEP 4.5: Internal Navigation Fallback ---
+        # RUNS ONLY IF STEP 4 FINISHED WITHOUT RETURNING
+        logging.warning(f"🕵️ External search failed. Starting internal navigation...")
+        internal_url = self._internal_navigation_crawl(root_domain, university_name, course_name)
+        
+        if internal_url:
+            if university_name not in self.db: self.db[university_name] = {}
+            self.db[university_name][course_name] = internal_url
+            self._save_db()
+            return internal_url, True
+             
+           # 5. SOFT-FAIL: Fallback to the main homepage
+        logging.warning(f"⚠️ Specific page for {course_name} not found.")
         homepage = f"https://{root_domain}"
         return homepage, False
-
+    
+                
+    def _internal_navigation_crawl(self, root_domain, university_name, course_name):
+        """
+        Fallback: Navigates the university homepage to find the course 
+        if external search fails.
+        """
+        homepage_url = f"https://{root_domain}"
+        try:
+            logging.info(f"🏠 Navigating homepage: {homepage_url}")
+            res = self.session.get(homepage_url, timeout=15, verify=False)
+            soup = BeautifulSoup(res.text, 'html.parser')
+            
+            # Look for menu links like 'Academics' or 'Programmes'
+            nav_link = None
+            for a in soup.find_all('a', href=True):
+                text = a.get_text().lower()
+                if any(word in text for word in ["academics", "programmes", "courses", "undergraduate"]):
+                    nav_link = urljoin(homepage_url, a['href'])
+                    break
+            
+            # If a menu was found, search that page for the course
+            search_page = nav_link if nav_link else homepage_url
+            prog_res = self.session.get(search_page, timeout=15, verify=False)
+            prog_soup = BeautifulSoup(prog_res.text, 'html.parser')
+            
+            for a in prog_soup.find_all('a', href=True):
+                if course_name.lower() in a.get_text().lower():
+                    target_url = urljoin(homepage_url, a['href'])
+                    # Validate with AI before returning
+                    scrape_res = self.session.get(f"https://r.jina.ai/{target_url}", timeout=20, verify=False)
+                    if ai_course_validator(university_name, course_name, scrape_res.text, target_url):
+                        return target_url
+        except Exception as e:
+            logging.debug(f"Internal crawl failed: {e}")
+        return None
 # Initialize
 TARGET_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'data')
 healer = AutoHealer(target_folder=TARGET_DIR)
