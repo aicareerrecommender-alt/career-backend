@@ -483,6 +483,9 @@ def recommend():
                 safe_uni = dict(uni)
                 uni_name = safe_uni.get("name")
                 course_name = safe_uni.get("specific_course", ai_insight.get("specific_course", user_interest))
+                if not uni.get("db_verified_name", True):
+                    logging.info(f"🗑️ Skipping web search for {uni_name} because the course name is hallucinated.")
+                    return None
                 
                 try:
                     url, is_verified = healer._hunt_for_url(uni_name, course_name)
