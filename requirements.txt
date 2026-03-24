@@ -16,3 +16,5 @@ psycopg2-binary
 google-api-python-client
 google-auth-httplib2
 google-auth-oauthlib
+pdfplumber==0.11.0
+ddgs==8.8.0

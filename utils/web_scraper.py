@@ -6,26 +6,29 @@ import requests
 import urllib3
 import threading
 import concurrent.futures
+import warnings
 from urllib.parse import urlparse
 
-# Handle the new DDGS library name changes gracefully
-try:
-    from ddgs import DDGS
-except ImportError:
-    from duckduckgo_search import DDGS
-
-from duckduckgo_search.exceptions import DuckDuckGoSearchException
-
-# Import your Groq client
-from .ai_engines import client_groq 
-
+# Suppress the DDGS renaming warning cluttering the logs
+warnings.filterwarnings("ignore", category=RuntimeWarning, module="duckduckgo_search")
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 logging.getLogger("httpx").setLevel(logging.WARNING)
 
+# Handle the DDGS import
+try:
+    from ddgs import DDGS
+except ImportError:
+    try:
+        from duckduckgo_search import DDGS
+    except ImportError:
+        logging.error("❌ Critical: duckduckgo_search/ddgs library not found.")
+
+from .ai_engines import client_groq 
+
 def ai_course_validator(uni_name, course_name, scraped_text, source_url):
     """
-    The Upgraded AI Agent: Features strict Anti-Crossover logic
-    to prevent competitor universities (like Zetech) from hijacking searches.
+    AI Auditor: Prevents 'Zetech Hijacking' by ensuring the scraped text 
+    actually belongs to the requested university.
     """
     if not client_groq: 
         return False
@@ -35,18 +38,14 @@ def ai_course_validator(uni_name, course_name, scraped_text, source_url):
     Requested Course: {course_name}
     Found URL: {source_url}
 
-    You are a strict Academic Auditor preventing cross-contamination.
-    CRITICAL RULE: Search engines sometimes return the WRONG university's website. 
-    If the Requested Institution is '{uni_name}', but the URL or Webpage Text belongs to a DIFFERENT university (e.g., you found Zetech or KCA instead of University of Nairobi), THIS IS A FATAL MISMATCH. 
-
-    Evaluate these two conditions:
-    1. INSTITUTION MATCH: Does this URL and webpage text STRICTLY and ONLY belong to the OFFICIAL '{uni_name}'? (Return false immediately if it belongs to a competitor, news site, or directory).
-    2. COURSE MATCH: Is the specific course '{course_name}' explicitly offered there?
+    AUDIT RULES:
+    1. INSTITUTION MATCH: Does the text/URL belong to {uni_name}? Reject if it is clearly a competitor university's site or a third-party course directory. Mentions of partner institutions, KUCCPS, or regulatory bodies (like CUE) are acceptable.
+    2. COURSE MATCH: Is '{course_name}' (or a closely related valid variant) offered by this institution according to the text? Note that PDF syllabus conversions might have messy formatting.
     
-    Answer STRICTLY with JSON: {{"is_official_site": true/false, "is_valid_course": true/false, "reason": "short explanation"}}.
+    Return JSON: {{"is_official_site": bool, "is_valid_course": bool, "reason": "string"}}
     
-    Webpage Text:
-    {scraped_text[:6000]}
+    Webpage Content:
+    {scraped_text[:5000]}
     """
     
     try:
@@ -57,13 +56,7 @@ def ai_course_validator(uni_name, course_name, scraped_text, source_url):
             temperature=0.1
         )
         data = json.loads(res.choices[0].message.content)
-        
-        if data.get("is_official_site") and data.get("is_valid_course"):
-            return True
-        else:
-            logging.warning(f"🤖 AI REJECTED HIJACK ATTEMPT -> Reason: {data.get('reason')}")
-            return False
-            
+        return data.get("is_official_site") and data.get("is_valid_course")
     except Exception as e: 
         logging.error(f"AI Validator Error: {e}")
         return False
@@ -73,27 +66,20 @@ class AutoHealer:
         self.db_path = os.path.join(target_folder, "academic_urls.json")
         os.makedirs(target_folder, exist_ok=True)
         self.session = requests.Session()
+        # Updated User-Agent to a newer version to reduce blocks
         self.session.headers.update({
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'
         })
-        
         self.db_lock = threading.Lock() 
         self.db = self._load_db()
 
-        # 🔥 LAYER 1: Hardcoded lookup for top universities to guarantee 100% accuracy
+        # The "Verified Anchor" List (KUCCPS Aligned)
         self.known_domains = {
             "university of nairobi": "uonbi.ac.ke", "kenyatta university": "ku.ac.ke",
             "jomo kenyatta": "jkuat.ac.ke", "egerton": "egerton.ac.ke", "moi university": "mu.ac.ke",
             "maseno": "maseno.ac.ke", "strathmore": "strathmore.edu", "kisii": "kisiiuniversity.ac.ke",
-            "masinde muliro": "mmust.ac.ke", "laikipia": "laikipia.ac.ke", "chuka": "chuka.ac.ke",
-            "dedan kimathi": "dkut.ac.ke", "technical university of kenya": "tukenya.ac.ke",
-            "technical university of mombasa": "tum.ac.ke", "kabianga": "kabianga.ac.ke",
-            "karatina": "karatina.ac.ke", "kca university": "kca.ac.ke", "mount kenya": "mku.ac.ke",
-            "kabarak": "kabarak.ac.ke", "zetech": "zetech.ac.ke", "daystar": "daystar.ac.ke",
-            "catholic university": "cuea.edu", "machakos": "mksu.ac.ke", "meru": "must.ac.ke",
-            "pwani": "pu.ac.ke", "kibabii": "kibu.ac.ke", "garissa": "gau.ac.ke", "seku": "seku.ac.ke",
-            "moringa": "moringaschool.com", "alx": "alxafrica.com", "kmtc": "kmtc.ac.ke",
-            "kenya medical training": "kmtc.ac.ke"
+            "masinde muliro": "mmust.ac.ke", "technical university of kenya": "tukenya.ac.ke",
+            "kca university": "kca.ac.ke", "mount kenya": "mku.ac.ke", "zetech": "zetech.ac.ke"
         }
 
     def _load_db(self):
@@ -112,45 +98,44 @@ class AutoHealer:
             except Exception: pass
 
     def _get_domain(self, university_name):
-        """Resolves the official domain using the Cache -> KUCCPS -> DDGS pipeline."""
+        """Resolves official domains by checking local map, then KUCCPS, then direct search."""
         uni_lower = university_name.lower()
         for name, domain in self.known_domains.items():
             if name in uni_lower: return domain
                 
         try:
             with DDGS() as ddgs:
+                # 1. KUCCPS Deep-Search for the Domain
                 kuccps_query = f'site:students.kuccps.net "{university_name}" website'
                 for r in list(ddgs.text(kuccps_query, max_results=3)):
-                    match = re.search(r'([a-zA-Z0-9\-]+\.(?:ac\.ke|edu\.ke|sc\.ke|edu))', r.get('body', '').lower())
+                    body = r.get('body', '').lower()
+                    match = re.search(r'([a-zA-Z0-9\-]+\.(?:ac\.ke|edu\.ke|sc\.ke|edu))', body)
                     if match: return match.group(1)
-        except Exception: pass
-            
-        try:
-            with DDGS() as ddgs:
-                for r in list(ddgs.text(f'"{university_name}" official website kenya', max_results=3)):
-                    found_url = r.get('href', '')
-                    if "bing.com" not in found_url and any(ext in found_url for ext in [".ac.ke", ".edu", ".sc.ke", ".org"]):
-                        return urlparse(found_url).netloc
-        except Exception: pass
+                
+                # 2. FALLBACK: Direct search if KUCCPS fails
+                direct_query = f'official website "{university_name}" Kenya'
+                for r in list(ddgs.text(direct_query, max_results=3)):
+                    href = r.get('href', '').lower()
+                    match = re.search(r'([a-zA-Z0-9\-]+\.(?:ac\.ke|edu\.ke|sc\.ke|edu))', href)
+                    if match: return match.group(1)
+        except Exception as e: 
+            logging.debug(f"Domain lookup exception: {e}")
             
         return None
 
     def _hunt_for_url(self, university_name, course_name):
-        # --- CACHE CHECK ---
+        # 1. Check Cache First
         if university_name in self.db and course_name in self.db[university_name]:
-            cached_url = self.db[university_name][course_name]
-            logging.info(f"⚡ CACHE HIT! Loaded {university_name} -> {course_name} from DB.")
-            return cached_url, True
+            return self.db[university_name][course_name], True
 
-        logging.info(f"🎯 Strict Deep-Link Hunting: {university_name} -> {course_name}")
+        # 2. Identify the Anchor Domain
         root_domain = self._get_domain(university_name)
-
         if not root_domain:
             logging.warning(f"⚠️ Could not isolate official domain for {university_name}.")
             return None, False
 
-        # --- GATHER URLS (DEEP LINK SNIPER) ---
-        precision_query = f'site:{root_domain} {course_name} course program'
+        # 3. Precision Deep-Link Search (Removed -filetype:pdf constraint)
+        precision_query = f'site:{root_domain} "{course_name}"'
         urls_to_check = []
         
         try:
@@ -158,49 +143,36 @@ class AutoHealer:
                 results = list(ddgs.text(precision_query, max_results=5))
                 for r in results:
                     url = r.get('href', '')
-                    if url and "bing.com" not in url and root_domain in url and not any(bad in url.lower() for bad in ['/login', '.pdf', '/download']):
+                    if url and root_domain in url:
                         urls_to_check.append(url)
         except Exception as e:
-            logging.error(f"❌ DDGS Course Search Error: {e}")
+            logging.error(f"❌ Search Error: {e}")
 
-        if not urls_to_check:
-            logging.warning(f"❌ Failed to find deep-link for {course_name} strictly inside {root_domain}")
-            return None, False
-
-        # --- THE SPEED UPGRADE: JINA + CONCURRENT SCRAPING ---
-        def verify_single_url(target_url):
-            logging.info(f"📄 Testing promising academic URL via Jina: {target_url}...")
-            try:
-                jina_url = f"https://r.jina.ai/{target_url}"
-                res_page = self.session.get(jina_url, timeout=8, verify=False)
-                clean_markdown_text = res_page.text 
-                
-                is_valid = ai_course_validator(university_name, course_name, clean_markdown_text, target_url)
-                
-                if is_valid:
-                    logging.info(f"🤝 SUCCESS! AI verified exact course page: {target_url}")
-                    return target_url
-                return None
-            except Exception as e:
-                logging.warning(f"⚠️ Scraping failed for {target_url}: {e}")
+        # 4. Concurrent Scraping & Validation
+        if urls_to_check:
+            def verify_single_url(target_url):
+                try:
+                    # Bumped timeout to 20s for slow university websites & Jina AI overhead
+                    res = self.session.get(f"https://r.jina.ai/{target_url}", timeout=20, verify=False)
+                    if ai_course_validator(university_name, course_name, res.text, target_url):
+                        return target_url
+                except Exception as e:
+                    logging.debug(f"Failed to scrape {target_url}: {e}")
                 return None
 
-        with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
-            future_to_url = {executor.submit(verify_single_url, url): url for url in urls_to_check}
-            
-            # as_completed yields results the exact millisecond they finish downloading
-            for future in concurrent.futures.as_completed(future_to_url):
-                approved_url = future.result()
-                if approved_url:
-                    # The FIRST url to get approved wins! We stop waiting for the rest.
-                    if university_name not in self.db:
-                        self.db[university_name] = {}
-                    self.db[university_name][course_name] = approved_url
-                    self._save_db()
-                    return approved_url, True
+            with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
+                for approved_url in executor.map(verify_single_url, urls_to_check):
+                    if approved_url:
+                        if university_name not in self.db: self.db[university_name] = {}
+                        self.db[university_name][course_name] = approved_url
+                        self._save_db()
+                        return approved_url, True
 
-        return None, False
+        # 5. SOFT-FAIL: Fallback to the main homepage instead of deleting the university
+        logging.warning(f"⚠️ Specific page for {course_name} not found strictly inside {root_domain}. Linking to homepage.")
+        homepage = f"https://{root_domain}"
+        return homepage, False
 
-# Initialize the healer so app.py can import it easily
+# Initialize
 TARGET_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'data')
 healer = AutoHealer(target_folder=TARGET_DIR)
