@@ -15,7 +15,7 @@ GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 # --- DATABASE LOADING ---
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 # Adjust the path below if your json file is in a different folder (like /data)
-COURSES_DB_PATH = os.path.join(BASE_DIR, '..', 'data', 'kuccps_courses.json')
+COURSES_DB_PATH = os.path.join(BASE_DIR,'kuccps_courses.json')
 
 def load_master_courses():
     """Loads the real KUCCPS courses and creates a fast, lowercase lookup set."""
