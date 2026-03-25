@@ -10,6 +10,10 @@ import requests
 # Load the .env file FIRST so API keys are available locally
 from dotenv import load_dotenv
 load_dotenv()
+from google.oauth2 import id_token
+from google.auth.transport import requests as google_requests
+# 'scraper' is the global instance in your new web_scraper.py
+from utils.web_scraper import scraper as healer, get_course_url
 
 from flask import Flask, request, jsonify
 from flask_cors import CORS
@@ -23,10 +27,14 @@ from sqlalchemy.orm.attributes import flag_modified
 from utils.database import db, init_db, save_json,load_json, USER_FILE, LOGS_FILE
 from utils.ai_engines import ask_hybrid_career_advice, calculate_total_points, grade_to_int
 
-from utils.web_scraper import healer, get_course_url
-from google.oauth2 import id_token
-from google.auth.transport import requests as google_requests
 
+from google.auth.transport import requests as google_requests
+# Remove 'healer' if you aren't using it. 
+# If 'get_course_url' is also missing, you can comment out the whole line.
+try:
+    from utils.web_scraper import get_course_url
+except ImportError:
+    print("⚠️ utils.web_scraper not found or empty, skipping...")
 import base64
 import asyncio 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - [%(levelname)s]: %(message)s', datefmt='%H:%M:%S')
@@ -484,7 +492,8 @@ def recommend():
 
             if target_uni and main_course_name:
                 # Using the existing _hunt_for_url method
-                verified_link, is_verified = healer._hunt_for_url(target_uni, main_course_name)
+                verified_link = healer.find_course_url(target_uni, main_course_name)
+                is_verified = True if verified_link and verified_link != target_uni else False
                 
                 # Check if it was verified and ensure the URL isn't just the placeholder
                 if is_verified and verified_link != "PLACEHOLDER_FOR_HEALER":
@@ -504,7 +513,8 @@ def recommend():
                     return None
                 
                 try:
-                    url, is_verified = healer._hunt_for_url(uni_name, course_name)
+                    url = healer.find_course_url(uni_name, course_name)
+                    is_verified = True if url and url != uni_name else False
                     if url and url != "PLACEHOLDER_FOR_HEALER":
                         safe_uni["website_url"] = url
                         safe_uni["verified_offering"] = is_verified
@@ -804,49 +814,7 @@ def delete_account():
     except Exception as e:
         db.session.rollback()
         return jsonify({"message": "Error during deletion."}), 500
- # ==========================================
-# 🦞 OPENCLAW SCRAPER ROUTE
-# ==========================================
-@app.route('/health-openclaw')
-def check_openclaw():
-    try:
-        # Pings the OpenClaw health endpoint directly
-        r = requests.get("http://localhost:18789/health", timeout=5)
-        return jsonify({
-            "status": "ok", 
-            "message": "OpenClaw is running perfectly!",
-            "openclaw_response": r.text
-        }), 200
-    except Exception as e:
-        logging.error(f"OpenClaw Health Check Failed: {e}")
-        return jsonify({
-            "status": "error", 
-            "message": "OpenClaw is NOT reachable.",
-            "details": str(e)
-        }), 500
-# ==========================================
-# 🕷️ OPENCLAW SCRAPING ROUTE
-# ==========================================
 
-def call_openclaw(payload, retries=3):
-    """Robust function to call OpenClaw with built-in retries."""
-    for attempt in range(retries):
-        try:
-            response = requests.post(
-                "http://localhost:18789/v1/agent/task",
-                json=payload,
-                timeout=120
-            )
-            response.raise_for_status() # Raises an error for bad HTTP status codes
-            return response.json()
-        except Exception as e:
-            logging.warning(f"⚠️ OpenClaw connection failed (Attempt {attempt+1}/{retries}): {e}")
-            if attempt < retries - 1:
-                time.sleep(3) # Wait 3 seconds before trying again
-            else:
-                logging.error("🚨 OpenClaw unavailable after maximum retries.")
-                # Return a safe fallback so your app doesn't completely crash
-                return None 
 
 @app.route('/scrape', methods=['POST'])
 def scrape_data():
