@@ -804,8 +804,7 @@ def delete_account():
     except Exception as e:
         db.session.rollback()
         return jsonify({"message": "Error during deletion."}), 500
-    
-    # ==========================================
+ # ==========================================
 # 🦞 OPENCLAW SCRAPER ROUTE
 # ==========================================
 
@@ -813,13 +812,14 @@ def delete_account():
 def scrape_data():
     data = request.json
     target_url = data.get('url')
+    course_name = data.get('course', 'Computer Science') # 👈 Now dynamically accepts any course
     
     if not target_url:
         return jsonify({"error": "URL is required"}), 400
     
     # Instruction for the OpenClaw Agent
     payload = {
-        "instruction": f"Go to {target_url}, find the Academics section, and return the link for Computer Science.",
+        "instruction": f"Navigate to {target_url}. Find the 'Academics' or 'Programs' section. Locate the exact link for the '{course_name}' course. Return ONLY the absolute URL to that specific course page.",
         "tools": ["browser"],
         "model": "nvidia/nemotron-4-340b-instruct", 
         "api_key": NVIDIA_API_KEY
@@ -827,12 +827,10 @@ def scrape_data():
     
     try:
         # Talk to the OpenClaw Gateway running inside your Docker container
-        # Note: 18789 is the default OpenClaw port
         response = requests.post("http://localhost:18789/v1/agent/task", json=payload, timeout=120)
         return jsonify(response.json())
     except Exception as e:
         return jsonify({"error": "Could not connect to OpenClaw gateway", "details": str(e)}), 500
-
 if __name__ == "__main__":
     # This block ensures the database tables and columns are created 
     # if they don't exist when the server starts
