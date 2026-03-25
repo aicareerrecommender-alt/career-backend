@@ -808,36 +808,42 @@ def delete_account():
 # 🦞 OPENCLAW SCRAPER ROUTE
 # ==========================================
 
+# ==========================================
+# 🦞 OPENCLAW SCRAPER ROUTE
+# ==========================================
+
 @app.route('/scrape', methods=['POST'])
 def scrape_data():
     data = request.json
     target_url = data.get('url')
-    course_name = data.get('course', 'Computer Science') # 👈 Now dynamically accepts any course
+    # Dynamically accepts any course from the frontend; defaults to Computer Science 
+    course_name = data.get('course', 'Computer Science') 
     
     if not target_url:
         return jsonify({"error": "URL is required"}), 400
     
-    # Instruction for the OpenClaw Agent
+    # Instruction for the OpenClaw Agent using the dynamic course name 
     payload = {
         "instruction": f"Navigate to {target_url}. Find the 'Academics' or 'Programs' section. Locate the exact link for the '{course_name}' course. Return ONLY the absolute URL to that specific course page.",
         "tools": ["browser"],
         "model": "nvidia/nemotron-4-340b-instruct", 
-        "api_key": NVIDIA_API_KEY
+        "api_key": os.environ.get("NVIDIA_API_KEY") # Pulled from Render environment variables 
     }
     
     try:
-        # Talk to the OpenClaw Gateway running inside your Docker container
+        # Connects to the OpenClaw Gateway running on port 18789 within the container 
         response = requests.post("http://localhost:18789/v1/agent/task", json=payload, timeout=120)
         return jsonify(response.json())
     except Exception as e:
+        logging.error(f"Scraper connection error: {e}")
         return jsonify({"error": "Could not connect to OpenClaw gateway", "details": str(e)}), 500
+
 if __name__ == "__main__":
-    # This block ensures the database tables and columns are created 
-    # if they don't exist when the server starts
+    # Ensures database tables are created or updated upon server start 
     with app.app_context():
         db.create_all()
         print("✅ Database tables synchronized successfully!")
-
-    port = int(os.environ.get("PORT", 5001))
+    
+    # Port is set dynamically for Render compatibility 
+    port = int(os.environ.get("PORT", 10000))
     app.run(host='0.0.0.0', port=port)
-
