@@ -7,6 +7,8 @@ import urllib3
 import threading
 import concurrent.futures
 import warnings
+import time
+import random
 from urllib.parse import urlparse, urljoin
 from bs4 import BeautifulSoup
 
@@ -24,6 +26,7 @@ except ImportError:
     except ImportError:
         logging.error("❌ Critical: duckduckgo_search/ddgs library not found.")
 
+# Import Groq client from your AI engines file
 from .ai_engines import client_groq 
 
 def ai_course_validator(uni_name, course_name, scraped_text, source_url):
@@ -71,15 +74,18 @@ class LinkResolver:
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'
         })
 
-    def resolve_deep_link(self, start_url, target_course):
+    def resolve_deep_link(self, start_url, target_course, max_hops=4):
         """
-        Navigates from a root URL to a specific course page in max 3 hops.
+        Navigates from a root URL to a specific course page.
+        Increased max_hops to allow for: Homepage -> Academics -> Faculty -> Dept -> Course
         """
         current_url = start_url
-        history = []
+        visited_urls = set()
 
-        for depth in range(3):
-            logging.info(f"🚀 Hop {depth + 1}: Analyzing {current_url}")
+        for depth in range(max_hops):
+            logging.info(f"🚀 Hop {depth + 1}: AI Analyzing {current_url}")
+            visited_urls.add(current_url)
+            
             try:
                 # 1. Fetch clean markdown via Jina AI
                 res = self.session.get(f"https://r.jina.ai/{current_url}", timeout=20, verify=False)
@@ -88,18 +94,19 @@ class LinkResolver:
                 # 2. Ask AI to pick the next best link from the Markdown
                 next_link = self._ask_ai_for_next_step(markdown, target_course, current_url)
                 
-                if not next_link or next_link == current_url or "STAY" in next_link.upper():
-                    break # Found it or reached a dead end
-                
-                # 3. Validation: If the link contains keywords, it might be the final page
-                if any(k in next_link.lower() for k in ['programme', 'course', 'admission', 'bachelor']):
-                    return next_link
+                # Exit conditions
+                if not next_link or next_link.upper() == "STAY":
+                    logging.info(f"🎯 AI decided to STAY. Target reached at: {current_url}")
+                    return current_url
+                    
+                if next_link in visited_urls:
+                    logging.warning(f"🔄 AI returned a visited URL ({next_link}). Stopping loop.")
+                    break
                 
                 current_url = next_link
-                history.append(current_url)
                 
             except Exception as e:
-                logging.error(f"Navigation failed: {e}")
+                logging.error(f"Navigation failed at depth {depth}: {e}")
                 break
                 
         return current_url
@@ -109,12 +116,22 @@ class LinkResolver:
         Current Page: {current_url}
         Goal: Find the official page for '{course}'.
         
-        Analyze the links in this Markdown content:
-        {content[:5000]} 
+        You are an expert web navigator hunting for a specific university course.
+        University websites follow this general funnel:
+        1. Homepage -> Academics / Admissions / Programmes
+        2. Academics -> Faculty / School / College (Pick the one related to '{course}')
+        3. Faculty -> Department
+        4. Department -> Specific Course Page
         
-        Pick the ONE absolute URL most likely to lead to the course. 
-        If you are already on the course page, return 'STAY'.
-        RETURN ONLY THE URL.
+        Analyze the links in this Markdown content from the current page:
+        {content[:6000]} 
+        
+        Pick the ONE absolute URL most likely to lead to the NEXT step in the funnel, or the course itself.
+        If you are already on the specific page detailing '{course}', return the exact word 'STAY'.
+        
+        RULES:
+        - RETURN ONLY THE URL OR 'STAY'. No explanations.
+        - Ensure it is a valid, absolute http/https URL.
         """
         try:
             res = self.groq.chat.completions.create(
@@ -129,27 +146,65 @@ class LinkResolver:
 
 
 class AutoHealer:
-    def __init__(self, target_folder="data"):
+    def __init__(self, target_folder="data", groq_client=None):
         self.db_path = os.path.join(target_folder, "academic_urls.json")
         os.makedirs(target_folder, exist_ok=True)
         self.session = requests.Session()
-        # Updated User-Agent to a newer version to reduce blocks
         self.session.headers.update({
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'
         })
         self.db_lock = threading.Lock() 
         self.db = self._load_db()
+        self.groq_client = groq_client
 
-        # The "Verified Anchor" List (KUCCPS Aligned)
+        # The 75+ Verified Domain Anchor List (KUCCPS Aligned)
         self.known_domains = {
+            # MAJOR PUBLIC
             "university of nairobi": "uonbi.ac.ke", "kenyatta university": "ku.ac.ke",
-            "jomo kenyatta": "jkuat.ac.ke", "egerton": "egerton.ac.ke", "moi university": "mu.ac.ke",
-            "maseno": "maseno.ac.ke", "strathmore": "strathmore.edu", "kisii": "kisiiuniversity.ac.ke",
-            "masinde muliro": "mmust.ac.ke", "technical university of kenya": "tukenya.ac.ke",
-            "kca university": "kca.ac.ke", "mount kenya": "mku.ac.ke", "zetech": "zetech.ac.ke",
-            "kabarak university": "kabarak.ac.ke", "kirinyaga university": "kyu.ac.ke",
-            "karatina university": "karu.ac.ke", "laikipia university": "laikipia.ac.ke",
-            "rongo university": "rongovarsity.ac.ke", "daystar university": "daystar.ac.ke"
+            "jomo kenyatta": "jkuat.ac.ke", "moi university": "mu.ac.ke", "egerton": "egerton.ac.ke",
+            "maseno": "maseno.ac.ke", "masinde muliro": "mmust.ac.ke", "technical university of kenya": "tukenya.ac.ke",
+            "technical university of mombasa": "tum.ac.ke", "chuka university": "chuka.ac.ke",
+            "dedan kimathi": "dkut.ac.ke", "kisii": "kisiiuniversity.ac.ke", "pwani": "pu.ac.ke",
+            "university of eldoret": "uoeld.ac.ke", "south eastern kenya": "seku.ac.ke",
+            "multimedia university": "mmu.ac.ke", "machakos university": "mksu.ac.ke",
+            "murang'a university": "mut.ac.ke", "university of embu": "embuni.ac.ke",
+            "meru university": "must.ac.ke", "karatina university": "karu.ac.ke",
+            "laikipia university": "laikipia.ac.ke", "rongo university": "rongovarsity.ac.ke",
+            "kibabii university": "kibu.ac.ke", "garissa university": "gau.ac.ke",
+            "taita taveta": "ttu.ac.ke", "kirinyaga university": "kyu.ac.ke",
+            "co-operative university": "cuk.ac.ke", "alupe university": "au.ac.ke",
+            "bomet university": "buc.ac.ke", "kaimosi friends": "kafu.ac.ke",
+            "tharaka university": "tharaka.ac.ke", "tom mboya": "tmu.ac.ke",
+            "turkana university": "tuc.ac.ke", "koitalel samoei": "ksuc.ac.ke",
+            "maasai mara": "mmarau.ac.ke",
+            
+            # PRIVATE
+            "strathmore": "strathmore.edu", "united states international": "usiu.ac.ke",
+            "usiu africa": "usiu.ac.ke", "daystar university": "daystar.ac.ke",
+            "mount kenya": "mku.ac.ke", "catholic university": "cuea.edu",
+            "cuea": "cuea.edu", "pan africa christian": "pacuniversity.ac.ke",
+            "st. paul's": "spu.ac.ke", "africa nazarene": "anu.ac.ke",
+            "kabarak university": "kabarak.ac.ke", "kca university": "kcau.ac.ke",
+            "zetech": "zetech.ac.ke", "umma university": "umma.ac.ke",
+            "great lakes university": "gluk.ac.ke", "gretsa university": "gretsauniversity.ac.ke",
+            "kag east": "kageast.ac.ke", "adventist university": "aua.ac.ke",
+            "amref international": "amiu.ac.ke", "management university of africa": "mua.ac.ke",
+            "riara university": "riarauniversity.ac.ke", "presbyterian university": "puea.ac.ke",
+            "pioneer international": "pioneer.ac.ke", "scott christian": "scott.ac.ke",
+            "tangaza university": "tangaza.ac.ke", "uzima university": "uzimauniversity.ac.ke",
+            "kenya methodist": "kemu.ac.ke", "lukenya university": "lukenyauniversity.ac.ke",
+            "raf international": "raf.ac.ke", "kiriri women's": "kwust.ac.ke",
+            "the east african university": "teau.ac.ke", "kenya highlands": "kheu.ac.ke",
+
+            # TVETS & POLYTECHNICS
+            "kenya medical training": "kmtc.ac.ke", "kmtc": "kmtc.ac.ke",
+            "kabete national": "kabetepoly.ac.ke", "nairobi technical": "nairobitti.ac.ke",
+            "kisumu national": "kisumupoly.ac.ke", "eldoret national": "tenp.ac.ke",
+            "nyeri national": "thenyeripoly.ac.ke", "meru national": "merunationalpolytechnic.ac.ke",
+            "kenya coast": "kenyacoastpoly.ac.ke", "sigalagala": "sigalagalapoly.ac.ke",
+            "kasneb": "kasneb.or.ke", "kenya school of government": "ksg.ac.ke",
+            "kenya utalii": "utalii.ac.ke", "kenya institute of mass communication": "kimc.ac.ke",
+            "railway training": "rti.ac.ke"
         }
 
     def _load_db(self):
@@ -170,19 +225,25 @@ class AutoHealer:
     def _get_domain(self, university_name):
         """Resolves official domains by checking local map, then KUCCPS, then direct search."""
         uni_lower = university_name.lower().strip()
+        
+        # 1. Fuzzy match against the known domains dictionary
         for name, domain in self.known_domains.items():
-            if name in uni_lower: return domain
+            if name in uni_lower or uni_lower in name: 
+                return domain
+                
+        # Add a tiny sleep before external searches to prevent rate limits
+        time.sleep(random.uniform(1.0, 2.0))
                 
         try:
             with DDGS() as ddgs:
-                # 1. KUCCPS Deep-Search for the Domain
+                # 2. KUCCPS Deep-Search for the Domain
                 kuccps_query = f'site:students.kuccps.net "{university_name}" website'
                 for r in list(ddgs.text(kuccps_query, max_results=3)):
                     body = r.get('body', '').lower()
                     match = re.search(r'([a-zA-Z0-9\-]+\.(?:ac\.ke|edu\.ke|sc\.ke|edu))', body)
                     if match: return match.group(1)
                 
-                # 2. FALLBACK: Direct search if KUCCPS fails
+                # 3. FALLBACK: Direct search if KUCCPS fails
                 direct_query = f'official website "{university_name}" Kenya'
                 for r in list(ddgs.text(direct_query, max_results=3)):
                     href = r.get('href', '').lower()
@@ -204,6 +265,9 @@ class AutoHealer:
             logging.warning(f"⚠️ Could not isolate official domain for {university_name}.")
             return None, False
 
+        # Add a tiny sleep to avoid search engine 429 Too Many Requests errors
+        time.sleep(random.uniform(1.0, 2.5))
+
         # 3. Precision Deep-Link Search
         precision_query = f'site:{root_domain} "{course_name}"'
         urls_to_check = []
@@ -213,6 +277,7 @@ class AutoHealer:
                 results = list(ddgs.text(precision_query, max_results=5))
                 for r in results:
                     url = r.get('href', '')
+                    # Strict validation: Only accept links from the university's domain
                     if url and root_domain in url:
                         urls_to_check.append(url)
         except Exception as e:
@@ -237,7 +302,7 @@ class AutoHealer:
                         self._save_db()
                         return approved_url, True
 
-        # 4.5: Internal Navigation Fallback
+        # 4.5: Internal Navigation Fallback (AI-Driven Hierarchical Crawl)
         logging.warning(f"🕵️ External search failed. Starting internal navigation...")
         internal_url = self._internal_navigation_crawl(root_domain, university_name, course_name)
         
@@ -254,37 +319,33 @@ class AutoHealer:
                 
     def _internal_navigation_crawl(self, root_domain, university_name, course_name):
         """
-        Fallback: Navigates the university homepage to find the course 
-        if external search fails.
+        Replaces rigid HTML parsing with an AI-driven multi-hop hunt.
+        Follows the path: Homepage -> Academics -> Faculty -> Department -> Course
         """
         homepage_url = f"https://{root_domain}"
-        try:
-            logging.info(f"🏠 Navigating homepage: {homepage_url}")
-            res = self.session.get(homepage_url, timeout=15, verify=False)
-            soup = BeautifulSoup(res.text, 'html.parser')
-            
-            # Look for menu links like 'Academics' or 'Programmes'
-            nav_link = None
-            for a in soup.find_all('a', href=True):
-                text = a.get_text().lower()
-                if any(word in text for word in ["academics", "programmes", "courses", "undergraduate"]):
-                    nav_link = urljoin(homepage_url, a['href'])
-                    break
-            
-            # If a menu was found, search that page for the course
-            search_page = nav_link if nav_link else homepage_url
-            prog_res = self.session.get(search_page, timeout=15, verify=False)
-            prog_soup = BeautifulSoup(prog_res.text, 'html.parser')
-            
-            for a in prog_soup.find_all('a', href=True):
-                if course_name.lower() in a.get_text().lower():
-                    target_url = urljoin(homepage_url, a['href'])
-                    # Validate with AI before returning
-                    scrape_res = self.session.get(f"https://r.jina.ai/{target_url}", timeout=20, verify=False)
-                    if ai_course_validator(university_name, course_name, scrape_res.text, target_url):
-                        return target_url
-        except Exception as e:
-            logging.debug(f"Internal crawl failed: {e}")
+        logging.info(f"🏠 Starting AI hierarchical crawl from: {homepage_url}")
+        
+        if not self.groq_client:
+            logging.error("No Groq client provided for internal crawling.")
+            return None
+
+        # Instantiate our upgraded LinkResolver
+        crawler = LinkResolver(self.groq_client)
+        
+        # Give the crawler 4 hops to dig through the university hierarchy
+        found_url = crawler.resolve_deep_link(start_url=homepage_url, target_course=course_name, max_hops=4)
+        
+        # If the AI navigated somewhere other than the homepage, validate the final destination
+        if found_url and found_url != homepage_url:
+            logging.info(f"🕵️ Internal crawl landed on: {found_url}. Validating...")
+            try:
+                scrape_res = self.session.get(f"https://r.jina.ai/{found_url}", timeout=20, verify=False)
+                if ai_course_validator(university_name, course_name, scrape_res.text, found_url):
+                    logging.info(f"✅ Final page validated successfully!")
+                    return found_url
+            except Exception as e:
+                logging.debug(f"Validation of crawled URL failed: {e}")
+                
         return None
 
 
@@ -293,6 +354,6 @@ TARGET_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'dat
 if not os.path.exists(TARGET_DIR):
     os.makedirs(TARGET_DIR)
 
-# Initialize the instances
-healer = AutoHealer(target_folder=TARGET_DIR)
+# Initialize the instances and PASS GROQ CLIENT to both
+healer = AutoHealer(target_folder=TARGET_DIR, groq_client=client_groq)
 resolver = LinkResolver(groq_client=client_groq)
