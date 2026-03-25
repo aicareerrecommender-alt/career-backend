@@ -6,7 +6,7 @@ from collections import Counter
 from datetime import datetime
 import io                   # For creating the PDF in memory
 from xhtml2pdf import pisa  # For converting HTML to PDF
-
+import requests
 # Load the .env file FIRST so API keys are available locally
 from dotenv import load_dotenv
 load_dotenv()
@@ -41,6 +41,8 @@ app = Flask(__name__)
 # Enable CORS for all routes so your frontend can communicate without being blocked
 CORS(app)
 
+# Add this line here
+NVIDIA_API_KEY = os.getenv("NVIDIA_API_KEY")
 # --- FLASK-MAIL CONFIGURATION ---
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
 app.config['MAIL_PORT'] = 587
@@ -802,6 +804,35 @@ def delete_account():
     except Exception as e:
         db.session.rollback()
         return jsonify({"message": "Error during deletion."}), 500
+    
+    # ==========================================
+# 🦞 OPENCLAW SCRAPER ROUTE
+# ==========================================
+
+@app.route('/scrape', methods=['POST'])
+def scrape_data():
+    data = request.json
+    target_url = data.get('url')
+    
+    if not target_url:
+        return jsonify({"error": "URL is required"}), 400
+    
+    # Instruction for the OpenClaw Agent
+    payload = {
+        "instruction": f"Go to {target_url}, find the Academics section, and return the link for Computer Science.",
+        "tools": ["browser"],
+        "model": "nvidia/nemotron-4-340b-instruct", 
+        "api_key": NVIDIA_API_KEY
+    }
+    
+    try:
+        # Talk to the OpenClaw Gateway running inside your Docker container
+        # Note: 18789 is the default OpenClaw port
+        response = requests.post("http://localhost:18789/v1/agent/task", json=payload, timeout=120)
+        return jsonify(response.json())
+    except Exception as e:
+        return jsonify({"error": "Could not connect to OpenClaw gateway", "details": str(e)}), 500
+
 if __name__ == "__main__":
     # This block ensures the database tables and columns are created 
     # if they don't exist when the server starts
