@@ -23,4 +23,5 @@ COPY . .
 RUN pip install -r requirements.txt
 
 # Start the OpenClaw Gateway and your Python app
-CMD ["sh", "-c", "openclaw gateway start & python app.py"]
+# Replace the last line of your Dockerfile with this for better stability
+CMD ["sh", "-c", "openclaw gateway start --port 18789 & sleep 5 && gunicorn app:app --bind 0.0.0.0:$PORT --timeout 300"]
