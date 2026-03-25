@@ -22,8 +22,8 @@ from sqlalchemy.orm.attributes import flag_modified
 # Preserved student logs loading for historical JSON read fallback in Word Cloud
 from utils.database import db, init_db, save_json,load_json, USER_FILE, LOGS_FILE
 from utils.ai_engines import ask_hybrid_career_advice, calculate_total_points, grade_to_int
-from utils.web_scraper import healer 
 
+from utils.web_scraper import healer, get_course_url
 from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
 
@@ -852,33 +852,26 @@ def call_openclaw(payload, retries=3):
 def scrape_data():
     data = request.json
     target_url = data.get('url')
-    # Dynamically accepts any course from the frontend; defaults to Computer Science 
     course_name = data.get('course', 'Computer Science') 
     
     if not target_url:
         return jsonify({"error": "URL is required"}), 400
     
-    # Instruction for the OpenClaw Agent using the dynamic course name 
-    payload = {
-        "instruction": f"Navigate to {target_url}. Find the 'Academics' or 'Programs' section. Locate the exact link for the '{course_name}' course. Return ONLY the absolute URL to that specific course page.",
-        "tools": ["browser"],
-        "model": "nvidia/nemotron-4-340b-instruct", 
-        "api_key": os.environ.get("NVIDIA_API_KEY") # Pulled from Render environment variables 
-    }
-    
     try:
-        # 🚀 Now using the robust retry function instead of a single request.post!
-        result = call_openclaw(payload)
+        logging.info(f"🕷️ Starting Smart Scrape for {course_name} at {target_url}")
         
-        if result is None:
-             return jsonify({"error": "Could not connect to OpenClaw gateway after multiple retries"}), 500
+        # 🚀 Call your new lightweight scraper!
+        found_link = get_course_url(target_url, course_name)
+        
+        if found_link:
+            # Return it in the exact JSON format your frontend expects (data.result)
+            return jsonify({"status": "success", "result": found_link}), 200
+        else:
+             return jsonify({"error": "Could not locate the course page."}), 404
              
-        return jsonify(result)
-        
     except Exception as e:
-        logging.error(f"Scraper error: {e}")
+        logging.error(f"Scraper route error: {e}")
         return jsonify({"error": "An unexpected error occurred", "details": str(e)}), 500
-
 # ==========================================
 # 🚀 SERVER STARTUP (Must be at the very bottom!)
 # ==========================================
