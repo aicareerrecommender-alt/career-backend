@@ -475,6 +475,20 @@ def recommend():
 
             if attempt == 1:
                 final_ai_insight = dict(ai_insight)
+                # --- YOUR NEW PRIMARY RECOMMENDATION LOGIC ---
+            primary = ai_insight.get("primary_recommendation", {})
+            main_course_name = primary.get("course_name", "")
+            target_uni = primary.get("university", "")
+
+            if target_uni and main_course_name:
+                # Using the existing _hunt_for_url method
+                verified_link, is_verified = healer._hunt_for_url(target_uni, main_course_name)
+                
+                # Check if it was verified and ensure the URL isn't just the placeholder
+                if is_verified and verified_link != "PLACEHOLDER_FOR_HEALER":
+                    if "primary_recommendation" not in ai_insight:
+                        ai_insight["primary_recommendation"] = {}
+                    ai_insight["primary_recommendation"]["url"] = verified_link
 
             raw_unis = ai_insight.get("universities", [])
 

@@ -277,9 +277,12 @@ class AutoHealer:
                 results = list(ddgs.text(precision_query, max_results=5))
                 for r in results:
                     url = r.get('href', '')
-                    # Strict validation: Only accept links from the university's domain
                     if url and root_domain in url:
-                        urls_to_check.append(url)
+                        # Prioritize URLs containing academic keywords
+                        if any(sub in url.lower() for sub in ['academic', 'programme', 'course', 'school']):
+                            urls_to_check.insert(0, url) 
+                        else:
+                            urls_to_check.append(url)
         except Exception as e:
             logging.error(f"❌ Search Error: {e}")
 
