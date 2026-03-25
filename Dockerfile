@@ -1,7 +1,7 @@
-# Use a Python image that includes Node.js (OpenClaw needs both)
+# Use a Python image that includes Node.js 
 FROM nikolaik/python-nodejs:python3.11-nodejs22
 
-# Install Chromium for the browser tool
+# Install Chromium and system dependencies 
 RUN apt-get update && apt-get install -y \
     chromium \
     fonts-liberation \
@@ -14,14 +14,18 @@ RUN apt-get update && apt-get install -y \
     xdg-utils \
     --no-install-recommends
 
-# Install OpenClaw
+# Install OpenClaw globally 
 RUN npm install -g openclaw@latest
 
-# Set up your work directory
+# Set up your work directory 
 WORKDIR /app
+
+# COPY . . to copy all files to the /app folder 
 COPY . .
+
+# Install Python dependencies 
 RUN pip install -r requirements.txt
 
-# Start the OpenClaw Gateway and your Python app
-# Replace the last line of your Dockerfile with this for better stability
-CMD ["sh", "-c", "openclaw gateway start --port 18789 & sleep 5 && gunicorn app:app --bind 0.0.0.0:$PORT --timeout 300"]
+# FIX: Use 'npx' to ensure the shell finds the openclaw binary
+# and use gunicorn for production stability.
+CMD ["sh", "-c", "npx openclaw gateway start --port 18789 & sleep 10 && gunicorn app:app --bind 0.0.0.0:${PORT:-10000} --timeout 300"]
