@@ -807,10 +807,46 @@ def delete_account():
  # ==========================================
 # 🦞 OPENCLAW SCRAPER ROUTE
 # ==========================================
+@app.route('/health-openclaw')
+def check_openclaw():
+    try:
+        # Pings the OpenClaw health endpoint directly
+        r = requests.get("http://localhost:18789/health", timeout=5)
+        return jsonify({
+            "status": "ok", 
+            "message": "OpenClaw is running perfectly!",
+            "openclaw_response": r.text
+        }), 200
+    except Exception as e:
+        logging.error(f"OpenClaw Health Check Failed: {e}")
+        return jsonify({
+            "status": "error", 
+            "message": "OpenClaw is NOT reachable.",
+            "details": str(e)
+        }), 500
+# ==========================================
+# 🕷️ OPENCLAW SCRAPING ROUTE
+# ==========================================
 
-# ==========================================
-# 🦞 OPENCLAW SCRAPER ROUTE
-# ==========================================
+def call_openclaw(payload, retries=3):
+    """Robust function to call OpenClaw with built-in retries."""
+    for attempt in range(retries):
+        try:
+            response = requests.post(
+                "http://localhost:18789/v1/agent/task",
+                json=payload,
+                timeout=120
+            )
+            response.raise_for_status() # Raises an error for bad HTTP status codes
+            return response.json()
+        except Exception as e:
+            logging.warning(f"⚠️ OpenClaw connection failed (Attempt {attempt+1}/{retries}): {e}")
+            if attempt < retries - 1:
+                time.sleep(3) # Wait 3 seconds before trying again
+            else:
+                logging.error("🚨 OpenClaw unavailable after maximum retries.")
+                # Return a safe fallback so your app doesn't completely crash
+                return None 
 
 @app.route('/scrape', methods=['POST'])
 def scrape_data():
@@ -831,19 +867,26 @@ def scrape_data():
     }
     
     try:
-        # Connects to the OpenClaw Gateway running on port 18789 within the container 
-        response = requests.post("http://localhost:18789/v1/agent/task", json=payload, timeout=120)
-        return jsonify(response.json())
+        # 🚀 Now using the robust retry function instead of a single request.post!
+        result = call_openclaw(payload)
+        
+        if result is None:
+             return jsonify({"error": "Could not connect to OpenClaw gateway after multiple retries"}), 500
+             
+        return jsonify(result)
+        
     except Exception as e:
-        logging.error(f"Scraper connection error: {e}")
-        return jsonify({"error": "Could not connect to OpenClaw gateway", "details": str(e)}), 500
+        logging.error(f"Scraper error: {e}")
+        return jsonify({"error": "An unexpected error occurred", "details": str(e)}), 500
 
+# ==========================================
+# 🚀 SERVER STARTUP (Must be at the very bottom!)
+# ==========================================
 if __name__ == "__main__":
     # Ensures database tables are created or updated upon server start 
     with app.app_context():
         db.create_all()
         print("✅ Database tables synchronized successfully!")
-    
-    # Port is set dynamically for Render compatibility 
-    port = int(os.environ.get("PORT", 10000))
+        
+    port = int(os.environ.get("PORT", 5001))
     app.run(host='0.0.0.0', port=port)
