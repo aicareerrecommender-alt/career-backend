@@ -771,16 +771,14 @@ from sqlalchemy import text
 def fix_db():
     try:
         from sqlalchemy import text
-        # Adding 'data' column which is currently missing
-        db.session.execute(text("ALTER TABLE student_log ADD COLUMN IF NOT EXISTS data TEXT;"))
-        # Just in case, ensuring 'username' is there too
+        # Changed TEXT to JSON to perfectly match your db.Column(db.JSON) model
+        db.session.execute(text("ALTER TABLE student_log ADD COLUMN IF NOT EXISTS data JSON;"))
         db.session.execute(text("ALTER TABLE student_log ADD COLUMN IF NOT EXISTS username VARCHAR(255);"))
         db.session.commit()
         return "✅ Columns 'data' and 'username' are now ready!"
     except Exception as e:
         db.session.rollback()
         return f"❌ Error: {e}"
-
 if __name__ == "__main__":
     with app.app_context():
         # Creates PostgreSQL tables automatically if they don't exist yet
