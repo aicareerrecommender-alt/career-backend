@@ -888,6 +888,8 @@ def reset_db_now():
 if __name__ == "__main__":
     # Ensures database tables are created or updated upon server start 
     with app.app_context():
+        # 🚨 TEMPORARY: WIPE ALL EXISTING TABLES 🚨
+        db.drop_all()  # <-- ADD THIS LINE
         db.create_all()
         print("✅ Database tables synchronized successfully!")
         
