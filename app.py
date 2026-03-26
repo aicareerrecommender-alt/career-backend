@@ -494,9 +494,16 @@ def recommend():
             target_uni_url = primary.get("website_url", "")
 
             # 🚀 Fallback: If AI didn't provide a valid URL, make it a search query
+            # 🚀 Fallback: Find the real domain using the DDGS library securely
             if target_uni_name and not target_uni_url.startswith("http"):
-                target_uni_url = f"https://duckduckgo.com/html/?q={target_uni_name.replace(' ', '+')}"
-
+                try:
+                    from ddgs import DDGS
+                    with DDGS() as ddgs:
+                        search_results = list(ddgs.text(f"{target_uni_name} official website kenya", max_results=1))
+                        if search_results:
+                            target_uni_url = search_results[0].get("href")
+                except Exception as e:
+                    logging.warning(f"Failed to find domain for {target_uni_name}: {e}")
             # Update this line to check target_uni_name
             if target_uni_name and main_course_name:
                 # Update this line to pass target_uni_url to the scraper!
@@ -521,9 +528,16 @@ def recommend():
                 uni_url = safe_uni.get("website_url", "")
                 
                 # If the AI hallucinates a name instead of a link, forcefully convert it into a search query
+                # 🚀 FIX: Find the real domain using the DDGS library securely
                 if not uni_url.startswith("http"):
-                    uni_url = f"https://duckduckgo.com/html/?q={uni_name.replace(' ', '+')}"
-
+                    try:
+                        from ddgs import DDGS
+                        with DDGS() as ddgs:
+                            search_results = list(ddgs.text(f"{uni_name} official website kenya", max_results=1))
+                            if search_results:
+                                uni_url = search_results[0].get("href")
+                    except Exception as e:
+                        logging.warning(f"Failed to find domain for {uni_name}: {e}")
                 if not uni.get("db_verified_name", True):
                     logging.info(f"🗑️ Skipping web search for {uni_name} because the course name is hallucinated.")
                     return None
