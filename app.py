@@ -68,6 +68,7 @@ if db_url.startswith("postgres://"):
 
 app.config['SQLALCHEMY_DATABASE_URI'] = db_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {"pool_pre_ping": True}
 db = SQLAlchemy(app)
 
 # --- DATABASE MODELS ---
@@ -505,7 +506,11 @@ def recommend():
             # Update this line to check target_uni_name
             if target_uni_name and main_course_name:
                 # Update this line to pass target_uni_url to the scraper!
-                verified_link = healer.find_course_url(target_uni_url, main_course_name)
+                # ✅ NEW CODE
+                # _internal_navigation_crawl needs (homepage_url, university_name, course_name)
+                verified_link = healer._internal_navigation_crawl(target_uni_url, target_uni_name, main_course_name)
+
+
                 # 2. 🚀 NEW: Define is_verified so Pylance stops complaining!
                 is_verified = True if verified_link else False
                 # Check if it was verified and ensure the URL isn't just the placeholder
@@ -887,7 +892,7 @@ if __name__ == "__main__":
     # Ensures database tables are created or updated upon server start 
     with app.app_context():
         # 🚨 TEMPORARY: WIPE ALL EXISTING TABLES 🚨
-        db.drop_all()  # <-- ADD THIS LINE
+        
         db.create_all()
         print("✅ Database tables synchronized successfully!")
         
