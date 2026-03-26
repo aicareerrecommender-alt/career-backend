@@ -13,7 +13,8 @@ load_dotenv()
 from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
 # 'scraper' is the global instance in your new web_scraper.py
-from utils.web_scraper import scraper as healer, get_course_url
+from utils.web_scraper import healer, get_course_url
+
 
 from flask import Flask, request, jsonify
 from flask_cors import CORS
@@ -873,6 +874,17 @@ def scrape_data():
 # ==========================================
 # 🚀 SERVER STARTUP (Must be at the very bottom!)
 # ==========================================
+
+@app.route('/reset-db-now')
+def reset_db_now():
+    try:
+        # Wipes the old database tables completely
+        db.drop_all()
+        # Rebuilds them with the new 'username' column
+        db.create_all()
+        return jsonify({"message": "✅ Database successfully wiped and rebuilt with new columns!"}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 if __name__ == "__main__":
     # Ensures database tables are created or updated upon server start 
     with app.app_context():
