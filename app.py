@@ -538,9 +538,7 @@ def recommend():
                                 uni_url = search_results[0].get("href")
                     except Exception as e:
                         logging.warning(f"Failed to find domain for {uni_name}: {e}")
-                if not uni.get("db_verified_name", True):
-                    logging.info(f"🗑️ Skipping web search for {uni_name} because the course name is hallucinated.")
-                    return None
+                
                 
                 try:
                     # Pass the valid URL/Search Query to the scraper, NOT the plain name!
