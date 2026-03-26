@@ -31,6 +31,7 @@ from sqlalchemy.orm.attributes import flag_modified
 
 # --- LOGGING CONFIGURATION ---
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - [%(levelname)s]: %(message)s', datefmt='%H:%M:%S')
+# Suppress the massive InsecureRequestWarning wall of text since we are intentionally ignoring SSL errors
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 logging.getLogger("httpx").setLevel(logging.WARNING)
 
@@ -45,7 +46,10 @@ if db_url and db_url.startswith("postgres://"):
 
 app.config['SQLALCHEMY_DATABASE_URI'] = db_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-db = SQLAlchemy(app)
+db = SQLAlchemy(app, engine_options={
+    "pool_pre_ping": True, 
+    "pool_recycle": 300
+})
 
 # --- DATABASE MODELS ---
 class User(db.Model):
@@ -162,6 +166,7 @@ class InstitutionValidator:
                 return False, f"🛡️ Blocked Aggregator: {domain} is not an official .ac.ke domain."
 
             headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
+            # ensure verify=False is here so manual ping tests also ignore bad SSL
             response = requests.get(url, headers=headers, timeout=5, verify=False)
             
             if response.status_code not in [200, 401, 403]:
@@ -194,6 +199,8 @@ class AutoHealer:
         self.session.headers.update({
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
         })
+        # 🟢 THE SSL FIX: Force the session to ignore broken University certificates
+        self.session.verify = False
         
         self.validator = InstitutionValidator() 
         self.url_cache = self._load_db()
@@ -216,8 +223,8 @@ class AutoHealer:
             return False 
             
         try:
-            # Using the persistent session for faster pinging
-            response = self.session.get(url, timeout=5, verify=False)
+            # Using the persistent session (which already has verify=False)
+            response = self.session.get(url, timeout=5)
             return response.status_code in [200, 401, 403]
         except requests.exceptions.RequestException as e:
             logging.warning(f"Link {url} appears dead: {e}")
@@ -243,6 +250,9 @@ class AutoHealer:
                 logging.warning(f"⚠️ KUCCPS WARNING: Could not find {core_course} at {university_name} on the public portal.")
         except Exception as e:
             logging.error(f"❌ KUCCPS Search Error: {e}")
+
+        # 🟢 RATE LIMIT PROTECT: Small pause so DuckDuckGo doesn't block us on the second search!
+        time.sleep(1)
 
         # 🟢 STEP 2: FINDING THE EXACT COURSE URL
         uni_query = f'site:ac.ke {university_name} "{core_course}" (course details OR programme structure OR admission requirements OR curriculum)'
@@ -275,7 +285,7 @@ class AutoHealer:
                 try:
                     # Switch to Jina Reader + session for blistering speed
                     jina_url = f"https://r.jina.ai/{target_url}"
-                    res_page = self.session.get(jina_url, timeout=8, verify=False)
+                    res_page = self.session.get(jina_url, timeout=8)
                     clean_markdown_text = res_page.text 
                     
                     ai_verdict = ai_kuccps_auditor(university_name, course_name, clean_markdown_text, target_url, kuccps_verified)
@@ -287,10 +297,14 @@ class AutoHealer:
                     logging.warning(f"⚠️ Scraping failed for {target_url}")
                     return None
 
-            # 🚀 STEP 3: CONCURRENT SCRAPING (The Speed Upgrade)
-            # Instead of a sequential `for` loop, we execute all checks at once
-            with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
-                future_to_url = {executor.submit(verify_single_url, url): url for url in urls_to_check}
+            # 🚀 STEP 3: CONCURRENT SCRAPING (The Rate Limited Speed Upgrade)
+            # We lowered max_workers to 2 to prevent triggering 429 DDoS protections!
+            with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
+                future_to_url = {}
+                for url in urls_to_check:
+                    # 🟢 THE RATE LIMIT FIX: Add a 1.5 second pause between queueing requests
+                    time.sleep(1.5)
+                    future_to_url[executor.submit(verify_single_url, url)] = url
                 
                 # as_completed yields results the exact millisecond they finish downloading
                 for future in concurrent.futures.as_completed(future_to_url):
