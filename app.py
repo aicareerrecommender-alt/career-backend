@@ -765,25 +765,48 @@ def scrape_data():
     except Exception as e:
         logging.error(f"Scraper route error: {e}")
         return jsonify({"error": "An unexpected error occurred", "details": str(e)}), 500
-
-from sqlalchemy import text
 @app.route('/fix-my-db-schema')
 def fix_db():
     try:
         from sqlalchemy import text
-        # Changed TEXT to JSON to perfectly match your db.Column(db.JSON) model
-        db.session.execute(text("ALTER TABLE student_log ADD COLUMN IF NOT EXISTS data JSON;"))
+        # Fix StudentLog Table
+        db.session.execute(text("ALTER TABLE student_log ADD COLUMN IF NOT EXISTS data JSONB;"))
         db.session.execute(text("ALTER TABLE student_log ADD COLUMN IF NOT EXISTS username VARCHAR(255);"))
+        
+        # Fix User Table (Reserved keyword "user" must be in double quotes)
+        db.session.execute(text('ALTER TABLE "user" ADD COLUMN IF NOT EXISTS email VARCHAR(120);'))
+        db.session.execute(text('ALTER TABLE "user" ADD COLUMN IF NOT EXISTS username VARCHAR(80);'))
+        
+        # 🚀 ADDING THE PASSWORD COLUMN FIX
+        # We use 255 to accommodate long secure hashes (generate_password_hash)
+        db.session.execute(text('ALTER TABLE "user" ADD COLUMN IF NOT EXISTS password VARCHAR(255);'))
+        
+        # Additional safety for Google Login status
+        db.session.execute(text('ALTER TABLE "user" ADD COLUMN IF NOT EXISTS is_verified BOOLEAN DEFAULT FALSE;'))
+        
         db.session.commit()
-        return "✅ Columns 'data' and 'username' are now ready!"
+        return "✅ Database structure fully repaired! All columns (Email, Username, Password) are synchronized."
     except Exception as e:
         db.session.rollback()
-        return f"❌ Error: {e}"
+        return f"❌ Schema Update Error: {e}"
+
+from sqlalchemy import text
+
 if __name__ == "__main__":
     with app.app_context():
-        # Creates PostgreSQL tables automatically if they don't exist yet
-        db.create_all() 
-        logging.info("✅ Database tables synchronized successfully!")
+        # 1. Create tables if they don't exist
+        db.create_all()
         
-    port = int(os.environ.get("PORT", 10000))
-    app.run(host='0.0.0.0', port=port)
+        # 2. MANUALLY ADD MISSING COLUMNS (Self-Healing)
+        try:
+            # Check if 'data' column exists, add if missing
+            db.session.execute(text("ALTER TABLE student_log ADD COLUMN IF NOT EXISTS data TEXT;"))
+            # Check if 'username' column exists, add if missing
+            db.session.execute(text("ALTER TABLE student_log ADD COLUMN IF NOT EXISTS username VARCHAR(255);"))
+            db.session.commit()
+            logging.info("✅ Database schema verified and updated.")
+        except Exception as e:
+            db.session.rollback()
+            logging.error(f"⚠️ Schema update skipped or failed: {e}")
+
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 10000)))
