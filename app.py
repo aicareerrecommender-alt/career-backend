@@ -767,7 +767,19 @@ def scrape_data():
         return jsonify({"error": "An unexpected error occurred", "details": str(e)}), 500
 
 from sqlalchemy import text
-
+@app.route('/fix-my-db-schema')
+def fix_db():
+    try:
+        from sqlalchemy import text
+        # Adding 'data' column which is currently missing
+        db.session.execute(text("ALTER TABLE student_log ADD COLUMN IF NOT EXISTS data TEXT;"))
+        # Just in case, ensuring 'username' is there too
+        db.session.execute(text("ALTER TABLE student_log ADD COLUMN IF NOT EXISTS username VARCHAR(255);"))
+        db.session.commit()
+        return "✅ Columns 'data' and 'username' are now ready!"
+    except Exception as e:
+        db.session.rollback()
+        return f"❌ Error: {e}"
 
 if __name__ == "__main__":
     with app.app_context():
