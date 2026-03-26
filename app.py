@@ -769,44 +769,50 @@ def scrape_data():
 def fix_db():
     try:
         from sqlalchemy import text
-        # Fix StudentLog Table
-        db.session.execute(text("ALTER TABLE student_log ADD COLUMN IF NOT EXISTS data JSONB;"))
+        
+        # 1. Repair student_log Table
+        # Using TEXT for 'data' is safer for general JSON storage strings
+        db.session.execute(text("ALTER TABLE student_log ADD COLUMN IF NOT EXISTS data TEXT;"))
         db.session.execute(text("ALTER TABLE student_log ADD COLUMN IF NOT EXISTS username VARCHAR(255);"))
         
-        # Fix User Table (Reserved keyword "user" must be in double quotes)
+        # 2. Repair "user" Table 
+        # PostgreSQL requires double quotes around "user" because it's a reserved keyword
         db.session.execute(text('ALTER TABLE "user" ADD COLUMN IF NOT EXISTS email VARCHAR(120);'))
         db.session.execute(text('ALTER TABLE "user" ADD COLUMN IF NOT EXISTS username VARCHAR(80);'))
-        
-        # 🚀 ADDING THE PASSWORD COLUMN FIX
-        # We use 255 to accommodate long secure hashes (generate_password_hash)
         db.session.execute(text('ALTER TABLE "user" ADD COLUMN IF NOT EXISTS password VARCHAR(255);'))
-        
-        # Additional safety for Google Login status
         db.session.execute(text('ALTER TABLE "user" ADD COLUMN IF NOT EXISTS is_verified BOOLEAN DEFAULT FALSE;'))
+        db.session.execute(text('ALTER TABLE "user" ADD COLUMN IF NOT EXISTS verification_code VARCHAR(100);'))
+        db.session.execute(text('ALTER TABLE "user" ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;'))
         
         db.session.commit()
-        return "✅ Database structure fully repaired! All columns (Email, Username, Password) are synchronized."
+        logging.info("🚀 Manual schema repair successful.")
+        return "✅ Database structure fully repaired! Google Login and History are now synchronized."
+    
     except Exception as e:
         db.session.rollback()
+        logging.error(f"❌ Schema Update Error: {e}")
         return f"❌ Schema Update Error: {e}"
 
-from sqlalchemy import text
-
+# ==========================================
+# 🚀 SERVER STARTUP (Bottom of app.py)
+# ==========================================
 if __name__ == "__main__":
     with app.app_context():
-        # 1. Create tables if they don't exist
+        # Step 1: Create any missing tables
         db.create_all()
         
-        # 2. MANUALLY ADD MISSING COLUMNS (Self-Healing)
+        # Step 2: Self-healing startup check
+        # This ensures the app doesn't crash on the first request after a fresh deploy
         try:
-            # Check if 'data' column exists, add if missing
+            from sqlalchemy import text
+            db.session.execute(text('ALTER TABLE "user" ADD COLUMN IF NOT EXISTS is_verified BOOLEAN DEFAULT FALSE;'))
             db.session.execute(text("ALTER TABLE student_log ADD COLUMN IF NOT EXISTS data TEXT;"))
-            # Check if 'username' column exists, add if missing
-            db.session.execute(text("ALTER TABLE student_log ADD COLUMN IF NOT EXISTS username VARCHAR(255);"))
             db.session.commit()
-            logging.info("✅ Database schema verified and updated.")
+            logging.info("✅ Startup schema check completed.")
         except Exception as e:
             db.session.rollback()
-            logging.error(f"⚠️ Schema update skipped or failed: {e}")
+            logging.warning(f"⚠️ Startup schema check skipped: {e}")
 
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 10000)))
+    # Step 3: Run the app
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host="0.0.0.0", port=port)
