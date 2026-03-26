@@ -13,7 +13,7 @@ load_dotenv()
 from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
 # 'scraper' is the global instance in your new web_scraper.py
-from utils.web_scraper import healer, get_course_url
+from utils.web_scraper import healer
 
 
 from flask import Flask, request, jsonify
@@ -32,10 +32,7 @@ from utils.ai_engines import ask_hybrid_career_advice, calculate_total_points, g
 from google.auth.transport import requests as google_requests
 # Remove 'healer' if you aren't using it. 
 # If 'get_course_url' is also missing, you can comment out the whole line.
-try:
-    from utils.web_scraper import get_course_url
-except ImportError:
-    print("⚠️ utils.web_scraper not found or empty, skipping...")
+
 import base64
 import asyncio 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - [%(levelname)s]: %(message)s', datefmt='%H:%M:%S')
@@ -860,7 +857,8 @@ def scrape_data():
         logging.info(f"🕷️ Starting Smart Scrape for {course_name} at {target_url}")
         
         # 🚀 Call your new lightweight scraper!
-        found_link = get_course_url(target_url, course_name)
+        uni_name = data.get('university', 'University')
+        found_link = healer._internal_navigation_crawl(target_url, uni_name, course_name)
         
         if found_link:
             # Return it in the exact JSON format your frontend expects (data.result)
