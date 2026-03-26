@@ -805,10 +805,13 @@ if __name__ == "__main__":
         # This ensures the app doesn't crash on the first request after a fresh deploy
         try:
             from sqlalchemy import text
+            # Ensure the most critical columns for Login are there IMMEDIATELY
+            db.session.execute(text('ALTER TABLE "user" ADD COLUMN IF NOT EXISTS username VARCHAR(80);'))
+            db.session.execute(text('ALTER TABLE "user" ADD COLUMN IF NOT EXISTS password VARCHAR(255);'))
             db.session.execute(text('ALTER TABLE "user" ADD COLUMN IF NOT EXISTS is_verified BOOLEAN DEFAULT FALSE;'))
             db.session.execute(text("ALTER TABLE student_log ADD COLUMN IF NOT EXISTS data TEXT;"))
             db.session.commit()
-            logging.info("✅ Startup schema check completed.")
+            logging.info("✅ Startup schema check completed.") 
         except Exception as e:
             db.session.rollback()
             logging.warning(f"⚠️ Startup schema check skipped: {e}")
