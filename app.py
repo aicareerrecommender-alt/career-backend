@@ -545,8 +545,10 @@ def recommend():
                 
                 try:
                     # Pass the valid URL/Search Query to the scraper, NOT the plain name!
-                    url = healer.find_course_url(uni_url, course_name)
-                    
+                   
+                    # ✅ USE THIS:
+                    uni_name = safe_uni.get('university', 'University')
+                    url = healer._internal_navigation_crawl(uni_url, uni_name, course_name)
                     is_verified = True if url and url != uni_url else False
                     if url and url != "PLACEHOLDER_FOR_HEALER":
                         safe_uni["website_url"] = url

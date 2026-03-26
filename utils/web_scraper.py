@@ -36,22 +36,28 @@ def ai_course_validator(uni_name, course_name, scraped_text, source_url):
     """
     if not client_groq: 
         return False
-    
     prompt = f"""
     Requested Institution: {uni_name}
     Requested Course: {course_name}
     Found URL: {source_url}
 
     AUDIT RULES:
-    1. INSTITUTION MATCH: Does the text/URL belong to {uni_name}? Reject if it is clearly a competitor university's site or a third-party course directory. Mentions of partner institutions, KUCCPS, or regulatory bodies (like CUE) are acceptable.
-    2. COURSE MATCH: Is '{course_name}' (or a closely related valid variant) offered by this institution according to the text? Note that PDF syllabus conversions might have messy formatting.
+    1. INSTITUTION MATCH: Does the text/URL belong to {uni_name}? 
+       - Accept if it is the official site, a student portal, or an official social media page.
+       - Reject ONLY if it is clearly a competitor university's site (e.g., page says 'Zetech' but we want 'JKUAT').
     
+    2. FLEXIBLE COURSE MATCH: Is '{course_name}' offered here?
+       - BE HIGHLY FLEXIBLE. 
+       - Treat 'BSc', 'B.Sc', 'BS', and 'Bachelor of Science' as identical.
+       - Treat 'B.A', 'BA', and 'Bachelor of Arts' as identical.
+       - If the page lists many courses and '{course_name}' is among them, it is a MATCH.
+       - If the course name is slightly different (e.g., 'Computer Science' vs 'Informatics & Computer Science'), it is a MATCH.
+
     Return JSON: {{"is_official_site": bool, "is_valid_course": bool, "reason": "string"}}
     
     Webpage Content:
     {scraped_text[:5000]}
     """
-    
     try:
         res = client_groq.chat.completions.create(
             response_format={"type": "json_object"},
