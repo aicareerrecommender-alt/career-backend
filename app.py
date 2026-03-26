@@ -768,16 +768,7 @@ def scrape_data():
 
 from sqlalchemy import text
 
-@app.route('/fix-my-db-schema')
-def fix_db():
-    try:
-        # This runs the raw SQL to add the missing column
-        db.session.execute(text("ALTER TABLE student_log ADD COLUMN username VARCHAR(255);"))
-        db.session.commit()
-        return "✅ Column 'username' added successfully!"
-    except Exception as e:
-        db.session.rollback()
-        return f"❌ Error: {e}"
+
 if __name__ == "__main__":
     with app.app_context():
         # Creates PostgreSQL tables automatically if they don't exist yet
