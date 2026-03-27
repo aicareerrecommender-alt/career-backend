@@ -232,68 +232,77 @@ class AutoHealer:
         return homepage, False
     
                 
-    def _internal_navigation_crawl(self, root_domain, university_name, course_name, max_depth=3):
+    def _internal_navigation_crawl(self, root_domain, university_name, course_name, max_pages=20):
         """
-        Fallback: Navigates the university homepage to find the course 
-        using a Breadth-First Search (BFS) Deep Crawler.
+        AI-Driven BFS: Searches until the specific course name AND 
+        requirements are found on a single page.
         """
         homepage_url = f"https://{root_domain}"
-        
-        # 1. Clean the target course name (removes filler words)
-        ignore_words = {'in', 'of', 'and', 'bachelor', 'degree', 'diploma', 'certificate', 'bsc', 'ba'}
-        course_keywords = [w.lower() for w in course_name.split() if w.lower() not in ignore_words]
-        
-        # 2. Define our "Tabs to Click" (Allowlist) and "Tabs to Ignore" (Blocklist)
-        hub_keywords = ['academic', 'faculty', 'school', 'department', 'programme', 'course', 'undergraduate', 'college']
-        deny_keywords = ['admission', 'portal', 'login', 'news', 'tender', 'contact', 'about', 'library', 'staff']
-
-        visited_urls = set()
-        # The Queue holds tuples of (url_to_visit, current_depth)
         queue = deque([(homepage_url, 0)]) 
-        
-        while queue:
+        visited = set()
+        pages_scanned = 0
+
+        # Create a set of keywords from the course name to score links
+        course_keywords = set(re.sub(r'[^\w\s]', '', course_name.lower()).split())
+        academic_keywords = {'requirement', 'unit', 'curriculum', 'module', 'syllabus', 'admission'}
+
+        while queue and pages_scanned < max_pages:
             current_url, depth = queue.popleft()
+            if current_url in visited or depth > 3: continue
             
-            # Don't visit the same page twice to prevent infinite loops
-            if current_url in visited_urls:
-                continue
-            visited_urls.add(current_url)
+            visited.add(current_url)
+            pages_scanned += 1
             
             try:
-                logging.info(f"🕵️ [Depth {depth}]: Scanning tabs on {current_url}")
-                res = self.session.get(current_url, timeout=10, verify=False)
+                logging.info(f"🕵️ Scanning [{pages_scanned}/{max_pages}]: {current_url}")
+                
+                # Use Jina for clean markdown text
+                res = self.session.get(f"https://r.jina.ai/{current_url}", timeout=15)
+                if res.status_code != 200: continue
+
+                # AI Validation Check
+                analysis = ai_course_validator(university_name, course_name, res.text, current_url)
+
+                # SUCCESS: Found the specific course page with details
+                if (analysis.get("is_correct_uni") and 
+                    analysis.get("specific_course_found") and 
+                    analysis.get("has_high_fidelity_details")):
+                    logging.info(f"✅ FINAL MATCH FOUND: {current_url}")
+                    return current_url
+
+                # If the AI says it's a 'hub' or a list, we focus on the links on this page
+                is_hub = analysis.get("page_type") == "hub_or_list"
+                
                 soup = BeautifulSoup(res.text, 'html.parser')
-                
+                discovered_links = []
+
                 for a in soup.find_all('a', href=True):
-                    href = a['href']
-                    text = a.get_text().strip().lower()
-                    full_url = urljoin(current_url, href)
-                    
-                    # Skip massive unhelpful links, external links, or dead links
-                    if not full_url.startswith('http') or any(bad in text or bad in href.lower() for bad in deny_keywords):
-                        continue
+                    full_url = urljoin(current_url, a['href'])
+                    link_text = a.get_text().lower()
+
+                    if root_domain in full_url and full_url not in visited:
+                        # 🎯 SCORING: Priority to links containing the course name
+                        score = 0
+                        if any(kw in link_text for kw in course_keywords): score += 20
+                        if any(ak in link_text for ak in academic_keywords): score += 10
                         
-                    # 🎯 PHASE 1: Did we find the exact course?
-                    if all(kw in text for kw in course_keywords):
-                        logging.info(f"🎉 BINGO! Found target course page: {full_url}")
-                        
-                        # Validate with AI before returning to ensure it's not a false positive
-                        scrape_res = self.session.get(f"https://r.jina.ai/{full_url}", timeout=20, verify=False)
-                        if ai_course_validator(university_name, course_name, scrape_res.text, full_url):
-                            return full_url
-                        else:
-                            logging.warning(f"⚠️ AI Rejected URL: {full_url}")
-                        
-                    # 🚪 PHASE 2: Is this a Navigation Tab we should click into?
-                    if depth < max_depth:
-                        if any(hub in text for hub in hub_keywords):
-                            if full_url not in visited_urls:
-                                queue.append((full_url, depth + 1))
-                                
+                        discovered_links.append((full_url, score))
+
+                # Sort links: highest score first
+                discovered_links.sort(key=lambda x: x[1], reverse=True)
+
+                for link, score in discovered_links:
+                    if score >= 20 or (is_hub and score > 0):
+                        # High Priority: Follow this link immediately (LIFO)
+                        queue.appendleft((link, depth + 1))
+                    else:
+                        # Normal Priority: Add to end of queue (FIFO)
+                        queue.append((link, depth + 1))
+
             except Exception as e:
-                logging.debug(f"⚠️ Failed to navigate {current_url}: {e}")
-                
-        logging.warning(f"❌ Could not find {course_name} within {max_depth} clicks from {homepage_url}")
+                logging.debug(f"⚠️ Navigation skipped {current_url}: {e}")
+
+        logging.warning(f"❌ Could not find a specific match for '{course_name}' after {pages_scanned} pages.")
         return None
 def get_course_url(university_name, course_name):
     """
