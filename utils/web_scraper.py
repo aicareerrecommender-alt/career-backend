@@ -326,93 +326,101 @@ class AutoHealer:
         return None
     def _internal_navigation_crawl(self, root_domain, university_name, course_name):
         """
-        Agentic Crawler: Groq decides which links to click until 
-        the specific course page is found.
+        Heuristic Crawler: Uses Best-First Search via a priority queue to rank 
+        and click the most promising links to find the course page.
         """
-        current_url = f"https://{root_domain}"
+        start_url = f"https://{root_domain}"
         visited = set()
-        best_match_so_far = {"url": None, "score": 0}
         
-        # 1. EXPANDED JUNK FILTER
-        # We include .pdf, bio, personnel, and graduation to stop the AI from wasting quota.
-        # We EXCLUDE 'academics', 'faculty', and 'department' because these are necessary pathfinders.
+        # Priority Queue: stores tuples of (score, url). Lower score = higher priority.
+        # We start at 0 for the root domain.
+        queue = []
+        heapq.heappush(queue, (0, start_url))
+        
+        # Expanded junk filter to skip non-navigational or heavy files
         JUNK_KEYWORDS = [
             'login', 'portal', 'webmail', 'gallery', '.pdf', 'personnel', 
             'bio', 'graduation', 'brochure', 'team', 'staff', 'download', 
-            'alumni', 'calendar', 'news', 'events'
+            'alumni', 'calendar', 'news', 'events', 'contact', '.jpg', '.png'
         ]
 
-        # We allow the AI to 'click' up to 5 times to find the deep page
-        for click_depth in range(5):
+        # Target identifiers
+        course_tokens = [token.lower() for token in course_name.split() if len(token) > 3]
+        nav_keywords = ['academics', 'programmes', 'courses', 'undergraduate', 'postgraduate', 'faculties', 'schools', 'departments']
+        success_keywords = ['curriculum', 'course units', 'syllabus', 'fee structure', 'duration', 'entry requirements']
+
+        max_pages_to_visit = 15 # Hard cap to prevent infinite crawling
+        pages_visited = 0
+
+        while queue and pages_visited < max_pages_to_visit:
+            current_score, current_url = heapq.heappop(queue)
+
             if current_url in visited:
-                break
-            visited.add(current_url)
+                continue
             
-            logging.info(f"🖱️ Click Depth {click_depth}: Navigating to {current_url}")
+            visited.add(current_url)
+            pages_visited += 1
+            
+            logging.info(f"🖱️ Crawling ({pages_visited}/{max_pages_to_visit}) [Priority: {current_score}]: {current_url}")
             
             try:
-                # Direct Fetch with a standard Browser Header
-                headers = {
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-                    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-                    'Accept-Language': 'en-US,en;q=0.5',
-                }
+                # Use self.session to leverage connection pooling (much faster than requests.get)
+                response = self.session.get(current_url, timeout=15, verify=False)
+                if response.status_code != 200:
+                    continue
                 
-                logging.info(f"🌐 Crawling Official Site (Depth {click_depth}): {current_url}")
-                response = requests.get(current_url, headers=headers, timeout=25, verify=False)
-                response.raise_for_status()
-                
-                # Parse with BeautifulSoup
                 soup = BeautifulSoup(response.text, 'html.parser')
                 
-                # NOISE REDUCTION: Remove non-content elements
+                # NOISE REDUCTION
                 for element in soup(["script", "style", "nav", "footer", "header", "aside"]):
                     element.decompose()
                 
-                clean_page_text = soup.get_text(separator=' ', strip=True)
+                clean_text = soup.get_text(separator=' ', strip=True).lower()
+                page_title = soup.title.string.lower() if soup.title else ""
                 
-                # 2. UPDATED LINK EXTRACTION & FILTERING
-                available_links = []
+                # --- 1. EVALUATE IF CURRENT PAGE IS THE TARGET ---
+                has_course_mentions = any(token in clean_text for token in course_tokens)
+                has_title_match = any(token in page_title for token in course_tokens)
+                has_details = any(keyword in clean_text for keyword in success_keywords)
+                
+                if (has_course_mentions and has_details) or (has_title_match and has_details):
+                    logging.info(f"🎯 HEURISTIC MATCH FOUND at: {current_url}")
+                    return current_url
+
+                # --- 2. EXTRACT, SCORE, AND QUEUE NEW LINKS ---
                 for a in soup.find_all('a', href=True):
-                    link_text = a.get_text().strip()
-                    link_url = a['href']
-                    full_url = urljoin(current_url, link_url)
+                    link_text = a.get_text().strip().lower()
+                    raw_link = a['href']
+                    full_url = urljoin(current_url, raw_link).split('#')[0] # Remove anchor tags
                     
-                    if root_domain in full_url and len(link_text) > 2:
-                        # Check both the link text and the URL for junk keywords
-                        if not any(bad in link_text.lower() or bad in full_url.lower() for bad in JUNK_KEYWORDS):
-                            available_links.append({"text": link_text, "url": full_url})
+                    if root_domain not in full_url or full_url in visited:
+                        continue
+                        
+                    url_lower = full_url.lower()
+                    if any(bad in link_text or bad in url_lower for bad in JUNK_KEYWORDS):
+                        continue
 
-                # 3. FIX: AI NAVIGATION AUDIT (Removed 'self.')
-                # This calls the global function instead of a non-existent class method.
-                analysis = ai_navigator_audit(university_name, course_name, clean_page_text, available_links[:25])
-                
-                # 4. STATUS LOGIC
-                if analysis.get("status") == "FINAL_MATCH":
-                    if course_name.lower() in clean_page_text.lower() or analysis.get("current_page_score", 0) > 85:
-                        logging.info(f"🎯 AI SATISFIED! Match found at: {current_url}")
-                        return current_url
-                
-                if analysis.get("status") == "KEEP_SEARCHING":
-                    next_url = analysis.get("next_best_link")
-                    score = analysis.get("current_page_score", 0)
+                    # -- SCORING LOGIC --
+                    link_score = 100 # Default score (low priority)
                     
-                    if score > best_match_so_far["score"]:
-                        best_match_so_far = {"url": current_url, "score": score}
-                    
-                    if next_url and next_url not in visited and next_url.startswith('http'):
-                        current_url = next_url
-                        time.sleep(1.5) # Small sleep between clicks
-                        continue 
+                    # Exact or partial course tokens in URL or link text (Highest Priority)
+                    if any(token in link_text for token in course_tokens) or any(token in url_lower for token in course_tokens):
+                        link_score = 10 
+                    # Academic navigation keywords (Medium Priority)
+                    elif any(nav in link_text for nav in nav_keywords):
+                        link_score = 30
+                    # General department/faculty links (Lower Priority)
+                    elif 'faculty' in link_text or 'department' in link_text:
+                        link_score = 50
 
-                # If the AI says DEAD_END or we reach here, stop the loop
-                break 
+                    # Push to queue
+                    heapq.heappush(queue, (link_score, full_url))
 
             except Exception as e:
-                logging.error(f"⚠️ BS4 Crawl Error at {current_url}: {e}")
-                break 
+                logging.warning(f"⚠️ Crawl Error at {current_url}: {e}")
 
-        return best_match_so_far["url"]
+        logging.info(f"🛑 Reached depth limit ({max_pages_to_visit} pages) without conclusive match.")
+        return None
     def _hunt_for_url(self, university_name, course_name):
         # 1. Check Cache First
         if university_name in self.db and course_name in self.db[university_name]:
@@ -525,23 +533,6 @@ def get_course_url(university_name, course_name):
                     
                 time.sleep(1.5)
                 logging.info(f"🧐 AI Auditor checking fallback candidate: {candidate_url}")
-
-                try:
-                    jina_url = f"https://r.jina.ai/{candidate_url}"
-                    response = requests.get(jina_url, timeout=30, verify=False)
-                    
-                    analysis = ai_course_validator(university_name, course_name, response.text, candidate_url)
-                    
-                    # Use your updated validator logic keys here
-                    if analysis and analysis.get("is_correct_uni") and analysis.get("is_conclusive"):
-                        logging.info(f"✅ AI VALIDATED FALLBACK SITE: {candidate_url}")
-                        return candidate_url
-                    else:
-                        logging.warning(f"❌ AI Rejected (Content mismatch): {candidate_url}")
-
-                except Exception as e:
-                    logging.error(f"⚠️ Validation error on {candidate_url}: {e}")
-                    continue
 
     except Exception as e:
         logging.error(f"❌ Dux Search Error: {e}")
