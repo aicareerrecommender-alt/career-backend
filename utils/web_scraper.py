@@ -301,60 +301,74 @@ class AutoHealer:
             
             logging.info(f"🖱️ Click Depth {click_depth}: Navigating to {current_url}")
             
+            
             try:
-                # 1. Use Jina to get the content of the current 'click'
-                jina_url = f"https://r.jina.ai/{current_url}"
-                response = self.session.get(jina_url, timeout=15, verify=False)
-                page_text = response.text
+                # 1. Direct Fetch with a standard Browser Header
+                headers = {
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+                    'Accept-Language': 'en-US,en;q=0.5',
+                }
                 
-                # 2. Extract potential links (Jina returns Markdown, so we use Regex, NOT BeautifulSoup)
-                markdown_links = re.findall(r'\[([^\]]+)\]\(([^\)]+)\)', page_text)
+                logging.info(f"🌐 Crawling Official Site (Depth {click_depth}): {current_url}")
+                response = requests.get(current_url, headers=headers, timeout=25, verify=False)
+                response.raise_for_status()
                 
+                # 2. Parse with BeautifulSoup
+                soup = BeautifulSoup(response.text, 'html.parser')
+                
+                # 3. NOISE REDUCTION: Remove non-content elements
+                for element in soup(["script", "style", "nav", "footer", "header", "aside"]):
+                    element.decompose()
+                
+                clean_page_text = soup.get_text(separator=' ', strip=True)
+                
+                # 4. Link Extraction & Filtering
                 available_links = []
-                junk_paths = ['.pdf', '.jpg', '.png', 'facebook', 'twitter', 'login', 'webmail', 'portal']
-                
-                for link_text, extracted_url in markdown_links:
-                    full_url = urljoin(current_url, extracted_url).split('#')[0].rstrip('/')
+                for a in soup.find_all('a', href=True):
+                    link_text = a.get_text().strip()
+                    link_url = a['href']
                     
-                    # Clean the link text and ensure it stays on the target university's domain
-                    clean_text = link_text.strip()
-                    if root_domain in full_url and len(clean_text) > 2:
-                        if not any(junk in full_url.lower() for junk in junk_paths):
-                            available_links.append({"text": clean_text, "url": full_url})
+                    full_url = urljoin(current_url, link_url)
+                    
+                    if root_domain in full_url and len(link_text) > 2:
+                        if not any(word in link_text.lower() for word in ['login', 'portal', 'webmail', 'gallery']):
+                            available_links.append({"text": link_text, "url": full_url})
 
-                # Deduplicate links while preserving order
-                unique_links = list({v['url']: v for v in available_links}.values())
-
-                # 3. ASK THE AI: "Are we there yet? If not, where to next?"
-                analysis = ai_navigator_audit(university_name, course_name, page_text, unique_links)
+                # 5. AI NAVIGATION AUDIT
+                analysis = self.ai_navigator_audit(university_name, course_name, clean_page_text, available_links[:25])
                 
-                # LOGIC: If AI found the 'Conclusive' page, we are DONE
+                # 6. STATUS LOGIC
                 if analysis.get("status") == "FINAL_MATCH":
-                    logging.info(f"🎯 AI SATISFIED! Final Page: {current_url}")
-                    return current_url
+                    if course_name.lower() in clean_page_text.lower() or analysis.get("current_page_score", 0) > 85:
+                        logging.info(f"🎯 AI SATISFIED! Match found at: {current_url}")
+                        return current_url
                 
-                # LOGIC: If AI sees a better link to click, update current_url and loop again
                 if analysis.get("status") == "KEEP_SEARCHING":
                     next_url = analysis.get("next_best_link")
                     score = analysis.get("current_page_score", 0)
                     
-                    # Keep track of the best page seen in case we never find the 'perfect' one
                     if score > best_match_so_far["score"]:
                         best_match_so_far = {"url": current_url, "score": score}
                     
-                    if next_url and next_url not in visited:
+                    if next_url and next_url not in visited and next_url.startswith('http'):
                         current_url = next_url
-                        time.sleep(2) # Respectful delay between clicks
-                        continue
-                
-                # Stop if AI is confused (DEAD_END) or no valid links returned
+                        time.sleep(1.5)
+                        # This 'continue' is now safely inside the 'for' loop
+                        continue 
+
+                # This 'break' is now safely inside the 'for' loop
                 break 
 
             except Exception as e:
-                logging.error(f"⚠️ Navigation error at {current_url}: {e}")
-                break
+                logging.error(f"⚠️ BS4 Crawl Error at {current_url}: {e}")
+                # This 'break' is now safely inside the 'for' loop
+                break 
 
-        return best_match_so_far["url"]
+        return best_match_so_far["url"]  
+       
+
+
     def _hunt_for_url(self, university_name, course_name):
         # 1. Check Cache First
         if university_name in self.db and course_name in self.db[university_name]:
