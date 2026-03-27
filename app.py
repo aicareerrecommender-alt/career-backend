@@ -544,7 +544,6 @@ def recommend():
                 
                 
                 try:
-                    # Pass the valid URL/Search Query to the scraper, NOT the plain name!
                    # Pass the task to your new Dux+Groq function!
                     url = get_course_url(uni_name, course_name) 
                     is_verified = True if url and url != uni_url else False
@@ -863,8 +862,9 @@ def scrape_data():
         
         # 🚀 Call your new lightweight scraper!
         uni_name = data.get('university', 'University')
-        found_link = healer._internal_navigation_crawl(target_url, uni_name, course_name)
-        
+        uni_name = data.get('university', 'University')
+      # Trigger the full AI-Gated Pipeline
+        found_link = get_course_url(uni_name, course_name)
         if found_link:
             # Return it in the exact JSON format your frontend expects (data.result)
             return jsonify({"status": "success", "result": found_link}), 200
