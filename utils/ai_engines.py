@@ -1,4 +1,5 @@
 import os
+import re  # Added for course normalization
 import json
 import time
 import logging
@@ -17,13 +18,17 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 # Adjust the path below if your json file is in a different folder (like /data)
 COURSES_DB_PATH = os.path.join(BASE_DIR,'kuccps_courses.json')
 
+def normalize_course_name(name):
+    """Lowercase and remove everything that isn't a letter or number for fuzzy matching."""
+    if not name: return ""
+    return re.sub(r'[^a-z0-9]', '', str(name).lower())
+
 def load_master_courses():
-    """Loads the real KUCCPS courses and creates a fast, lowercase lookup set."""
+    """Loads the real KUCCPS courses and creates a fast, lookup list."""
     try:
         if os.path.exists(COURSES_DB_PATH):
             with open(COURSES_DB_PATH, 'r', encoding='utf-8') as f:
                 courses = json.load(f)
-                # Ensure it's a list of strings and strip whitespace
                 return [str(c).strip() for c in courses]
         else:
             logging.warning(f"⚠️ Course DB not found at {COURSES_DB_PATH}")
@@ -33,8 +38,8 @@ def load_master_courses():
 
 # Load into memory once for speed
 MASTER_COURSE_LIST = load_master_courses()
-# O(1) lookup set for blazing fast case-insensitive validation
-LOWERCASE_COURSE_SET = {c.lower() for c in MASTER_COURSE_LIST}
+# O(1) lookup set for blazing fast normalized validation
+NORMALIZED_MASTER_LIST = {normalize_course_name(c) for c in MASTER_COURSE_LIST}
 
 # --- AI CLIENT INITIALIZATION ---
 client_groq = None
@@ -91,6 +96,7 @@ def calculate_total_points(student_grades):
 def validate_course_names(ai_response_data):
     """
     Cross-references AI suggestions against the local KUCCPS database to flag hallucinations.
+    Uses fuzzy normalization to handle minor punctuation/casing differences.
     """
     if not ai_response_data or "universities" not in ai_response_data:
         return ai_response_data
@@ -98,8 +104,9 @@ def validate_course_names(ai_response_data):
     for uni in ai_response_data.get("universities", []):
         course_name = uni.get("specific_course", "")
         
-        # Safe, case-insensitive matching
-        if LOWERCASE_COURSE_SET and course_name.lower() not in LOWERCASE_COURSE_SET:
+        # Safe, normalized matching
+        ai_norm = normalize_course_name(course_name)
+        if NORMALIZED_MASTER_LIST and ai_norm not in NORMALIZED_MASTER_LIST:
             logging.warning(f"⚠️ AI Hallucinated Course Name: {course_name}")
             uni["db_verified_name"] = False
         else:
@@ -210,7 +217,6 @@ def fetch_from_gemini(system_instruction, base_prompt, grades, expected_level):
 # 🧠 CORE HYBRID ENGINE
 # ==========================================
 def ask_hybrid_career_advice(student_name, interest, grades, calculated_points, expected_level, pop_count=0, exclude_unis=None, successful_unis=None):
-    # Grab a sample of 20 random real courses to inject as formatting examples if the DB loaded correctly
     style_sample = ""
     if MASTER_COURSE_LIST:
         sample_list = MASTER_COURSE_LIST[100:120] if len(MASTER_COURSE_LIST) > 120 else MASTER_COURSE_LIST[:20]
@@ -225,7 +231,6 @@ def ask_hybrid_career_advice(student_name, interest, grades, calculated_points, 
     5. CRITICAL TECH OVERRIDE: If the student is at the Artisan or Certificate level, but their passion is Technology/Coding/IT, recommend tech-adjacent practical courses like 'Artisan in ICT', 'Computer Repair', or 'Certificate in IT'.{style_sample}
     """
     
-    # --- SMART AI FEEDBACK LOOP INJECTION ---
     exclusion_rule = ""
     if exclude_unis:
         bad_unis_str = ", ".join(exclude_unis)
@@ -237,7 +242,6 @@ def ask_hybrid_career_advice(student_name, interest, grades, calculated_points, 
 
     base_prompt = f"Student: {student_name} | Points: {calculated_points}/84 | Tier: {expected_level} | Passion: {interest}\nSubject Grades: {json.dumps(grades)}{exclusion_rule}"
 
-    # Note: Removed "alternative_careers" to save tokens and align with the app.py update
     json_structure = """
     Respond ONLY with valid JSON matching this exact structure:
     {"specific_course": "Specific Name", "level": "Expected Level", "ai_role": "Specific Job Title", "interest_match_reason": "2-3 sentences.", "ai_roadmap": "A brief 3-step HTML roadmap", "career_exploration_url": "Search URL", "universities": [{"name": "Kenyan University Name", "students": 120, "specific_course": "Exact Name", "reason": "Why this fits", "website_url": "PLACEHOLDER_FOR_HEALER", "verified_offering": true, "requirements_met": [{"subject": "Math", "required": "C-", "attained": "REAL_GRADE"}]}]}

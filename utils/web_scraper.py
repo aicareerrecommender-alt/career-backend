@@ -484,7 +484,8 @@ def get_course_url(university_name, course_name):
                 # 🛑 SAFETY CHECK
                 if any(bad in candidate_url for bad in ['facebook', 'twitter', 'kenyayote', 'advance-africa']):
                     continue
-
+             # 1. Add a tiny delay to prevent Groq/DuckDuckGo rate limits
+                time.sleep(1.5)
                 logging.info(f"🧐 AI Auditor checking fallback candidate: {candidate_url}")
 
                 try:
