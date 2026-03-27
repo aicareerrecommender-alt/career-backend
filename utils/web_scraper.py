@@ -2,6 +2,7 @@ import os
 import re
 import json
 import logging
+from time import time
 import bs4
 import requests
 import urllib3
@@ -34,6 +35,11 @@ def ai_course_validator(uni_name, course_name, scraped_text, source_url):
     AI Auditor: Prevents 'Zetech Hijacking' by ensuring the scraped text 
     actually belongs to the requested university.
     """
+    # ⏱️ THROTTLING: Prevents Groq 429 Rate Limit errors (TPM limit)
+    time.sleep(1.5) 
+    
+    if not client_groq: 
+        return False
     if not client_groq: 
         return False
     prompt = f"""
@@ -73,6 +79,7 @@ def ai_course_validator(uni_name, course_name, scraped_text, source_url):
 
 class AutoHealer:
     def __init__(self, target_folder="data"):
+
         # TWO SEPARATE FILES: One for domains, one for specific course links
         self.domain_db_path = os.path.join(target_folder, "school_domains.json")
         self.course_db_path = os.path.join(target_folder, "course_urls.json")
@@ -87,6 +94,10 @@ class AutoHealer:
         # Load both databases into memory
         self.domain_db = self._load_json(self.domain_db_path)
         self.course_db = self._load_json(self.course_db_path)
+        
+       # Ensure consistency with your _hunt_for_url method
+        self.db = self.course_db  # Add this alias for compatibility
+        self.db_path = self.course_db_path # Add this alias
 
         # Baseline "Verified Anchor" List
         self.known_domains = {
@@ -313,14 +324,13 @@ def get_course_url(university_name, course_name):
                 try:
                     # 1. Fetch clean text via Jina AI
                     jina_url = f"https://r.jina.ai/{candidate_url}"
-                    response = requests.get(jina_url, timeout=15, verify=False)
+                    response = requests.get(jina_url, timeout=30, verify=False)
                     
                     # 2. AI Gatekeeper: Does this school name and course match the user's request?
                     if ai_course_validator(university_name, course_name, response.text, candidate_url):
                         logging.info(f"✅ AI VALIDATED OFFICIAL SITE: {candidate_url}")
-                        
+                        found_deep_link = healer._internal_navigation_crawl(candidate_url, university_name, course_name)
                         # 3. BFS Hand-off: Only crawl if the AI confirms we are on the official site
-                        found_deep_link = healer.crawl(candidate_url, university_name, course_name)
                         return found_deep_link if found_deep_link else candidate_url
                     
                     else:
