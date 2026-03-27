@@ -165,7 +165,7 @@ class AutoHealer:
                 logging.error(f"Failed to save databases: {e}")
     
     def _load_kenet_file(self, file_path):
-        """Parses the KENET text file and injects verified domains into the database."""
+        """Parses the KENET text file, cleaning formatting artifacts, and injects domains."""
         if not os.path.exists(file_path):
             logging.warning(f"KENET file not found at {file_path}")
             return
@@ -173,25 +173,36 @@ class AutoHealer:
         added_count = 0
         with open(file_path, 'r', encoding='utf-8') as f:
             for line in f:
-                if '|' in line:
-                    parts = [p.strip() for p in line.split('|')]
-                    if len(parts) >= 3:
-                        uni_name = parts[1].lower()
-                        # Clean up weird spaces
-                        uni_name = re.sub(r'\s+', ' ', uni_name)
-                        url = parts[2]
+                if '->' in line:
+                    parts = line.split('->')
+                    if len(parts) == 2:
+                        uni_name = parts[0].lower().strip()
                         
-                        # Only grab valid URLs (Ignore 'NO_URL_FOUND')
+                        # 1. Removes citations like [1] or [2] if they exist from AI outputs
+                        uni_name = re.sub(r'\[.*?\]', '', uni_name).strip()
+                        
+                        # Note: If you were actually trying to remove single quotes ('), 
+                        # you can uncomment the line below instead:
+                        # uni_name = uni_name.replace("'", "").strip()
+                        
+                        # 2. Removes literal backslashes
+                        uni_name = re.sub(r'\\', '', uni_name).strip()
+                        
+                        # 3. Cleans up extra whitespace
+                        uni_name = re.sub(r'\s+', ' ', uni_name)
+                        
+                        url = parts[1].strip()
+                        
                         if url.startswith('http'):
                             domain = urlparse(url).netloc.replace('www.', '')
-                            if uni_name not in self.domain_db:
+                            if uni_name and uni_name not in self.domain_db:
                                 self.domain_db[uni_name] = domain
                                 added_count += 1
         
         if added_count > 0:
             logging.info(f"✅ Loaded {added_count} new verified domains from KENET file.")
             self._save_all()
-    
+              
     def _load_db(self):
         if os.path.exists(self.db_path):
             try:
