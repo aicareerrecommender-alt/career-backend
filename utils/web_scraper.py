@@ -65,61 +65,76 @@ def safe_ai_call(prompt):
         temperature=0.1
     )
 
-def ai_course_validator(uni_name, course_name, scraped_text, source_url):
-    """
-    AI Auditor: Prevents 'Zetech Hijacking' by ensuring the scraped text 
-    actually belongs to the requested university, while assessing page depth.
-    """
-    # A small buffer sleep is fine, but let Tenacity handle the heavy lifting
-    time.sleep(2) 
+def ai_course_validator(university_name, course_name, web_text, source_url):
+    """Evaluates if a page is the final, dedicated course page."""
+    time.sleep(2)
+    optimized_text = web_text[:2500] 
     
-    # Aggressively trim text to save tokens and stay within context limits
-    optimized_text = scraped_text[:2500] 
-    
-    if not client_groq: 
-        return {}
-
     prompt = f"""
-    Requested Institution: {uni_name}
-    Requested Course: {course_name}
-    Found URL: {source_url}
-
-    AUDIT RULES:
-    1. INSTITUTION MATCH: Does the text/URL belong to {uni_name}? 
-       - Accept if it is the official site, a student portal, or an official social media page.
-       - Reject ONLY if it is clearly a competitor university's site (e.g., page says 'Zetech' but we want 'JKUAT').
+    Analyze if this webpage is the SPECIFIC official landing page for '{course_name}' at {university_name}.
+    URL: {source_url}
     
-    2. FLEXIBLE COURSE MATCH: Is '{course_name}' offered here?
-       - BE HIGHLY FLEXIBLE. 
-       - Treat 'BSc', 'B.Sc', 'BS', and 'Bachelor of Science' as identical.
-       - Treat 'B.A', 'BA', and 'Bachelor of Arts' as identical.
-       - If the page lists many courses and '{course_name}' is among them, it is a MATCH.
-       - If the course name is slightly different (e.g., 'Computer Science' vs 'Informatics & Computer Science'), it is a MATCH.
+    CRITERIA:
+    - HUB/LIST PAGE: Contains many courses (e.g., 'Our Programs', 'Faculty of Science').
+    - DEDICATED PAGE: Focuses exclusively on '{course_name}'. Contains detailed units, duration, or specific career paths.
 
-    3. HIGH FIDELITY CHECK: Does this page contain deep course details (admission requirements, units, fees)?
-    
-    4. PAGE TYPE: Is this a specific "course_detail" page, or a "hub_or_list" of many courses?
-
-    Return a JSON object with strictly these keys based on the rules above:
+    Return JSON strictly in this format:
     {{
-        "is_correct_uni": bool, 
-        "specific_course_found": bool, 
-        "has_high_fidelity_details": bool,
-        "page_type": "course_detail" | "hub_or_list" | "other"
+        "is_correct_uni": true,
+        "specific_course_found": true,
+        "page_type": "dedicated" | "hub" | "irrelevant",
+        "confidence_score": 85,
+        "is_conclusive": true 
     }}
+    (is_conclusive should ONLY be true if page_type is 'dedicated')
     
     Webpage Content:
     {optimized_text}
     """
-    
     try:
         res = safe_ai_call(prompt)
-        data = json.loads(res.choices[0].message.content)
-        return data
+        return json.loads(res.choices[0].message.content)
     except Exception as e: 
         logging.error(f"AI Validator Error: {e}")
         return {}
 
+def ai_navigator_audit(university_name, course_name, page_text, available_links):
+    """The 'Brain' of the Agentic Crawler. Decides which link to click next."""
+    time.sleep(2)
+    
+    # Aggressively trim text to save tokens. The AI mostly needs the links.
+    optimized_text = page_text[:1500]
+    # Limit links to top 60 to prevent blowing up the Groq context window
+    links_json = json.dumps(available_links[:60])
+    
+    prompt = f"""
+    You are an AI Web Crawler Agent.
+    Goal: Find the dedicated official course page for '{course_name}' at '{university_name}'.
+    
+    Current Page Content Summary:
+    {optimized_text}
+    
+    Available Links on this page:
+    {links_json}
+    
+    Determine your next action:
+    1. If the Current Page Content proves we are already on the conclusive, dedicated page for {course_name} (shows units, fees, duration), set status to "FINAL_MATCH".
+    2. If not, pick the BEST link from the 'Available Links' that will get us closer (e.g., look for 'Academics', 'Undergraduate', 'School of Science', or the course name itself). Set status to "KEEP_SEARCHING".
+    3. If none of the links are helpful, set status to "DEAD_END".
+    
+    Return JSON strictly in this format:
+    {{
+        "status": "FINAL_MATCH" | "KEEP_SEARCHING" | "DEAD_END",
+        "next_best_link": "exact url string from the list or null",
+        "current_page_score": 0-100
+    }}
+    """
+    try:
+        res = safe_ai_call(prompt)
+        return json.loads(res.choices[0].message.content)
+    except Exception as e: 
+        logging.error(f"AI Navigator Error: {e}")
+        return {"status": "DEAD_END", "next_best_link": None, "current_page_score": 0}
 
 # ==========================================
 # 🕷️ AUTO-HEALER SCRAPER CLASS
@@ -269,113 +284,77 @@ class AutoHealer:
             logging.debug(f"Domain lookup exception: {e}")
             
         return None
-    def _internal_navigation_crawl(self, root_domain, university_name, course_name, max_pages=15):
+    def _internal_navigation_crawl(self, root_domain, university_name, course_name):
         """
-        AI-Driven Best-First Search (Priority Queue). 
-        Navigates academic 'hotspots' and uses density-checking before triggering AI.
+        Agentic Crawler: Groq decides which links to click until 
+        the specific course page is found.
         """
-        homepage_url = f"https://{root_domain}"
-        pq = [(0, 0, homepage_url)] 
-        visited = {homepage_url}
-        pages_scanned = 0
-
-        # 1. Clean course keywords (Remove distracting words so it focuses on the actual subject)
-        clean_course_name = re.sub(r'[^\w\s]', '', course_name.lower())
-        course_keywords = set(clean_course_name.split())
-        stop_words = {'of', 'in', 'and', 'the', 'for', 'with', 'bachelor', 'bsc', 'ba', 'diploma', 'degree', 'certificate'}
-        core_course_keywords = {kw for kw in course_keywords if len(kw) > 2 and kw not in stop_words}
-        if not core_course_keywords:
-            core_course_keywords = {course_name.lower()}
-            
-        academic_keywords = {'requirement', 'unit', 'curriculum', 'module', 'syllabus', 'admission', 'program', 'course', 'intake', 'fee'}
+        current_url = f"https://{root_domain}"
+        visited = set()
+        best_match_so_far = {"url": None, "score": 0}
         
-        # 2. URL Heuristics (Blacklists & Whitelists)
-        junk_url_paths = ['news', 'event', 'blog', 'tender', 'vacancy', 'career', 'webmail', 'portal', 
-                          'library', 'alumni', 'gallery', 'contact', 'staff', 'login', 'register',
-                          '.pdf', '.jpg', '.png', '.docx']
-        hotspot_url_paths = ['course', 'program', 'academic', 'admission', 'study', 'undergraduate', 'department', 'faculty', 'school']
-
-        while pq and pages_scanned < max_pages:
-            current_neg_score, depth, current_url = heapq.heappop(pq)
+        # We allow the AI to 'click' up to 5 times to find the deep page
+        for click_depth in range(5):
+            if current_url in visited:
+                break
+            visited.add(current_url)
             
-            # Don't go too deep into the website architecture
-            if depth > 4: 
-                continue
-                
-            pages_scanned += 1
+            logging.info(f"🖱️ Click Depth {click_depth}: Navigating to {current_url}")
             
             try:
-                current_score = -current_neg_score
-                logging.info(f"🕵️ Scanning [{pages_scanned}/{max_pages}] (Score: {current_score}): {current_url}")
+                # 1. Use Jina to get the content of the current 'click'
+                jina_url = f"https://r.jina.ai/{current_url}"
+                response = self.session.get(jina_url, timeout=15, verify=False)
+                page_text = response.text
                 
-                res = self.session.get(f"https://r.jina.ai/{current_url}", timeout=15)
-                if res.status_code != 200: 
-                    continue
-
-                text_lower = res.text.lower()
-                is_hub = False
-
-                # ==========================================
-                # 🔗 DECOUPLED LINK EXTRACTION (Do this FIRST)
-                # ==========================================
-                markdown_links = re.findall(r'\[([^\]]+)\]\(([^\)]+)\)', res.text)
-
+                # 2. Extract potential links (Jina returns Markdown, so we use Regex, NOT BeautifulSoup)
+                markdown_links = re.findall(r'\[([^\]]+)\]\(([^\)]+)\)', page_text)
+                
+                available_links = []
+                junk_paths = ['.pdf', '.jpg', '.png', 'facebook', 'twitter', 'login', 'webmail', 'portal']
+                
                 for link_text, extracted_url in markdown_links:
                     full_url = urljoin(current_url, extracted_url).split('#')[0].rstrip('/')
-                    full_url_lower = full_url.lower()
-                    link_text_lower = link_text.lower()
                     
-                    # 🛑 CRITICAL: Skip junk URLs entirely to save time
-                    if any(junk in full_url_lower for junk in junk_url_paths):
+                    # Clean the link text and ensure it stays on the target university's domain
+                    clean_text = link_text.strip()
+                    if root_domain in full_url and len(clean_text) > 2:
+                        if not any(junk in full_url.lower() for junk in junk_paths):
+                            available_links.append({"text": clean_text, "url": full_url})
+
+                # Deduplicate links while preserving order
+                unique_links = list({v['url']: v for v in available_links}.values())
+
+                # 3. ASK THE AI: "Are we there yet? If not, where to next?"
+                analysis = ai_navigator_audit(university_name, course_name, page_text, unique_links)
+                
+                # LOGIC: If AI found the 'Conclusive' page, we are DONE
+                if analysis.get("status") == "FINAL_MATCH":
+                    logging.info(f"🎯 AI SATISFIED! Final Page: {current_url}")
+                    return current_url
+                
+                # LOGIC: If AI sees a better link to click, update current_url and loop again
+                if analysis.get("status") == "KEEP_SEARCHING":
+                    next_url = analysis.get("next_best_link")
+                    score = analysis.get("current_page_score", 0)
+                    
+                    # Keep track of the best page seen in case we never find the 'perfect' one
+                    if score > best_match_so_far["score"]:
+                        best_match_so_far = {"url": current_url, "score": score}
+                    
+                    if next_url and next_url not in visited:
+                        current_url = next_url
+                        time.sleep(2) # Respectful delay between clicks
                         continue
-
-                    if root_domain in full_url and full_url not in visited:
-                        visited.add(full_url)
-                        
-                        score = 0
-                        # Heavy scoring for links containing the core course subject
-                        if any(kw in link_text_lower for kw in core_course_keywords): score += 50
-                        # Boost if the URL path implies it's an academic page
-                        if any(hotspot in full_url_lower for hotspot in hotspot_url_paths): score += 30
-                        # Minor boost for academic terms in the link text
-                        if any(ak in link_text_lower for ak in academic_keywords): score += 10
-                            
-                        heapq.heappush(pq, (-score, depth + 1, full_url))
-
-                # ==========================================
-                # 🛡️ PRE-AI KEYWORD DENSITY HEURISTIC 
-                # ==========================================
-                # Count how many times the core course subject and academic terms appear in the text
-                course_mentions = sum(text_lower.count(kw) for kw in core_course_keywords)
-                academic_mentions = sum(text_lower.count(aw) for aw in academic_keywords)
-
-                # Only call the AI if there is a strong presence of the specific program
-                if pages_scanned > 1 and (course_mentions < 1 or academic_mentions < 2):
-                    logging.info(f"⏩ Skipping AI (Low Density): Page is likely generic, moving to next link...")
-                else:
-                    logging.info(f"🧠 High Density! Triggering AI Validator to check program details...")
-                    
-                    # Now the AI evaluates if this is the ACTUAL program page
-                    analysis = ai_course_validator(university_name, course_name, res.text, current_url)
-
-                    if analysis:
-                        if (analysis.get("is_correct_uni") and 
-                            analysis.get("specific_course_found") and 
-                            analysis.get("has_high_fidelity_details")):
-                            logging.info(f"✅ FINAL MATCH FOUND: {current_url}")
-                            return current_url
-
-                        if analysis.get("page_type") == "hub_or_list":
-                            # If it's a hub, we bump up the priority of links we found on this page
-                            for i in range(len(pq)):
-                                pq[i] = (pq[i][0] - 15, pq[i][1], pq[i][2])
-                            heapq.heapify(pq)
+                
+                # Stop if AI is confused (DEAD_END) or no valid links returned
+                break 
 
             except Exception as e:
-                logging.debug(f"⚠️ Navigation skipped {current_url}: {e}")
+                logging.error(f"⚠️ Navigation error at {current_url}: {e}")
+                break
 
-        logging.warning(f"❌ Could not find a specific match for '{course_name}' after {pages_scanned} pages.")
-        return None
+        return best_match_so_far["url"]
     def _hunt_for_url(self, university_name, course_name):
         # 1. Check Cache First
         if university_name in self.db and course_name in self.db[university_name]:
@@ -442,35 +421,29 @@ class AutoHealer:
 # ==========================================
 def get_course_url(university_name, course_name):
     """
-    1. Looks up the exact KENET domain from the database.
-    2. Sends the exact domain to the internal crawler to find the course page.
-    3. Fallbacks to AI Search only if the internal crawler fails.
+    The Funnel:
+    1. Look up exact KENET domain.
+    2. Agentic Crawl inside the official website.
+    3. Fallback to AI Web Search ONLY if the crawler fails.
     """
-    # --- NEW: Get the lazy-loaded instance instead of using a global variable ---
     instance = get_healer()
-
     logging.info(f"🔍 Initializing search for: {university_name} - {course_name}")
 
     # STEP 1: Get the domain from the KENET list / JSON DB
-    # Changed 'healer' to 'instance'
     root_domain = instance._get_domain(university_name)
 
     # STEP 2: Use the exact domain to crawl the site directly
     if root_domain:
-        logging.info(f"✅ KENET Domain found: {root_domain}. Launching direct crawler...")
-        
-        # Changed 'healer' to 'instance'
+        logging.info(f"✅ KENET Domain found: {root_domain}. Launching Agentic Crawler...")
         found_deep_link = instance._internal_navigation_crawl(root_domain, university_name, course_name)
         
         if found_deep_link:
             return found_deep_link
         else:
-            logging.warning(f"⚠️ Direct crawl missed. Falling back to AI Search...")
-            # We know the domain, so we can make the AI search hyper-specific
+            logging.warning(f"⚠️ Direct crawl missed the specific page. Falling back to external AI Search...")
             search_query = f'site:{root_domain} "{course_name}" requirements'
     else:
         logging.warning(f"⚠️ Domain unknown. Falling back to broad AI Search...")
-        # Broad search if university wasn't in the KENET list
         search_query = f'site:.ac.ke OR site:.edu "{university_name}" "{course_name}" requirements'
 
     # STEP 3: Fallback AI Search (DuckDuckGo + Jina AI Validator)
@@ -481,10 +454,9 @@ def get_course_url(university_name, course_name):
             for result in results:
                 candidate_url = result.get('href', '').lower()
                 
-                # 🛑 SAFETY CHECK
                 if any(bad in candidate_url for bad in ['facebook', 'twitter', 'kenyayote', 'advance-africa']):
                     continue
-             # 1. Add a tiny delay to prevent Groq/DuckDuckGo rate limits
+                    
                 time.sleep(1.5)
                 logging.info(f"🧐 AI Auditor checking fallback candidate: {candidate_url}")
 
@@ -494,7 +466,8 @@ def get_course_url(university_name, course_name):
                     
                     analysis = ai_course_validator(university_name, course_name, response.text, candidate_url)
                     
-                    if analysis and analysis.get("is_correct_uni") and analysis.get("specific_course_found"):
+                    # Use your updated validator logic keys here
+                    if analysis and analysis.get("is_correct_uni") and analysis.get("is_conclusive"):
                         logging.info(f"✅ AI VALIDATED FALLBACK SITE: {candidate_url}")
                         return candidate_url
                     else:
