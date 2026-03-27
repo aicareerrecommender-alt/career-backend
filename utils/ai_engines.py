@@ -19,9 +19,33 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 COURSES_DB_PATH = os.path.join(BASE_DIR,'kuccps_courses.json')
 
 def normalize_course_name(name):
-    """Lowercase and remove everything that isn't a letter or number for fuzzy matching."""
-    if not name: return ""
-    return re.sub(r'[^a-z0-9]', '', str(name).lower())
+    """
+    Lowercase, replace common KUCCPS synonyms/abbreviations, 
+    and remove non-alphanumerics for lenient fuzzy matching.
+    """
+    if not name: 
+        return ""
+        
+    name = str(name).lower()
+    
+    # Replace common synonyms/abbreviations before stripping characters
+    # Using a dictionary makes it easy to add new rules later
+    replacements = {
+        "bachelor of science": "bsc",
+        "bachelor of arts": "ba",
+        "bachelor of education": "bed",
+        "diploma in": "dip",
+        "certificate in": "cert",
+        " in ": "",
+        " of ": "",
+        " and ": ""
+    }
+    
+    for old_val, new_val in replacements.items():
+        name = name.replace(old_val, new_val)
+        
+    # Strip non-alphanumeric characters (removes spaces, hyphens, ampersands, etc.)
+    return re.sub(r'[^a-z0-9]', '', name)
 
 def load_master_courses():
     """Loads the real KUCCPS courses and creates a fast, lookup list."""
