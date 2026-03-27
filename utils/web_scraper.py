@@ -31,7 +31,26 @@ except ImportError:
         logging.error("❌ Critical: duckduckgo_search/ddgs library not found.")
 
 from .ai_engines import client_groq 
+from .ai_engines import client_groq 
 
+# --- NEW LAZY LOADING LOGIC ---
+healer = None
+
+def get_healer():
+    """Lazily initializes the AutoHealer only when needed."""
+    global healer
+    if healer is None:
+        logging.info("🚀 First request received. Initializing AutoHealer...")
+        # Get the path to the data folder relative to this file
+        current_file_dir = os.path.dirname(os.path.abspath(__file__))
+        target_dir = os.path.normpath(os.path.join(current_file_dir, '..', 'data'))
+        
+        if not os.path.exists(target_dir):
+            os.makedirs(target_dir)
+            
+        healer = AutoHealer(target_folder=target_dir)
+    return healer
+# ------------------------------
 # ==========================================
 # 🧠 AI VALIDATION & RETRY LOGIC
 # ==========================================
@@ -202,7 +221,7 @@ class AutoHealer:
         if added_count > 0:
             logging.info(f"✅ Loaded {added_count} new verified domains from KENET file.")
             self._save_all()
-              
+
     def _load_db(self):
         if os.path.exists(self.db_path):
             try:
@@ -421,22 +440,27 @@ class AutoHealer:
 # ==========================================
 # 🌐 STANDALONE HELPER FUNCTION
 # ==========================================
-
 def get_course_url(university_name, course_name):
     """
     1. Looks up the exact KENET domain from the database.
     2. Sends the exact domain to the internal crawler to find the course page.
     3. Fallbacks to AI Search only if the internal crawler fails.
     """
+    # --- NEW: Get the lazy-loaded instance instead of using a global variable ---
+    instance = get_healer()
+
     logging.info(f"🔍 Initializing search for: {university_name} - {course_name}")
 
     # STEP 1: Get the domain from the KENET list / JSON DB
-    root_domain = healer._get_domain(university_name)
+    # Changed 'healer' to 'instance'
+    root_domain = instance._get_domain(university_name)
 
     # STEP 2: Use the exact domain to crawl the site directly
     if root_domain:
         logging.info(f"✅ KENET Domain found: {root_domain}. Launching direct crawler...")
-        found_deep_link = healer._internal_navigation_crawl(root_domain, university_name, course_name)
+        
+        # Changed 'healer' to 'instance'
+        found_deep_link = instance._internal_navigation_crawl(root_domain, university_name, course_name)
         
         if found_deep_link:
             return found_deep_link
@@ -452,7 +476,7 @@ def get_course_url(university_name, course_name):
     # STEP 3: Fallback AI Search (DuckDuckGo + Jina AI Validator)
     try:
         with DDGS() as ddgs:
-            results = list(ddgs.text(search_query, max_results=5)) # Reduced to 5 to avoid Rate Limits
+            results = list(ddgs.text(search_query, max_results=5)) 
 
             for result in results:
                 candidate_url = result.get('href', '').lower()
