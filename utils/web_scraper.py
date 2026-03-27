@@ -54,8 +54,12 @@ def get_healer():
 # ==========================================
 # 🧠 AI VALIDATION & RETRY LOGIC
 # ==========================================
+# ==========================================
+# 🧠 AI VALIDATION & RETRY LOGIC
+# ==========================================
 
-@retry(wait=wait_exponential(multiplier=1, min=5, max=60), stop=stop_after_attempt(5))
+# Increased multiplier and minimum wait time to respect Groq limits
+@retry(wait=wait_exponential(multiplier=2, min=10, max=120), stop=stop_after_attempt(5))
 def safe_ai_call(prompt):
     """Wraps the Groq API call with exponential backoff for 429 Rate Limits."""
     return client_groq.chat.completions.create(
@@ -67,7 +71,7 @@ def safe_ai_call(prompt):
 
 def ai_course_validator(university_name, course_name, web_text, source_url):
     """Evaluates if a page is the final, dedicated course page."""
-    time.sleep(2)
+    time.sleep(4) # Increased delay to prevent 429s
     optimized_text = web_text[:2500] 
     
     prompt = f"""
@@ -97,6 +101,42 @@ def ai_course_validator(university_name, course_name, web_text, source_url):
     except Exception as e: 
         logging.error(f"AI Validator Error: {e}")
         return {}
+
+def ai_navigator_audit(university_name, course_name, page_text, available_links):
+    """The 'Brain' of the Agentic Crawler. Decides which link to click next."""
+    time.sleep(4) # Increased delay to prevent 429s
+    
+    optimized_text = page_text[:1500]
+    links_json = json.dumps(available_links[:60])
+    
+    prompt = f"""
+    You are an AI Web Crawler Agent.
+    Goal: Find the dedicated official course page for '{course_name}' at '{university_name}'.
+    
+    Current Page Content Summary:
+    {optimized_text}
+    
+    Available Links on this page:
+    {links_json}
+    
+    Determine your next action:
+    1. If the Current Page Content proves we are already on the conclusive, dedicated page for {course_name} (shows units, fees, duration), set status to "FINAL_MATCH".
+    2. If not, pick the BEST link from the 'Available Links' that will get us closer. Set status to "KEEP_SEARCHING".
+    3. If none of the links are helpful, set status to "DEAD_END".
+    
+    Return JSON strictly in this format:
+    {{
+        "status": "FINAL_MATCH" | "KEEP_SEARCHING" | "DEAD_END",
+        "next_best_link": "exact url string from the list or null",
+        "current_page_score": 0-100
+    }}
+    """
+    try:
+        res = safe_ai_call(prompt)
+        return json.loads(res.choices[0].message.content)
+    except Exception as e: 
+        logging.error(f"AI Navigator Error: {e}")
+        return {"status": "DEAD_END", "next_best_link": None, "current_page_score": 0}
 
 def ai_navigator_audit(university_name, course_name, page_text, available_links):
     """The 'Brain' of the Agentic Crawler. Decides which link to click next."""
@@ -293,6 +333,15 @@ class AutoHealer:
         visited = set()
         best_match_so_far = {"url": None, "score": 0}
         
+        # 1. EXPANDED JUNK FILTER
+        # We include .pdf, bio, personnel, and graduation to stop the AI from wasting quota.
+        # We EXCLUDE 'academics', 'faculty', and 'department' because these are necessary pathfinders.
+        JUNK_KEYWORDS = [
+            'login', 'portal', 'webmail', 'gallery', '.pdf', 'personnel', 
+            'bio', 'graduation', 'brochure', 'team', 'staff', 'download', 
+            'alumni', 'calendar', 'news', 'events'
+        ]
+
         # We allow the AI to 'click' up to 5 times to find the deep page
         for click_depth in range(5):
             if current_url in visited:
@@ -301,9 +350,8 @@ class AutoHealer:
             
             logging.info(f"🖱️ Click Depth {click_depth}: Navigating to {current_url}")
             
-            
             try:
-                # 1. Direct Fetch with a standard Browser Header
+                # Direct Fetch with a standard Browser Header
                 headers = {
                     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
                     'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
@@ -314,31 +362,32 @@ class AutoHealer:
                 response = requests.get(current_url, headers=headers, timeout=25, verify=False)
                 response.raise_for_status()
                 
-                # 2. Parse with BeautifulSoup
+                # Parse with BeautifulSoup
                 soup = BeautifulSoup(response.text, 'html.parser')
                 
-                # 3. NOISE REDUCTION: Remove non-content elements
+                # NOISE REDUCTION: Remove non-content elements
                 for element in soup(["script", "style", "nav", "footer", "header", "aside"]):
                     element.decompose()
                 
                 clean_page_text = soup.get_text(separator=' ', strip=True)
                 
-                # 4. Link Extraction & Filtering
+                # 2. UPDATED LINK EXTRACTION & FILTERING
                 available_links = []
                 for a in soup.find_all('a', href=True):
                     link_text = a.get_text().strip()
                     link_url = a['href']
-                    
                     full_url = urljoin(current_url, link_url)
                     
                     if root_domain in full_url and len(link_text) > 2:
-                        if not any(word in link_text.lower() for word in ['login', 'portal', 'webmail', 'gallery']):
+                        # Check both the link text and the URL for junk keywords
+                        if not any(bad in link_text.lower() or bad in full_url.lower() for bad in JUNK_KEYWORDS):
                             available_links.append({"text": link_text, "url": full_url})
 
-                # 5. AI NAVIGATION AUDIT
-                analysis = self.ai_navigator_audit(university_name, course_name, clean_page_text, available_links[:25])
+                # 3. FIX: AI NAVIGATION AUDIT (Removed 'self.')
+                # This calls the global function instead of a non-existent class method.
+                analysis = ai_navigator_audit(university_name, course_name, clean_page_text, available_links[:25])
                 
-                # 6. STATUS LOGIC
+                # 4. STATUS LOGIC
                 if analysis.get("status") == "FINAL_MATCH":
                     if course_name.lower() in clean_page_text.lower() or analysis.get("current_page_score", 0) > 85:
                         logging.info(f"🎯 AI SATISFIED! Match found at: {current_url}")
@@ -353,22 +402,17 @@ class AutoHealer:
                     
                     if next_url and next_url not in visited and next_url.startswith('http'):
                         current_url = next_url
-                        time.sleep(1.5)
-                        # This 'continue' is now safely inside the 'for' loop
+                        time.sleep(1.5) # Small sleep between clicks
                         continue 
 
-                # This 'break' is now safely inside the 'for' loop
+                # If the AI says DEAD_END or we reach here, stop the loop
                 break 
 
             except Exception as e:
                 logging.error(f"⚠️ BS4 Crawl Error at {current_url}: {e}")
-                # This 'break' is now safely inside the 'for' loop
                 break 
 
-        return best_match_so_far["url"]  
-       
-
-
+        return best_match_so_far["url"]
     def _hunt_for_url(self, university_name, course_name):
         # 1. Check Cache First
         if university_name in self.db and course_name in self.db[university_name]:
@@ -384,13 +428,17 @@ class AutoHealer:
         precision_query = f'site:{root_domain} "{course_name}"'
         urls_to_check = []
         
+        # Inside _hunt_for_url (Precision Deep-Link Search)
+        JUNK_KEYWORDS = ['.pdf', 'personnel', 'bio', 'graduation', 'brochure', 'team', 'staff', 'download']
         try:
             with DDGS() as ddgs:
                 results = list(ddgs.text(precision_query, max_results=5))
                 for r in results:
                     url = r.get('href', '')
                     if url and root_domain in url:
-                        urls_to_check.append(url)
+                        # Added junk filter here
+                        if not any(bad in url.lower() for bad in JUNK_KEYWORDS):
+                            urls_to_check.append(url)
         except Exception as e:
             logging.error(f"❌ Search Error: {e}")
 
@@ -461,14 +509,18 @@ def get_course_url(university_name, course_name):
         search_query = f'site:.ac.ke OR site:.edu "{university_name}" "{course_name}" requirements'
 
     # STEP 3: Fallback AI Search (DuckDuckGo + Jina AI Validator)
+    # Inside get_course_url (Fallback AI Search)
     try:
         with DDGS() as ddgs:
             results = list(ddgs.text(search_query, max_results=5)) 
 
+            JUNK_KEYWORDS = ['.pdf', 'personnel', 'bio', 'graduation', 'brochure', 'team', 'staff', 'download']
+            
             for result in results:
                 candidate_url = result.get('href', '').lower()
                 
-                if any(bad in candidate_url for bad in ['facebook', 'twitter', 'kenyayote', 'advance-africa']):
+                # Combined your existing bad domains with the new junk keyword list
+                if any(bad in candidate_url for bad in ['facebook', 'twitter', 'kenyayote', 'advance-africa'] + JUNK_KEYWORDS):
                     continue
                     
                 time.sleep(1.5)
