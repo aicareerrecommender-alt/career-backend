@@ -73,17 +73,22 @@ def ai_course_validator(uni_name, course_name, scraped_text, source_url):
 
 class AutoHealer:
     def __init__(self, target_folder="data"):
-        self.db_path = os.path.join(target_folder, "academic_urls.json")
+        # TWO SEPARATE FILES: One for domains, one for specific course links
+        self.domain_db_path = os.path.join(target_folder, "school_domains.json")
+        self.course_db_path = os.path.join(target_folder, "course_urls.json")
+        
         os.makedirs(target_folder, exist_ok=True)
         self.session = requests.Session()
-        # Updated User-Agent to a newer version to reduce blocks
         self.session.headers.update({
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'
         })
         self.db_lock = threading.Lock() 
-        self.db = self._load_db()
 
-        # The "Verified Anchor" List (KUCCPS Aligned)
+        # Load both databases into memory
+        self.domain_db = self._load_json(self.domain_db_path)
+        self.course_db = self._load_json(self.course_db_path)
+
+        # Baseline "Verified Anchor" List
         self.known_domains = {
             "university of nairobi": "uonbi.ac.ke", "kenyatta university": "ku.ac.ke",
             "jomo kenyatta": "jkuat.ac.ke", "egerton": "egerton.ac.ke", "moi university": "mu.ac.ke",
@@ -91,47 +96,69 @@ class AutoHealer:
             "masinde muliro": "mmust.ac.ke", "technical university of kenya": "tukenya.ac.ke",
             "kca university": "kca.ac.ke", "mount kenya": "mku.ac.ke", "zetech": "zetech.ac.ke"
         }
+        
+        # Merge baseline anchors into domain_db if they aren't already there
+        for name, domain in self.known_domains.items():
+            if name not in self.domain_db:
+                self.domain_db[name] = domain
 
-    def _load_db(self):
-        if os.path.exists(self.db_path):
+    def _load_json(self, path):
+        if os.path.exists(path):
             try:
-                with open(self.db_path, 'r', encoding='utf-8') as f:
+                with open(path, 'r', encoding='utf-8') as f:
                     return json.load(f)
             except Exception: pass
         return {}
 
-    def _save_db(self):
+    def _save_all(self):
+        """Saves both domains and course URLs to their respective files."""
         with self.db_lock:
             try:
-                with open(self.db_path, 'w', encoding='utf-8') as f:
-                    json.dump(self.db, f, indent=4)
-            except Exception: pass
+                with open(self.domain_db_path, 'w', encoding='utf-8') as f:
+                    json.dump(self.domain_db, f, indent=4)
+                with open(self.course_db_path, 'w', encoding='utf-8') as f:
+                    json.dump(self.course_db, f, indent=4)
+            except Exception as e:
+                logging.error(f"Failed to save databases: {e}")
 
     def _get_domain(self, university_name):
-        """Resolves official domains by checking local map, then KUCCPS, then direct search."""
-        uni_lower = university_name.lower()
-        for name, domain in self.known_domains.items():
-            if name in uni_lower: return domain
+        """Resolves official domains and UPDATES the local domain cache."""
+        uni_lower = university_name.lower().strip()
+        
+        # 1. Check current memory/file cache first
+        if uni_lower in self.domain_db:
+            return self.domain_db[uni_lower]
                 
+        # 2. If not found, use Dux to hunt for it
         try:
             with DDGS() as ddgs:
-                # 1. KUCCPS Deep-Search for the Domain
+                # KUCCPS Deep-Search
                 kuccps_query = f'site:students.kuccps.net "{university_name}" website'
                 for r in list(ddgs.text(kuccps_query, max_results=3)):
                     body = r.get('body', '').lower()
                     match = re.search(r'([a-zA-Z0-9\-]+\.(?:ac\.ke|edu\.ke|sc\.ke|edu))', body)
-                    if match: return match.group(1)
+                    if match:
+                        found_domain = match.group(1)
+                        self.domain_db[uni_lower] = found_domain
+                        self._save_all() # Save to school_domains.json
+                        return found_domain
                 
-                # 2. FALLBACK: Direct search if KUCCPS fails
+                # Direct fallback search
                 direct_query = f'official website "{university_name}" Kenya'
                 for r in list(ddgs.text(direct_query, max_results=3)):
                     href = r.get('href', '').lower()
                     match = re.search(r'([a-zA-Z0-9\-]+\.(?:ac\.ke|edu\.ke|sc\.ke|edu))', href)
-                    if match: return match.group(1)
+                    if match:
+                        found_domain = match.group(1)
+                        self.domain_db[uni_lower] = found_domain
+                        self._save_all() # Save to school_domains.json
+                        return found_domain
         except Exception as e: 
             logging.debug(f"Domain lookup exception: {e}")
             
         return None
+
+    # ... [Keep your existing _internal_navigation_crawl method here] ...
 
     def _hunt_for_url(self, university_name, course_name):
         # 1. Check Cache First
@@ -257,12 +284,83 @@ class AutoHealer:
                 
         logging.warning(f"❌ Could not find {course_name} within {max_depth} clicks from {homepage_url}")
         return None
-# Initialize
-# Replace your current TARGET_DIR and healer lines with this:
-TARGET_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'data')
+def get_course_url(university_name, course_name):
+    """
+    AI-Gated 'Dux' Search: Forces results to come ONLY from official .ac.ke 
+    or .edu domains to prevent 'Zetech Hijacking'.
+    """
+    # 🎯 TARGETED QUERY: 
+    # 'site:.ac.ke' forces Kenyan University domains
+    # 'site:.edu' captures international/private academic domains
+    search_query = f'site:.ac.ke OR site:.edu "{university_name}" "{course_name}" requirements'
+    
+    logging.info(f"🦆 Dux is scanning official school domains for: {university_name}")
 
-# Create the directory if it doesn't exist to stop the WARNING
+    try:
+        with DDGS() as ddgs:
+            # We fetch up to 10 results to ensure we find the right sub-page
+            results = list(ddgs.text(search_query, max_results=10))
+
+            for result in results:
+                candidate_url = result.get('href', '').lower()
+                
+                # 🛑 SAFETY CHECK: Ensure it's not a generic blog or social media
+                if any(bad in candidate_url for bad in ['facebook', 'twitter', 'kenyayote', 'advance-africa']):
+                    continue
+
+                logging.info(f"🧐 AI Auditor checking official candidate: {candidate_url}")
+
+                try:
+                    # 1. Fetch clean text via Jina AI
+                    jina_url = f"https://r.jina.ai/{candidate_url}"
+                    response = requests.get(jina_url, timeout=15, verify=False)
+                    
+                    # 2. AI Gatekeeper: Does this school name and course match the user's request?
+                    if ai_course_validator(university_name, course_name, response.text, candidate_url):
+                        logging.info(f"✅ AI VALIDATED OFFICIAL SITE: {candidate_url}")
+                        
+                        # 3. BFS Hand-off: Only crawl if the AI confirms we are on the official site
+                        found_deep_link = healer.crawl(candidate_url, university_name, course_name)
+                        return found_deep_link if found_deep_link else candidate_url
+                    
+                    else:
+                        logging.warning(f"❌ AI Rejected (Content mismatch): {candidate_url}")
+                        continue 
+
+                except Exception as e:
+                    logging.error(f"⚠️ Validation error on {candidate_url}: {e}")
+                    continue
+
+    except Exception as e:
+        logging.error(f"❌ Dux Search Error: {e}")
+    
+        return None
+    def _load_db(self):
+        if os.path.exists(self.db_path):
+            try:
+                with open(self.db_path, 'r', encoding='utf-8') as f:
+                    return json.load(f)
+            except Exception: pass
+        return {}
+
+    def _save_db(self):
+        with self.db_lock:
+            try:
+                with open(self.db_path, 'w', encoding='utf-8') as f:
+                    json.dump(self.db, f, indent=4)
+            except Exception: pass
+# ==========================================
+# 🛠️ FINAL INITIALIZATION (Bottom of file)
+# ==========================================
+
+# 1. Define the path to your 'data' folder
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+TARGET_DIR = os.path.join(BASE_DIR, '..', 'data')
+
+# 2. Physically create the folder so the JSON files have a home
 if not os.path.exists(TARGET_DIR):
     os.makedirs(TARGET_DIR)
 
+# 3. Initialize the global healer instance
+# Note: Ensure your AutoHealer.__init__ expects 'target_folder'
 healer = AutoHealer(target_folder=TARGET_DIR)
