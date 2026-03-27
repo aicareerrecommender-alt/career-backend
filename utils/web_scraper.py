@@ -140,6 +140,10 @@ class AutoHealer:
         for name, domain in self.known_domains.items():
             if name not in self.domain_db:
                 self.domain_db[name] = domain
+        # Load the KENET text file database
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        kenet_file_path = os.path.join(current_dir, "kenet_all_200_institutions.txt")
+        self._load_kenet_file(kenet_file_path)
 
     def _load_json(self, path):
         if os.path.exists(path):
@@ -159,7 +163,35 @@ class AutoHealer:
                     json.dump(self.course_db, f, indent=4)
             except Exception as e:
                 logging.error(f"Failed to save databases: {e}")
+    
+    def _load_kenet_file(self, file_path):
+        """Parses the KENET text file and injects verified domains into the database."""
+        if not os.path.exists(file_path):
+            logging.warning(f"KENET file not found at {file_path}")
+            return
 
+        added_count = 0
+        with open(file_path, 'r', encoding='utf-8') as f:
+            for line in f:
+                if '|' in line:
+                    parts = [p.strip() for p in line.split('|')]
+                    if len(parts) >= 3:
+                        uni_name = parts[1].lower()
+                        # Clean up weird spaces
+                        uni_name = re.sub(r'\s+', ' ', uni_name)
+                        url = parts[2]
+                        
+                        # Only grab valid URLs (Ignore 'NO_URL_FOUND')
+                        if url.startswith('http'):
+                            domain = urlparse(url).netloc.replace('www.', '')
+                            if uni_name not in self.domain_db:
+                                self.domain_db[uni_name] = domain
+                                added_count += 1
+        
+        if added_count > 0:
+            logging.info(f"✅ Loaded {added_count} new verified domains from KENET file.")
+            self._save_all()
+    
     def _load_db(self):
         if os.path.exists(self.db_path):
             try:
@@ -207,29 +239,37 @@ class AutoHealer:
             logging.debug(f"Domain lookup exception: {e}")
             
         return None
-
-    def _internal_navigation_crawl(self, root_domain, university_name, course_name, max_pages=20):
+    def _internal_navigation_crawl(self, root_domain, university_name, course_name, max_pages=15):
         """
         AI-Driven Best-First Search (Priority Queue). 
-        Searches until the specific course name AND requirements are found.
+        Navigates academic 'hotspots' and uses density-checking before triggering AI.
         """
         homepage_url = f"https://{root_domain}"
-        
         pq = [(0, 0, homepage_url)] 
         visited = {homepage_url}
         pages_scanned = 0
 
+        # 1. Clean course keywords (Remove distracting words so it focuses on the actual subject)
         clean_course_name = re.sub(r'[^\w\s]', '', course_name.lower())
         course_keywords = set(clean_course_name.split())
-        if not course_keywords:
-            course_keywords = {course_name.lower()}
+        stop_words = {'of', 'in', 'and', 'the', 'for', 'with', 'bachelor', 'bsc', 'ba', 'diploma', 'degree', 'certificate'}
+        core_course_keywords = {kw for kw in course_keywords if len(kw) > 2 and kw not in stop_words}
+        if not core_course_keywords:
+            core_course_keywords = {course_name.lower()}
             
-        academic_keywords = {'requirement', 'unit', 'curriculum', 'module', 'syllabus', 'admission', 'program', 'course'}
+        academic_keywords = {'requirement', 'unit', 'curriculum', 'module', 'syllabus', 'admission', 'program', 'course', 'intake', 'fee'}
+        
+        # 2. URL Heuristics (Blacklists & Whitelists)
+        junk_url_paths = ['news', 'event', 'blog', 'tender', 'vacancy', 'career', 'webmail', 'portal', 
+                          'library', 'alumni', 'gallery', 'contact', 'staff', 'login', 'register',
+                          '.pdf', '.jpg', '.png', '.docx']
+        hotspot_url_paths = ['course', 'program', 'academic', 'admission', 'study', 'undergraduate', 'department', 'faculty', 'school']
 
         while pq and pages_scanned < max_pages:
             current_neg_score, depth, current_url = heapq.heappop(pq)
             
-            if depth > 3: 
+            # Don't go too deep into the website architecture
+            if depth > 4: 
                 continue
                 
             pages_scanned += 1
@@ -245,9 +285,47 @@ class AutoHealer:
                 text_lower = res.text.lower()
                 is_hub = False
 
-                if pages_scanned > 1 and not any(word in text_lower for word in course_keywords):
-                    logging.info(f"⏩ Skipping AI Validation: Course keywords not found in {current_url}")
+                # ==========================================
+                # 🔗 DECOUPLED LINK EXTRACTION (Do this FIRST)
+                # ==========================================
+                markdown_links = re.findall(r'\[([^\]]+)\]\(([^\)]+)\)', res.text)
+
+                for link_text, extracted_url in markdown_links:
+                    full_url = urljoin(current_url, extracted_url).split('#')[0].rstrip('/')
+                    full_url_lower = full_url.lower()
+                    link_text_lower = link_text.lower()
+                    
+                    # 🛑 CRITICAL: Skip junk URLs entirely to save time
+                    if any(junk in full_url_lower for junk in junk_url_paths):
+                        continue
+
+                    if root_domain in full_url and full_url not in visited:
+                        visited.add(full_url)
+                        
+                        score = 0
+                        # Heavy scoring for links containing the core course subject
+                        if any(kw in link_text_lower for kw in core_course_keywords): score += 50
+                        # Boost if the URL path implies it's an academic page
+                        if any(hotspot in full_url_lower for hotspot in hotspot_url_paths): score += 30
+                        # Minor boost for academic terms in the link text
+                        if any(ak in link_text_lower for ak in academic_keywords): score += 10
+                            
+                        heapq.heappush(pq, (-score, depth + 1, full_url))
+
+                # ==========================================
+                # 🛡️ PRE-AI KEYWORD DENSITY HEURISTIC 
+                # ==========================================
+                # Count how many times the core course subject and academic terms appear in the text
+                course_mentions = sum(text_lower.count(kw) for kw in core_course_keywords)
+                academic_mentions = sum(text_lower.count(aw) for aw in academic_keywords)
+
+                # Only call the AI if there is a strong presence of the specific program
+                if pages_scanned > 1 and (course_mentions < 1 or academic_mentions < 2):
+                    logging.info(f"⏩ Skipping AI (Low Density): Page is likely generic, moving to next link...")
                 else:
+                    logging.info(f"🧠 High Density! Triggering AI Validator to check program details...")
+                    
+                    # Now the AI evaluates if this is the ACTUAL program page
                     analysis = ai_course_validator(university_name, course_name, res.text, current_url)
 
                     if analysis:
@@ -257,31 +335,17 @@ class AutoHealer:
                             logging.info(f"✅ FINAL MATCH FOUND: {current_url}")
                             return current_url
 
-                        is_hub = analysis.get("page_type") == "hub_or_list"
-
-                markdown_links = re.findall(r'\[([^\]]+)\]\(([^\)]+)\)', res.text)
-
-                for link_text, extracted_url in markdown_links:
-                    full_url = urljoin(current_url, extracted_url)
-                    full_url = full_url.split('#')[0].rstrip('/')
-                    link_text_lower = link_text.lower()
-
-                    if root_domain in full_url and full_url not in visited:
-                        visited.add(full_url)
-                        
-                        score = 0
-                        if any(kw in link_text_lower for kw in course_keywords): score += 30
-                        if any(ak in link_text_lower for ak in academic_keywords): score += 10
-                        if is_hub: score += 5 
-                            
-                        heapq.heappush(pq, (-score, depth + 1, full_url))
+                        if analysis.get("page_type") == "hub_or_list":
+                            # If it's a hub, we bump up the priority of links we found on this page
+                            for i in range(len(pq)):
+                                pq[i] = (pq[i][0] - 15, pq[i][1], pq[i][2])
+                            heapq.heapify(pq)
 
             except Exception as e:
                 logging.debug(f"⚠️ Navigation skipped {current_url}: {e}")
 
         logging.warning(f"❌ Could not find a specific match for '{course_name}' after {pages_scanned} pages.")
         return None
-
     def _hunt_for_url(self, university_name, course_name):
         # 1. Check Cache First
         if university_name in self.db and course_name in self.db[university_name]:
@@ -349,15 +413,35 @@ class AutoHealer:
 
 def get_course_url(university_name, course_name):
     """
-    AI-Gated 'Dux' Search: Forces results to come ONLY from official .ac.ke 
-    or .edu domains to prevent 'Zetech Hijacking'.
+    1. Looks up the exact KENET domain from the database.
+    2. Sends the exact domain to the internal crawler to find the course page.
+    3. Fallbacks to AI Search only if the internal crawler fails.
     """
-    search_query = f'site:.ac.ke OR site:.edu "{university_name}" "{course_name}" requirements'
-    logging.info(f"🦆 Dux is scanning official school domains for: {university_name}")
+    logging.info(f"🔍 Initializing search for: {university_name} - {course_name}")
 
+    # STEP 1: Get the domain from the KENET list / JSON DB
+    root_domain = healer._get_domain(university_name)
+
+    # STEP 2: Use the exact domain to crawl the site directly
+    if root_domain:
+        logging.info(f"✅ KENET Domain found: {root_domain}. Launching direct crawler...")
+        found_deep_link = healer._internal_navigation_crawl(root_domain, university_name, course_name)
+        
+        if found_deep_link:
+            return found_deep_link
+        else:
+            logging.warning(f"⚠️ Direct crawl missed. Falling back to AI Search...")
+            # We know the domain, so we can make the AI search hyper-specific
+            search_query = f'site:{root_domain} "{course_name}" requirements'
+    else:
+        logging.warning(f"⚠️ Domain unknown. Falling back to broad AI Search...")
+        # Broad search if university wasn't in the KENET list
+        search_query = f'site:.ac.ke OR site:.edu "{university_name}" "{course_name}" requirements'
+
+    # STEP 3: Fallback AI Search (DuckDuckGo + Jina AI Validator)
     try:
         with DDGS() as ddgs:
-            results = list(ddgs.text(search_query, max_results=10))
+            results = list(ddgs.text(search_query, max_results=5)) # Reduced to 5 to avoid Rate Limits
 
             for result in results:
                 candidate_url = result.get('href', '').lower()
@@ -366,7 +450,7 @@ def get_course_url(university_name, course_name):
                 if any(bad in candidate_url for bad in ['facebook', 'twitter', 'kenyayote', 'advance-africa']):
                     continue
 
-                logging.info(f"🧐 AI Auditor checking official candidate: {candidate_url}")
+                logging.info(f"🧐 AI Auditor checking fallback candidate: {candidate_url}")
 
                 try:
                     jina_url = f"https://r.jina.ai/{candidate_url}"
@@ -375,17 +459,10 @@ def get_course_url(university_name, course_name):
                     analysis = ai_course_validator(university_name, course_name, response.text, candidate_url)
                     
                     if analysis and analysis.get("is_correct_uni") and analysis.get("specific_course_found"):
-                        logging.info(f"✅ AI VALIDATED OFFICIAL SITE: {candidate_url}")
-                        
-                        # Fix: Extract root domain from candidate_url before passing to crawler
-                        root_domain = urlparse(candidate_url).netloc
-                        found_deep_link = healer._internal_navigation_crawl(root_domain, university_name, course_name)
-                        
-                        return found_deep_link if found_deep_link else candidate_url
-                    
+                        logging.info(f"✅ AI VALIDATED FALLBACK SITE: {candidate_url}")
+                        return candidate_url
                     else:
                         logging.warning(f"❌ AI Rejected (Content mismatch): {candidate_url}")
-                        continue 
 
                 except Exception as e:
                     logging.error(f"⚠️ Validation error on {candidate_url}: {e}")
@@ -395,8 +472,6 @@ def get_course_url(university_name, course_name):
         logging.error(f"❌ Dux Search Error: {e}")
     
     return None
-
-
 # ==========================================
 # 🛠️ FINAL INITIALIZATION (Bottom of file)
 # ==========================================
