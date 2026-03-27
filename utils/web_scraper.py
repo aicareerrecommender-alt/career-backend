@@ -2,7 +2,7 @@ import os
 import re
 import json
 import logging
-from time import time
+import time
 import bs4
 import requests
 import urllib3
