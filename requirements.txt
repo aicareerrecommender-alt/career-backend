@@ -19,4 +19,3 @@ google-auth-oauthlib
 pdfplumber==0.11.0
 ddgs>=9.11.0
 urllib3<2.0.0          # Ensures compatibility with older request formats if needed
-playwright==1.42.0     # The engine OpenClaw uses to drive the browser
