@@ -273,7 +273,20 @@ def ask_hybrid_career_advice(student_name, interest, grades, calculated_points, 
 
     json_structure = """
     Respond ONLY with valid JSON matching this exact structure:
-    {"specific_course": "Specific Name", "level": "Expected Level", "ai_role": "Specific Job Title", "interest_match_reason": "2-3 sentences.", "ai_roadmap": "A brief 3-step HTML roadmap", "career_exploration_url": "Search URL", "universities": [{"name": "Kenyan University Name", "students": 120, "specific_course": "Exact Name", "reason": "Why this fits", "website_url": "PLACEHOLDER_FOR_HEALER", "verified_offering": true, "requirements_met": [{"subject": "Math", "required": "C-", "attained": "REAL_GRADE"}]}]}
+    {
+        "specific_course": "Specific Name", 
+        "level": "Expected Level", 
+        "ai_role": "Specific Job Title", 
+        "interest_match_reason": "2-3 sentences.", 
+        "ai_roadmap": "A brief 3-step HTML roadmap", 
+        "career_exploration_url": "Search URL", 
+        "universities": [
+            {"name": "Kenyan University Name", "students": 120, "specific_course": "Exact Name", "reason": "Why this fits", "website_url": "PLACEHOLDER_FOR_HEALER", "verified_offering": true, "requirements_met": [{"subject": "Math", "required": "C-", "attained": "REAL_GRADE"}]}
+        ],
+        "alternative_careers": [
+            {"name": "Job Title", "title": "Job Title", "description": "1-2 sentence description of the career.", "fit": "Why this is a great alternative fit for the student."}
+        ]
+    }
     """
     full_prompt = base_prompt + "\n" + json_structure
 

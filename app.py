@@ -683,7 +683,9 @@ def recommend():
                     {"subject": "General Requirement", "required": "Check University Website", "status": "Pending"}
                 ]
 
-          
+        if "alternative_careers" in ai_insight:
+            ai_insight["alternatives"] = ai_insight["alternative_careers"]
+
         logging.info(f"✅ [SUCCESS] Request successfully completed and dispatched to frontend for {user_name}!")
         return jsonify(ai_insight), 200
 
