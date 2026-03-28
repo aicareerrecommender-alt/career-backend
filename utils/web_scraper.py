@@ -546,17 +546,12 @@ class AutoHealer:
 # 🌐 STANDALONE HELPER FUNCTION
 # ==========================================
 
-# ==import time
-import re
-from duckduckgo_search import DDGS
-import logging
-
 def get_course_url(university_name, course_name):
     """
     The Funnel:
     1. Look up exact KENET domain.
     2. Agentic Crawl inside the official website.
-    3. Fallback to AI Web Search ONLY if the crawler fails.
+    3. Fallback to Groq Web Search (NEW) if the crawler fails.
     """
     instance = get_healer()
     logging.info(f"🔍 Initializing search for: {university_name} - {course_name}")
@@ -571,86 +566,49 @@ def get_course_url(university_name, course_name):
         if found_deep_link:
             return found_deep_link
         else:
-            logging.warning(f"⚠️ Direct crawl missed the specific page. Falling back to external AI Search...")
+            logging.warning(f"⚠️ Direct crawl missed the specific page. Falling back to Groq AI Search...")
     else:
-        logging.warning(f"⚠️ Domain unknown. Falling back to broad AI Search...")
+        logging.warning(f"⚠️ Domain unknown. Falling back to Groq AI Search...")
 
-    # --- PREPARE FOR FALLBACK AI SEARCH ---
-    # 1. Normalize the course name (ignore generic words, focus on the unique subject)
-    raw_words = re.sub(r'[^a-z0-9\s]', ' ', course_name.lower()).split()
-    generic_words = {'bachelor', 'science', 'arts', 'degree', 'diploma', 'certificate', 'education', 'with', 'and', 'the', 'of', 'programme', 'undergraduate'}
-    core_course_words = [w for w in raw_words if len(w) > 3 and w not in generic_words]
-    
-    if not core_course_words: 
-        core_course_words = [w for w in raw_words if len(w) > 3]
-
-    JUNK_KEYWORDS = ['.pdf', 'personnel', 'bio', 'graduation', 'brochure', 'team', 'staff', 'download', 'news', 'events', 'blog', 'portal', 'login', 'elearning', 'library', 'mail', 'contacts', 'account', 'studentportal']
-    GOOD_KEYWORDS = ['course', 'program', 'undergraduate', 'bachelor', 'bsc', 'ba', 'degree', 'academics', 'admission', 'faculty', 'school']
-
-    # 2. Setup Search Variations (Retry Loop Queries)
-    search_queries = [
-        f"{course_name} at {university_name}",
-        f"{course_name} undergraduate course {university_name}"
-    ]
-    if root_domain:
-        clean_domain = root_domain.replace("https://", "").replace("http://", "").split('/')[0]
-        search_queries.append(f"{course_name} site:{clean_domain}")
-
-    # STEP 3: Fallback AI Search (DuckDuckGo + Validator Loop)
+    # STEP 3: Fallback AI Search via Groq
     try:
-        with DDGS() as ddgs:
-            for attempt, query in enumerate(search_queries):
-                logging.info(f"🔍 AI Search Attempt {attempt + 1}: '{query}'")
-                
-                results = list(ddgs.text(query, max_results=5))
-                if not results:
-                    time.sleep(1) # Prevent rate limiting
-                    continue
+        logging.info(f"🌐 Triggering Groq Search for: {course_name} @ {university_name}")
+        
+        # Construct a high-precision prompt
+        prompt = (
+            f"Find the direct official undergraduate course URL for '{course_name}' at '{university_name}'. "
+            f"The university domain is likely '{root_domain}'. "
+            "Search the web and provide ONLY the raw URL to the specific course requirements or department page. "
+            "Do not include any text, explanations, or markdown. Just the URL."
+        )
 
-                # Pass 1: Strict Validation (Perfect Match)
-                for result in results:
-                    candidate_url = result.get('href', '').lower()
-                    
-                    # Block junk pages instantly
-                    if any(bad in candidate_url for bad in ['facebook', 'twitter', 'kenyayote', 'advance-africa', 'kuccps'] + JUNK_KEYWORDS):
-                        continue
-                        
-                    # Normalize URL to connect broken words (agri-business -> agribusiness)
-                    normalized_url = re.sub(r'[-_]', '', candidate_url)
-                    
-                    has_core_word = any(cw in normalized_url for cw in core_course_words)
-                    has_good_word = any(gw in normalized_url for gw in GOOD_KEYWORDS)
-                    
-                    if has_core_word and has_good_word:
-                        logging.info(f"🎯 Perfect Fallback Match found: {result.get('href')}")
-                        return result.get('href') 
+        # Using groq/compound (or your specific Groq model with tool access)
+        response = client_groq.chat.completions.create(
+            model="groq/compound", # Ensure this model is enabled for search in your environment
+            messages=[
+                {"role": "system", "content": "You are a professional web researcher. Return only direct URLs."},
+                {"role": "user", "content": prompt}
+            ],
+            temperature=0
+        )
 
-                # Pass 2: Lenient Validation (Just the core course words)
-                for result in results:
-                    candidate_url = result.get('href', '').lower()
-                    
-                    if any(bad in candidate_url for bad in ['facebook', 'twitter', 'kenyayote', 'advance-africa', 'kuccps'] + JUNK_KEYWORDS):
-                        continue
-                        
-                    normalized_url = re.sub(r'[-_]', '', candidate_url)
-                    
-                    if any(cw in normalized_url for cw in core_course_words):
-                        logging.info(f"✅ Good Fallback Match found: {result.get('href')}")
-                        return result.get('href')
+        groq_url = response.choices[0].message.content.strip()
 
-                # Wait before trying the next search variation
-                time.sleep(1)
+        # Simple validation: remove markdown backticks if Groq accidentally adds them
+        groq_url = re.sub(r'[`"\'\s]', '', groq_url)
 
-        logging.warning(f"⚠️ All {len(search_queries)} AI Search attempts failed. Defaulting to homepage.")
+        if groq_url.startswith("http"):
+            logging.info(f"🎯 Groq Found specific link: {groq_url}")
+            return groq_url
+        else:
+            logging.warning(f"⚠️ Groq returned invalid format: {groq_url}")
 
     except Exception as e:
-        logging.error(f"❌ Dux Search Error: {e}")
+        logging.error(f"❌ Groq Search Error: {e}")
     
-    # Final safety net: Return the university homepage
+    # FINAL SAFETY NET: Return the university homepage if everything fails
     if root_domain:
-        if not root_domain.startswith("http"):
-            return f"https://{root_domain}"
-        return root_domain
+        return root_domain if root_domain.startswith("http") else f"https://{root_domain}"
         
     return None
 #========================================
