@@ -45,7 +45,7 @@ from email.mime.base import MIMEBase
 from email import encoders
 app = Flask(__name__)
 # Enable CORS for all routes so your frontend can communicate without being blocked
-CORS(app)
+CORS(app, resources={r"/*": {"origins": "*"}})
 
 # Add this line here
 NVIDIA_API_KEY = os.environ.get("NVIDIA_API_KEY")

@@ -245,38 +245,42 @@ class AutoHealer:
             return
 
         added_count = 0
+        buffer = "" # Added a buffer to handle lines split across multiple lines
+        
         with open(file_path, 'r', encoding='utf-8') as f:
             for line in f:
-                if '->' in line:
-                    parts = line.split('->')
-                    if len(parts) == 2:
+                # Add the current line to our buffer
+                buffer += " " + line.strip()
+                
+                # Only process if we have BOTH the arrow and an http link in our buffer
+                if '->' in buffer and 'http' in buffer:
+                    parts = buffer.split('->')
+                    
+                    if len(parts) >= 2:
                         uni_name = parts[0].lower().strip()
-                        
-                        # 1. Removes citations like [1] or [2] if they exist from AI outputs
                         uni_name = re.sub(r'\[.*?\]', '', uni_name).strip()
-                        
-                        # Note: If you were actually trying to remove single quotes ('), 
-                        # you can uncomment the line below instead:
-                        # uni_name = uni_name.replace("'", "").strip()
-                        
-                        # 2. Removes literal backslashes
                         uni_name = re.sub(r'\\', '', uni_name).strip()
-                        
-                        # 3. Cleans up extra whitespace
                         uni_name = re.sub(r'\s+', ' ', uni_name)
                         
-                        url = parts[1].strip()
+                        # Extract the URL part from the second half
+                        url_part = parts[1].strip()
                         
-                        if url.startswith('http'):
+                        # Find where the actual http starts (in case of weird formatting)
+                        http_index = url_part.find('http')
+                        if http_index != -1:
+                            url = url_part[http_index:].split()[0] # Grab just the URL string
+                            
                             domain = urlparse(url).netloc.replace('www.', '')
                             if uni_name and uni_name not in self.domain_db:
                                 self.domain_db[uni_name] = domain
                                 added_count += 1
+                                
+                    # Clear the buffer for the next university
+                    buffer = "" 
         
         if added_count > 0:
             logging.info(f"✅ Loaded {added_count} new verified domains from KENET file.")
             self._save_all()
-
     def _load_db(self):
         if os.path.exists(self.db_path):
             try:
@@ -349,7 +353,7 @@ class AutoHealer:
         nav_keywords = ['academics', 'programmes', 'courses', 'undergraduate', 'postgraduate', 'faculties', 'schools', 'departments']
         success_keywords = ['curriculum', 'course units', 'syllabus', 'fee structure', 'duration', 'entry requirements']
 
-        max_pages_to_visit = 15 # Hard cap to prevent infinite crawling
+        max_pages_to_visit = 25 # Hard cap to prevent infinite crawling
         pages_visited = 0
 
         while queue and pages_visited < max_pages_to_visit:
@@ -401,15 +405,19 @@ class AutoHealer:
                         continue
 
                     # -- SCORING LOGIC --
+                   # -- SCORING LOGIC --
                     link_score = 100 # Default score (low priority)
                     
-                    # Exact or partial course tokens in URL or link text (Highest Priority)
-                    if any(token in link_text for token in course_tokens) or any(token in url_lower for token in course_tokens):
-                        link_score = 10 
-                    # Academic navigation keywords (Medium Priority)
+                    # 1. Exact course tokens IN THE URL (Super High Priority)
+                    if any(token in url_lower for token in course_tokens):
+                        link_score = 5 
+                    # 2. Exact course tokens IN THE LINK TEXT (High Priority)
+                    elif any(token in link_text for token in course_tokens):
+                        link_score = 10
+                    # 3. Academic navigation keywords (Medium Priority)
                     elif any(nav in link_text for nav in nav_keywords):
                         link_score = 30
-                    # General department/faculty links (Lower Priority)
+                    # 4. General department/faculty links (Lower Priority)
                     elif 'faculty' in link_text or 'department' in link_text:
                         link_score = 50
 
@@ -499,10 +507,10 @@ def get_course_url(university_name, course_name):
     instance = get_healer()
     logging.info(f"🔍 Initializing search for: {university_name} - {course_name}")
 
-    # STEP 1: Get the domain from the KENET list / JSON DB
     root_domain = instance._get_domain(university_name)
 
-    # STEP 2: Use the exact domain to crawl the site directly
+    # --- BETTER SEARCH KEYWORDS ---
+    # Instead of just "requirements", we use a broad OR statement to catch variations
     if root_domain:
         logging.info(f"✅ KENET Domain found: {root_domain}. Launching Agentic Crawler...")
         found_deep_link = instance._internal_navigation_crawl(root_domain, university_name, course_name)
@@ -511,32 +519,64 @@ def get_course_url(university_name, course_name):
             return found_deep_link
         else:
             logging.warning(f"⚠️ Direct crawl missed the specific page. Falling back to external AI Search...")
-            search_query = f'site:{root_domain} "{course_name}" requirements'
+            search_query = f'site:{root_domain} "{course_name}" (course OR undergraduate OR bachelor OR programme)'
     else:
         logging.warning(f"⚠️ Domain unknown. Falling back to broad AI Search...")
-        search_query = f'site:.ac.ke OR site:.edu "{university_name}" "{course_name}" requirements'
+        search_query = f'site:.ac.ke OR site:.edu "{university_name}" "{course_name}" (course OR undergraduate)'
 
     # STEP 3: Fallback AI Search (DuckDuckGo + Jina AI Validator)
-    # Inside get_course_url (Fallback AI Search)
     try:
         with DDGS() as ddgs:
             results = list(ddgs.text(search_query, max_results=5)) 
 
-            JUNK_KEYWORDS = ['.pdf', 'personnel', 'bio', 'graduation', 'brochure', 'team', 'staff', 'download']
+            # --- KEYWORD LISTS ---
+            JUNK_KEYWORDS = ['.pdf', 'personnel', 'bio', 'graduation', 'brochure', 'team', 'staff', 'download', 'news', 'events', 'blog']
+            GOOD_KEYWORDS = ['course', 'program', 'undergraduate', 'bachelor', 'bsc', 'ba', 'degree', 'academics', 'admission']
             
+            # Extract main words from the course (e.g., "Computer Science" -> ["computer", "science"])
+            course_words = [w.lower() for w in course_name.split() if len(w) > 3]
+            
+            # Pass 1: Look for the PERFECT URL (Contains course name AND an academic keyword)
             for result in results:
                 candidate_url = result.get('href', '').lower()
                 
-                # Combined your existing bad domains with the new junk keyword list
-                if any(bad in candidate_url for bad in ['facebook', 'twitter', 'kenyayote', 'advance-africa'] + JUNK_KEYWORDS):
+                # Skip junk pages
+                if any(bad in candidate_url for bad in ['facebook', 'twitter', 'kenyayote', 'advance-africa', 'kuccps'] + JUNK_KEYWORDS):
+                    continue
+                
+                # If it has a course word AND a good academic word, it's a 100% match
+                has_course_word = any(cw in candidate_url for cw in course_words)
+                has_good_word = any(gw in candidate_url for gw in GOOD_KEYWORDS)
+                
+                if has_course_word and has_good_word:
+                    logging.info(f"🎯 Perfect Fallback Match found: {result.get('href')}")
+                    return result.get('href') 
+
+            # Pass 2: If no perfect match, just look for the course name in the URL
+            for result in results:
+                candidate_url = result.get('href', '').lower()
+                
+                if any(bad in candidate_url for bad in ['facebook', 'twitter', 'kenyayote', 'advance-africa', 'kuccps'] + JUNK_KEYWORDS):
                     continue
                     
-                time.sleep(1.5)
-                logging.info(f"🧐 AI Auditor checking fallback candidate: {candidate_url}")
+                if any(cw in candidate_url for cw in course_words):
+                    logging.info(f"✅ Good Fallback Match found: {result.get('href')}")
+                    return result.get('href')
+
+            # Pass 3: If still no match, return the first clean university link
+            for result in results:
+                candidate_url = result.get('href', '').lower()
+                if not any(bad in candidate_url for bad in ['facebook', 'twitter', 'kenyayote', 'advance-africa', 'kuccps'] + JUNK_KEYWORDS):
+                    logging.info(f"⚠️ Best available clean link: {result.get('href')}")
+                    return result.get('href')
 
     except Exception as e:
         logging.error(f"❌ Dux Search Error: {e}")
     
+    # Final safety net: If everything completely fails, return the university homepage
+    if root_domain:
+        return f"https://{root_domain}"
+        
     return None
 # ==========================================
 # 🛠️ FINAL INITIALIZATION (Bottom of file)
