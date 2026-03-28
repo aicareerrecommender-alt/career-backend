@@ -12,6 +12,7 @@ from urllib.parse import urlparse, urljoin
 from bs4 import BeautifulSoup
 import heapq
 from collections import deque
+from duckduckgo_search import DDGS
 
 # Tenacity for handling API Rate Limits
 from tenacity import retry, stop_after_attempt, wait_exponential
@@ -497,6 +498,12 @@ class AutoHealer:
 # ==========================================
 # 🌐 STANDALONE HELPER FUNCTION
 # ==========================================
+
+# ==import time
+import re
+from duckduckgo_search import DDGS
+import logging
+
 def get_course_url(university_name, course_name):
     """
     The Funnel:
@@ -509,8 +516,7 @@ def get_course_url(university_name, course_name):
 
     root_domain = instance._get_domain(university_name)
 
-    # --- BETTER SEARCH KEYWORDS ---
-    # Instead of just "requirements", we use a broad OR statement to catch variations
+    # STEP 1 & 2: KENET Domain & Agentic Crawl
     if root_domain:
         logging.info(f"✅ KENET Domain found: {root_domain}. Launching Agentic Crawler...")
         found_deep_link = instance._internal_navigation_crawl(root_domain, university_name, course_name)
@@ -519,66 +525,88 @@ def get_course_url(university_name, course_name):
             return found_deep_link
         else:
             logging.warning(f"⚠️ Direct crawl missed the specific page. Falling back to external AI Search...")
-            search_query = f'site:{root_domain} "{course_name}" (course OR undergraduate OR bachelor OR programme)'
     else:
         logging.warning(f"⚠️ Domain unknown. Falling back to broad AI Search...")
-        search_query = f'site:.ac.ke OR site:.edu "{university_name}" "{course_name}" (course OR undergraduate)'
 
-    # STEP 3: Fallback AI Search (DuckDuckGo + Jina AI Validator)
+    # --- PREPARE FOR FALLBACK AI SEARCH ---
+    # 1. Normalize the course name (ignore generic words, focus on the unique subject)
+    raw_words = re.sub(r'[^a-z0-9\s]', ' ', course_name.lower()).split()
+    generic_words = {'bachelor', 'science', 'arts', 'degree', 'diploma', 'certificate', 'education', 'with', 'and', 'the', 'of', 'programme', 'undergraduate'}
+    core_course_words = [w for w in raw_words if len(w) > 3 and w not in generic_words]
+    
+    if not core_course_words: 
+        core_course_words = [w for w in raw_words if len(w) > 3]
+
+    JUNK_KEYWORDS = ['.pdf', 'personnel', 'bio', 'graduation', 'brochure', 'team', 'staff', 'download', 'news', 'events', 'blog', 'portal', 'login', 'elearning', 'library', 'mail', 'contacts', 'account', 'studentportal']
+    GOOD_KEYWORDS = ['course', 'program', 'undergraduate', 'bachelor', 'bsc', 'ba', 'degree', 'academics', 'admission', 'faculty', 'school']
+
+    # 2. Setup Search Variations (Retry Loop Queries)
+    search_queries = [
+        f"{course_name} at {university_name}",
+        f"{course_name} undergraduate course {university_name}"
+    ]
+    if root_domain:
+        clean_domain = root_domain.replace("https://", "").replace("http://", "").split('/')[0]
+        search_queries.append(f"{course_name} site:{clean_domain}")
+
+    # STEP 3: Fallback AI Search (DuckDuckGo + Validator Loop)
     try:
         with DDGS() as ddgs:
-            results = list(ddgs.text(search_query, max_results=5)) 
-
-            # --- KEYWORD LISTS ---
-            JUNK_KEYWORDS = ['.pdf', 'personnel', 'bio', 'graduation', 'brochure', 'team', 'staff', 'download', 'news', 'events', 'blog']
-            GOOD_KEYWORDS = ['course', 'program', 'undergraduate', 'bachelor', 'bsc', 'ba', 'degree', 'academics', 'admission']
-            
-            # Extract main words from the course (e.g., "Computer Science" -> ["computer", "science"])
-            course_words = [w.lower() for w in course_name.split() if len(w) > 3]
-            
-            # Pass 1: Look for the PERFECT URL (Contains course name AND an academic keyword)
-            for result in results:
-                candidate_url = result.get('href', '').lower()
+            for attempt, query in enumerate(search_queries):
+                logging.info(f"🔍 AI Search Attempt {attempt + 1}: '{query}'")
                 
-                # Skip junk pages
-                if any(bad in candidate_url for bad in ['facebook', 'twitter', 'kenyayote', 'advance-africa', 'kuccps'] + JUNK_KEYWORDS):
+                results = list(ddgs.text(query, max_results=5))
+                if not results:
+                    time.sleep(1) # Prevent rate limiting
                     continue
-                
-                # If it has a course word AND a good academic word, it's a 100% match
-                has_course_word = any(cw in candidate_url for cw in course_words)
-                has_good_word = any(gw in candidate_url for gw in GOOD_KEYWORDS)
-                
-                if has_course_word and has_good_word:
-                    logging.info(f"🎯 Perfect Fallback Match found: {result.get('href')}")
-                    return result.get('href') 
 
-            # Pass 2: If no perfect match, just look for the course name in the URL
-            for result in results:
-                candidate_url = result.get('href', '').lower()
-                
-                if any(bad in candidate_url for bad in ['facebook', 'twitter', 'kenyayote', 'advance-africa', 'kuccps'] + JUNK_KEYWORDS):
-                    continue
+                # Pass 1: Strict Validation (Perfect Match)
+                for result in results:
+                    candidate_url = result.get('href', '').lower()
                     
-                if any(cw in candidate_url for cw in course_words):
-                    logging.info(f"✅ Good Fallback Match found: {result.get('href')}")
-                    return result.get('href')
+                    # Block junk pages instantly
+                    if any(bad in candidate_url for bad in ['facebook', 'twitter', 'kenyayote', 'advance-africa', 'kuccps'] + JUNK_KEYWORDS):
+                        continue
+                        
+                    # Normalize URL to connect broken words (agri-business -> agribusiness)
+                    normalized_url = re.sub(r'[-_]', '', candidate_url)
+                    
+                    has_core_word = any(cw in normalized_url for cw in core_course_words)
+                    has_good_word = any(gw in normalized_url for gw in GOOD_KEYWORDS)
+                    
+                    if has_core_word and has_good_word:
+                        logging.info(f"🎯 Perfect Fallback Match found: {result.get('href')}")
+                        return result.get('href') 
 
-            # Pass 3: If still no match, return the first clean university link
-            for result in results:
-                candidate_url = result.get('href', '').lower()
-                if not any(bad in candidate_url for bad in ['facebook', 'twitter', 'kenyayote', 'advance-africa', 'kuccps'] + JUNK_KEYWORDS):
-                    logging.info(f"⚠️ Best available clean link: {result.get('href')}")
-                    return result.get('href')
+                # Pass 2: Lenient Validation (Just the core course words)
+                for result in results:
+                    candidate_url = result.get('href', '').lower()
+                    
+                    if any(bad in candidate_url for bad in ['facebook', 'twitter', 'kenyayote', 'advance-africa', 'kuccps'] + JUNK_KEYWORDS):
+                        continue
+                        
+                    normalized_url = re.sub(r'[-_]', '', candidate_url)
+                    
+                    if any(cw in normalized_url for cw in core_course_words):
+                        logging.info(f"✅ Good Fallback Match found: {result.get('href')}")
+                        return result.get('href')
+
+                # Wait before trying the next search variation
+                time.sleep(1)
+
+        logging.warning(f"⚠️ All {len(search_queries)} AI Search attempts failed. Defaulting to homepage.")
 
     except Exception as e:
         logging.error(f"❌ Dux Search Error: {e}")
     
-    # Final safety net: If everything completely fails, return the university homepage
+    # Final safety net: Return the university homepage
     if root_domain:
-        return f"https://{root_domain}"
+        if not root_domain.startswith("http"):
+            return f"https://{root_domain}"
+        return root_domain
         
     return None
-# ==========================================
+#========================================
 # 🛠️ FINAL INITIALIZATION (Bottom of file)
 # ==========================================
 
