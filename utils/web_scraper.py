@@ -329,6 +329,13 @@ class AutoHealer:
             logging.debug(f"Domain lookup exception: {e}")
             
         return None
+    def clean_url(self, base, link):
+        """Fixes broken links and skips non-web links like mailto:"""
+        if not link or any(link.startswith(x) for x in ['mailto:', 'tel:', 'javascript:', '#', 'whatsapp:']):
+            return None
+        
+        # Proper way to join URLs to avoid 'ac.kenode' errors
+        return urljoin(base, link).split('#')[0]
     def _internal_navigation_crawl(self, root_domain, university_name, course_name):
         """
         Heuristic Crawler: Uses Best-First Search via a priority queue to rank 
@@ -392,23 +399,62 @@ class AutoHealer:
                     logging.info(f"🎯 HEURISTIC MATCH FOUND at: {current_url}")
                     return current_url
 
-                # --- 2. EXTRACT, SCORE, AND QUEUE NEW LINKS ---
+              # --- 2. EXTRACT, SCORE, AND QUEUE NEW LINKS ---
                 for a in soup.find_all('a', href=True):
-                    link_text = a.get_text().strip().lower()
-                    raw_link = a['href']
-                    full_url = urljoin(current_url, raw_link).split('#')[0] # Remove anchor tags
+                    raw_href = a['href']
+                    clean_href = self.clean_url(current_url, raw_href) 
                     
-                    if root_domain not in full_url or full_url in visited:
-                        continue
-                        
-                    url_lower = full_url.lower()
-                    if any(bad in link_text or bad in url_lower for bad in JUNK_KEYWORDS):
+                    # SAFETY FILTER: Must stay on the university domain and not be visited
+                    if not clean_href or clean_href in visited or root_domain not in clean_href:
+                        continue 
+
+                    # 1. EXTRACT LINK TEXT
+                    link_text = a.get_text().strip().lower()
+                    url_lower = clean_href.lower()
+
+                    # 2. SKIP JUNK (PDFs, Social Media, etc.)
+                    if any(junk in url_lower for junk in JUNK_KEYWORDS):
                         continue
 
-                    # -- SCORING LOGIC --
+                    # 3. CHECK IF THIS IS THE TARGET (The "Gold" Match / Early Exit)
+                    # If all core course tokens are in the link text or URL, we found it!
+                    if all(token in link_text or token in url_lower for token in course_tokens):
+                        logging.info(f"🎯 EARLY TARGET FOUND via link text: {clean_href}")
+                        return clean_href 
+
+                    # 4. CALCULATE PRIORITY SCORE
+                    link_score = 100 
+                    if any(nav in link_text or nav in url_lower for nav in nav_keywords):
+                        link_score = 10  # High priority for academic/course links
+                    elif 'faculty' in link_text or 'department' in link_text:
+                        link_score = 50  
+
+                    # 5. PUSH TO QUEUE
+                    heapq.heappush(queue, (link_score, clean_href))
+
+            except Exception as e:
+                logging.warning(f"⚠️ Crawl Error at {current_url}: {e}")
+
                    # -- SCORING LOGIC --
-                    link_score = 100 # Default score (low priority)
+                link_score = 100 # Default score (low priority)
                     
+                   # --- 2. EXTRACT, SCORE, AND QUEUE NEW LINKS ---
+                for a in soup.find_all('a', href=True):
+                    raw_href = a['href']
+                    
+                    # Resolve relative URLs and strip anchors
+                    clean_href = self.clean_url(current_url, raw_href) 
+                    
+                    # Safety Filter: Stay within the domain and avoid loops
+                    if not clean_href or clean_href in visited or root_domain not in clean_href:
+                        continue 
+
+                    link_text = a.get_text().strip().lower()
+                    url_lower = clean_href.lower()
+
+                    # --- SCORING LOGIC ---
+                    link_score = 100 
+
                     # 1. Exact course tokens IN THE URL (Super High Priority)
                     if any(token in url_lower for token in course_tokens):
                         link_score = 5 
@@ -416,14 +462,15 @@ class AutoHealer:
                     elif any(token in link_text for token in course_tokens):
                         link_score = 10
                     # 3. Academic navigation keywords (Medium Priority)
-                    elif any(nav in link_text for nav in nav_keywords):
+                    elif any(nav in link_text or nav in url_lower for nav in nav_keywords):
                         link_score = 30
                     # 4. General department/faculty links (Lower Priority)
                     elif 'faculty' in link_text or 'department' in link_text:
                         link_score = 50
 
-                    # Push to queue
-                    heapq.heappush(queue, (link_score, full_url))
+                    # 5. PUSH TO QUEUE
+                    # Fixed: Use 'clean_href' instead of 'full_url'
+                    heapq.heappush(queue, (link_score, clean_href))
 
             except Exception as e:
                 logging.warning(f"⚠️ Crawl Error at {current_url}: {e}")
