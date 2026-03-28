@@ -689,8 +689,17 @@ def recommend():
                 ]
 
         if "alternative_careers" in ai_insight:
-            ai_insight["alternatives"] = ai_insight["alternative_careers"]
-
+            # Force normalize the keys so the frontend never gets 'undefined'
+            clean_alts = []
+            for alt in ai_insight["alternative_careers"]:
+                clean_alt = {
+                    "name": alt.get("name") or alt.get("title") or "Alternative Career",
+                    "description": alt.get("description") or alt.get("desc") or "A great related field to explore.",
+                    "fit": alt.get("fit") or alt.get("match_reason") or alt.get("reason") or "Aligns with your academic strengths."
+                }
+                clean_alts.append(clean_alt)
+            
+            ai_insight["alternatives"] = clean_alts
         logging.info(f"✅ [SUCCESS] Request successfully completed and dispatched to frontend for {user_name}!")
         return jsonify(ai_insight), 200
 
@@ -902,21 +911,38 @@ def send_report():
         
     try:
         data = request.get_json()
+        user_name = data.get('name', 'Student')
         user_email = data.get('email')
-        report_html = data.get('reportHtml')
+        pdf_data = data.get('pdf_data') # Changed from reportHtml
 
-        if not user_email or not report_html:
-            return jsonify({"error": "Missing email or report content"}), 400
+        if not user_email or not pdf_data:
+            return jsonify({"error": "Missing email or PDF data"}), 400
 
         # Create the email message
         msg = Message(
             subject="Your CareerPath AI Assessment Report",
             recipients=[user_email],
-            html=report_html
+            html=f"""
+            <h3>Hello {user_name},</h3>
+            <p>Congratulations on completing your CareerPath AI Assessment!</p>
+            <p>We have attached your personalized, AI-generated career recommendation report as a PDF to this email.</p>
+            <br>
+            <p>Best regards,<br><b>The CareerPath AI Team</b></p>
+            """
         )
         
+        # Decode the Base64 PDF sent from the frontend and attach it
+        # The frontend sends "data:application/pdf;filename=generated.pdf;base64,JVBER..."
+        if ',' in pdf_data:
+            base64_pdf = pdf_data.split(',')[1]
+        else:
+            base64_pdf = pdf_data
+            
+        pdf_bytes = base64.b64decode(base64_pdf)
+        msg.attach("CareerPath_Report.pdf", "application/pdf", pdf_bytes)
+        
         mail.send(msg)
-        return jsonify({"status": "success", "message": "Email sent successfully!"}), 200
+        return jsonify({"status": "success", "message": "Email sent successfully with PDF attached!"}), 200
 
     except Exception as e:
         logging.error(f"Error sending email: {str(e)}")
