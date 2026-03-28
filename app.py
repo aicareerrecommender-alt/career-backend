@@ -45,7 +45,12 @@ from email.mime.base import MIMEBase
 from email import encoders
 app = Flask(__name__)
 # Enable CORS for all routes so your frontend can communicate without being blocked
-CORS(app, resources={r"/*": {"origins": "*"}})
+# Change this:
+CORS(app)
+
+# To this:
+CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
+
 
 # Add this line here
 NVIDIA_API_KEY = os.environ.get("NVIDIA_API_KEY")
@@ -889,6 +894,32 @@ def reset_db_now():
         db.create_all()
         return jsonify({"message": "✅ Database successfully wiped and rebuilt with new columns!"}), 200
     except Exception as e:
+        return jsonify({"error": str(e)}), 500
+@app.route('/send-report', methods=['POST', 'OPTIONS'])
+def send_report():
+    if request.method == 'OPTIONS':
+        return jsonify({"status": "ok"}), 200
+        
+    try:
+        data = request.get_json()
+        user_email = data.get('email')
+        report_html = data.get('reportHtml')
+
+        if not user_email or not report_html:
+            return jsonify({"error": "Missing email or report content"}), 400
+
+        # Create the email message
+        msg = Message(
+            subject="Your CareerPath AI Assessment Report",
+            recipients=[user_email],
+            html=report_html
+        )
+        
+        mail.send(msg)
+        return jsonify({"status": "success", "message": "Email sent successfully!"}), 200
+
+    except Exception as e:
+        logging.error(f"Error sending email: {str(e)}")
         return jsonify({"error": str(e)}), 500
 if __name__ == "__main__":
     # Ensures database tables are created or updated upon server start 
