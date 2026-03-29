@@ -583,39 +583,7 @@ def recommend():
                         failed_universities.append(bad_name)
         if not final_ai_insight:
             return jsonify({"error": "Failed to generate AI response. Please try again."}), 500
- # ✅ UPDATED CODE: We replaced DDGS and `healer` with our new Guaranteed Scraper
-        logging.info(f"🚀 Fetching guaranteed links for {main_course_name}...")
-            
-            # This handles ALL the searching, crawling, and verification!
-        new_verified_unis = get_guaranteed_five(main_course_name)
-            
-        if new_verified_unis:
-                # Add them to your valid_universities list
-                valid_universities.extend(new_verified_unis)
-        else:
-                logging.warning(f"Failed to find links for {main_course_name}. Adding to failed list.")
-                failed_universities.append(target_uni_name)
-            # Fallback in case even the retries completely failed
-        if len(valid_universities) == 0:
-            valid_universities = [{
-                "name": "KUCCPS Official Portal",
-                "website_url": "https://students.kuccps.net/",
-                "verified_offering": True,
-                "requirements_met": [{"subject": "General Requirement", "required": "Check Website", "status": "Pending"}]
-            }]
-
-        # Ensure we attach exactly 5 valid universities to the final output
-        final_ai_insight["universities"] = valid_universities[:5] 
-        
-        # Ensure your primary recommendation reflects the first verified URL
-        if valid_universities and "name" in valid_universities[0]:
-            final_ai_insight["primary_recommendation"] = {
-                "university": valid_universities[0]["name"],
-                "course_name": final_ai_insight.get("specific_course", user_interest),
-                "url": valid_universities[0]["website_url"]
-            }
-            return jsonify(final_ai_insight), 200  
-     
+ 
         # Cap at exactly 5 (or however many we found)
         final_ai_insight["universities"] = valid_universities[:min_required_unis]
 
