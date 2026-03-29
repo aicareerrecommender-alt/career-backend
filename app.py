@@ -14,7 +14,7 @@ from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
 # 'scraper' is the global instance in your new web_scraper.py
 from utils.web_scraper import healer, get_course_url
-from utils.web_scraper import get_guaranteed_five
+
 
 
 
