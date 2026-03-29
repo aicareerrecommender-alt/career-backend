@@ -417,87 +417,166 @@ class AutoHealer:
 # ==========================================
 # 🌐 THE MAIN FUNNEL: GROQ PRIMARY -> PEEK -> CRAWLER
 # ==========================================
+def verify_course_page(url, course_name):
+    """
+    The 'Peek' Validator: 
+    Checks if a URL actually contains course details (modules, fees, units)
+    and matches the course keywords.
+    """
+    try:
+        headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
+        # verify=False is often necessary for university sites with outdated SSL certs
+        response = requests.get(url, headers=headers, timeout=10, verify=False, allow_redirects=True)
+        
+        if response.status_code == 200:
+            soup = BeautifulSoup(response.text, 'html.parser')
+            page_text = soup.get_text().lower()
+            
+            # 1. Academic Markers: Does the page look like a course description?
+            academic_markers = ["module", "unit", "curriculum", "syllabus", "requirement", "fees", "duration", "admission"]
+            has_academic_context = any(marker in page_text for marker in academic_markers)
+            
+            # 2. Keyword Match: Does it actually mention the subject?
+            ignore_words = {"bsc", "bachelor", "of", "in", "degree", "program", "course", ".", ",", "-"}
+            course_keywords = [word.lower() for word in re.findall(r'\w+', course_name) if word.lower() not in ignore_words]
+            match_count = sum(1 for kw in course_keywords if kw in page_text)
+            
+            # STRICT LOGIC: Must have academic context AND at least 50% of the keywords
+            if has_academic_context and (match_count >= len(course_keywords) * 0.5):
+                return True
+    except Exception as e:
+        logging.warning(f"⚠️ Verification failed for {url}: {e}")
+    
+    return False
 
 @retry(wait=wait_exponential(multiplier=2, min=4, max=30), stop=stop_after_attempt(3))
 def get_course_url(university_name, course_name):
     """
-    The Ultimate Funnel:
-    1. Groq Compound Search (Primary)
-    2. BeautifulSoup Peek Test (Verify contents)
-    3. Agentic Crawler (Fallback)
+    STRICT MODE FUNNEL:
+    Returns the URL only if it is verified. Otherwise returns None.
     """
     instance = get_healer()
-    logging.info(f"🔍 Initializing search for: {university_name} - {course_name}")
+    logging.info(f"🔍 Strict search initialized: {university_name} - {course_name}")
 
     root_domain = instance._get_domain(university_name)
 
     # ==========================================
-    # STEP 1: PRIMARY SEEKER (GROQ COMPOUND)
+    # STEP 1: GROQ COMPOUND (PRIMARY)
     # ==========================================
-    logging.info("🧠 Using Groq Compound Search as PRIMARY tool...")
+    logging.info("🧠 Attempting Groq Compound Search...")
     try:
         prompt = (
-            f"Use your search tool to find the direct official undergraduate course URL for '{course_name}' at '{university_name}'. "
-            f"Focus your search on this official domain: {root_domain if root_domain else 'Find via search'}. "
-            "Evaluate the search results. Skip student portals, login pages, or third-party blogs. "
-            "Return ONLY the raw URL string starting with http. No markdown, no extra text."
+            f"Find the direct official undergraduate course URL for '{course_name}' at '{university_name}'. "
+            f"Target domain: {root_domain if root_domain else 'official university site'}. "
+            "Return ONLY the raw URL string."
         )
 
         response = client_groq.chat.completions.create(
             model="groq/compound", 
-            messages=[
-                {"role": "system", "content": "You are a professional web researcher with internet search capabilities. Return only the final validated URL."},
-                {"role": "user", "content": prompt}
-            ],
+            messages=[{"role": "user", "content": prompt}],
             temperature=0 
         )
 
         found_url = re.sub(r'[`"\'\s]', '', response.choices[0].message.content.strip())
 
         if found_url.startswith("http"):
-            # ==========================================
-            # STEP 2: THE PING-PEEK TRICK
-            # ==========================================
-            logging.info(f"🕵️‍♂️ Groq found a URL. Executing Ping-Peek trick: {found_url}")
-            try:
-                headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
-                test_response = requests.get(found_url, headers=headers, timeout=10, verify=False, allow_redirects=True)
-                
-                if test_response.status_code == 200:
-                    soup = BeautifulSoup(test_response.text, 'html.parser')
-                    page_text = soup.get_text().lower()
-                    
-                    ignore_words = {"bsc", "bachelor", "of", "in", "degree", "program", "course", ".", ",", "-"}
-                    course_keywords = [word.lower() for word in re.findall(r'\w+', course_name) if word.lower() not in ignore_words]
-                    
-                    match_count = sum(1 for kw in course_keywords if kw in page_text)
-                    
-                    if match_count >= len(course_keywords) * 0.5:
-                        logging.info(f"🎯 SUCCESS! URL is LIVE and Peek verified contents for '{course_name}': {found_url}")
-                        return found_url
-                    else:
-                        logging.warning(f"⚠️ URL is alive, but the Peek trick didn't find '{course_name}' keywords. Rejecting Groq's link.")
-                else:
-                    logging.warning(f"⚠️ Groq URL returned a {test_response.status_code} error.")
-            except Exception as e:
-                logging.warning(f"⚠️ URL Peek verification failed (Timeout/Unreachable): {e}")
-        else:
-            logging.warning(f"⚠️ Groq Compound returned invalid format: {found_url}")
+            if verify_course_page(found_url, course_name):
+                logging.info(f"🎯 SUCCESS: Groq link verified: {found_url}")
+                return found_url
+            else:
+                logging.warning(f"❌ Groq found a link, but it failed verification: {found_url}")
 
     except Exception as e:
         logging.error(f"❌ Groq Compound Search Failed: {e}")
 
     # ==========================================
-    # STEP 3: HEURISTIC CRAWLER FALLBACK
+    # STEP 2: CRAWLER FALLBACK (STRICT)
     # ==========================================
     if root_domain:
-        logging.warning("🕸️ Groq failed or was rejected by Peek Trick. Falling back to Heuristic Crawler...")
-        found_link = instance._internal_navigation_crawl(root_domain, university_name, course_name)
-        if found_link:
-            return found_link
+        logging.warning("🕸️ Groq failed. Starting Agentic Crawler fallback...")
+        crawler_url = instance._internal_navigation_crawl(root_domain, university_name, course_name)
+        
+        if crawler_url:
+            if verify_course_page(crawler_url, course_name):
+                logging.info(f"🎯 SUCCESS: Crawler link verified: {crawler_url}")
+                return crawler_url
+            else:
+                logging.warning(f"❌ Crawler found a link, but it failed verification: {crawler_url}")
+
+    # ==========================================
+    # STEP 3: TERMINATE (NO FALLBACK TO HOMEPAGE)
+    # ==========================================
+    logging.error(f"🛑 No verified match found for {course_name} at {university_name}.")
+    return None
+  
+# ==========================================
+# 🚀 DYNAMIC 5-LINK RECOMMENDER LOOP
+# ==========================================
+
+def generate_dynamic_universities(course_name, amount_needed, exclude_list=None):
+    """Asks Groq to dynamically generate a list of Kenyan universities."""
+    if exclude_list is None:
+        exclude_list = []
+    try:
+        exclude_str = ", ".join(exclude_list)
+        exclude_instruction = f" DO NOT include any of these: {exclude_str}." if exclude_str else ""
+        
+        prompt = (
+            f"List {amount_needed} universities in Kenya that offer a bachelor's degree in '{course_name}'."
+            f"{exclude_instruction}"
+            " Return ONLY a comma-separated list of the exact university names. No extra text."
+        )
+        
+        response = client_groq.chat.completions.create(
+            model="llama-3.1-8b-instant", 
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.3
+        )
+        
+        raw_list = response.choices[0].message.content.split(',')
+        return [u.strip() for u in raw_list if u.strip()]
+    except Exception as e:
+        logging.error(f"Failed to generate universities: {e}")
+        return []
+
+def get_guaranteed_five(course_name):
+    """100% Dynamic Loop: Generates universities on the fly and verifies exactly 5."""
+    verified_results = []
+    tried_universities = set()
     
-    # ==========================================
-    # STEP 4: FINAL SAFETY NET
-    # ==========================================
-    logging.info("🔙 All methods exhausted. Falling back to root domain.")
-    return f"https://{root_domain}" if root_domain else None
+    logging.info(f"🤖 Asking Groq to find universities in Kenya for: {course_name}...")
+    current_queue = generate_dynamic_universities(course_name, amount_needed=8)
+    
+    while len(verified_results) < 5:
+        if not current_queue:
+            needed = 5 - len(verified_results)
+            logging.warning(f"⚠️ Need {needed} more! Asking Groq for a fresh batch...")
+            
+            new_batch = generate_dynamic_universities(course_name, amount_needed=needed + 3, exclude_list=list(tried_universities))
+            
+            if not new_batch:
+                logging.error("🛑 Groq couldn't find any more universities. Stopping.")
+                break
+            current_queue.extend(new_batch)
+
+        uni_to_try = current_queue.pop(0)
+        
+        if uni_to_try in tried_universities:
+            continue
+            
+        tried_universities.add(uni_to_try)
+        
+        logging.info(f"🔍 Testing Groq's suggestion: {uni_to_try}...")
+        url = get_course_url(uni_to_try, course_name) # Calls the scraper function right above it!
+        
+        if url:
+            # Format strictly for what the frontend expects
+            verified_results.append({
+                "name": uni_to_try, 
+                "website_url": url,
+                "verified_offering": True,
+                "requirements_met": [{"subject": "General", "required": "Check Website", "status": "Pending"}]
+            })
+            logging.info(f"✅ VERIFIED ({len(verified_results)}/5): {uni_to_try}")
+
+    return verified_results

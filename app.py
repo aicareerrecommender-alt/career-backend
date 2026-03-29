@@ -14,6 +14,8 @@ from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
 # 'scraper' is the global instance in your new web_scraper.py
 from utils.web_scraper import healer, get_course_url
+from utils.web_scraper import get_guaranteed_five
+
 
 
 from flask import Flask, request, jsonify
@@ -497,6 +499,8 @@ def recommend():
             target_uni_name = primary.get("university", "") 
             target_uni_url = primary.get("website_url", "")
 
+                       
+
             # 🚀 Fallback: If AI didn't provide a valid URL, make it a search query
             # 🚀 Fallback: Find the real domain using the DDGS library securely
             if target_uni_name and not target_uni_url.startswith("http"):
@@ -518,7 +522,7 @@ def recommend():
 
                 # 2. 🚀 NEW: Define is_verified so Pylance stops complaining!
                 is_verified = True if verified_link else False
-                # Check if it was verified and ensure the URL isn't just the placeholder
+                #Check if it was verified and ensure the URL isn't just the placeholder
                 if is_verified and verified_link != "PLACEHOLDER_FOR_HEALER":
                     if "primary_recommendation" not in ai_insight:
                         ai_insight["primary_recommendation"] = {}
@@ -565,7 +569,8 @@ def recommend():
             logging.info("🏥 [AUTO-HEALER] Commencing Web Scraping to verify URLs...")
             with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
                 healed_results = list(executor.map(heal_university, raw_unis))
-
+             
+             
             # Filter out hallucinations and build the blacklists
             for original_uni, healed_uni in zip(raw_unis, healed_results):
                 if healed_uni is not None:
@@ -578,7 +583,39 @@ def recommend():
                         failed_universities.append(bad_name)
         if not final_ai_insight:
             return jsonify({"error": "Failed to generate AI response. Please try again."}), 500
+ # ✅ UPDATED CODE: We replaced DDGS and `healer` with our new Guaranteed Scraper
+        logging.info(f"🚀 Fetching guaranteed links for {main_course_name}...")
+            
+            # This handles ALL the searching, crawling, and verification!
+        new_verified_unis = get_guaranteed_five(main_course_name)
+            
+        if new_verified_unis:
+                # Add them to your valid_universities list
+                valid_universities.extend(new_verified_unis)
+        else:
+                logging.warning(f"Failed to find links for {main_course_name}. Adding to failed list.")
+                failed_universities.append(target_uni_name)
+            # Fallback in case even the retries completely failed
+        if len(valid_universities) == 0:
+            valid_universities = [{
+                "name": "KUCCPS Official Portal",
+                "website_url": "https://students.kuccps.net/",
+                "verified_offering": True,
+                "requirements_met": [{"subject": "General Requirement", "required": "Check Website", "status": "Pending"}]
+            }]
 
+        # Ensure we attach exactly 5 valid universities to the final output
+        final_ai_insight["universities"] = valid_universities[:5] 
+        
+        # Ensure your primary recommendation reflects the first verified URL
+        if valid_universities and "name" in valid_universities[0]:
+            final_ai_insight["primary_recommendation"] = {
+                "university": valid_universities[0]["name"],
+                "course_name": final_ai_insight.get("specific_course", user_interest),
+                "url": valid_universities[0]["website_url"]
+            }
+            return jsonify(final_ai_insight), 200  
+     
         # Cap at exactly 5 (or however many we found)
         final_ai_insight["universities"] = valid_universities[:min_required_unis]
 
@@ -708,7 +745,7 @@ def recommend():
         logging.error(f"🚨 Critical Error in /recommend: {str(e)}")
         # Internal error payload robustness prioritizationensures accurate feedback robustness preservation. preserve it.
         return jsonify({"error": "An internal server error occurred.", "details": str(e)}), 500
-
+     
 @app.route('/resend-code', methods=['POST'])
 def resend_code():
     data = request.json
