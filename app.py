@@ -14,7 +14,7 @@ from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
 # 'scraper' is the global instance in your new web_scraper.py
 
-from utils.web_scraper import get_course_url, get_course_urls_batched
+from utils.web_scraper import get_course_url, healer
 
 
 
@@ -501,42 +501,43 @@ def recommend():
             primary = ai_insight.get("primary_recommendation", {})
             main_course_name = primary.get("course_name", "")
             
-           # --- REPLACING OLD LOOP & THREADPOOL WITH BATCHING ---
+       # --- NON-BATCHED INDIVIDUAL VERIFICATION ---
         raw_unis = ai_insight.get("universities", [])
-        main_course_name = ai_insight.get("primary_recommendation", {}).get("course_name", "")
-        course_name_to_search = main_course_name or user_interest
-
-        # 1. Prepare the list of university names for the batcher
-        uni_names_to_verify = [uni.get("name") for uni in raw_unis if uni.get("name")]
+        valid_universities = []
         
-        logging.info(f"🧠 [BATCHING] Firing 1 single Groq request for {len(uni_names_to_verify)} universities...")
+        # Determine the course name to search for
+        main_course_name = ai_insight.get("primary_recommendation", {}).get("course_name", "")
+        course_to_search = main_course_name or user_interest
 
-        # 2. Call the batcher (Make sure to import this at the top of app.py)
-        # from utils.web_scraper import get_course_urls_batched
-        from utils.web_scraper import get_course_urls_batched
-        batched_results = get_course_urls_batched(uni_names_to_verify, course_name_to_search)
+        logging.info(f"🔍 Verifying {len(raw_unis)} universities individually...")
 
-        # 3. Map the results back to your university objects
-        for uni in raw_unis:
-            uni_name = uni.get("name")
-            if uni_name in batched_results:
-                uni["website_url"] = batched_results[uni_name]
-                uni["verified_offering"] = True
+        with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+            # Map each individual university to the scraper's get_course_url
+            future_to_uni = {
+                executor.submit(get_course_url, uni.get("name"), course_to_search): uni 
+                for uni in raw_unis if uni.get("name")
+            }
+
+            for future in concurrent.futures.as_completed(future_to_uni):
+                uni_data = future_to_uni[future]
+                uni_name = uni_data.get("name")
                 
-                # Prevent duplicates in valid_universities
-                if not any(u.get('name') == uni_name for u in valid_universities):
-                    valid_universities.append(uni)
-            else:
-                if uni_name not in failed_universities:
-                    failed_universities.append(uni_name)
-        # --- END OF BATCHING UPDATE ---
-           
-        if not final_ai_insight:
-            return jsonify({"error": "Failed to generate AI response. Please try again."}), 500
+                try:
+                    # get_course_url returns the URL string or None
+                    verified_url = future.result()
+                    
+                    if verified_url:
+                        uni_data["website_url"] = verified_url
+                        uni_data["verified_offering"] = True
+                        valid_universities.append(uni_data)
+                        logging.info(f"✅ Verified {uni_name}")
+                    else:
+                        logging.warning(f"❌ Could not verify {uni_name}")
+                except Exception as e:
+                    logging.error(f"🚨 Error verifying {uni_name}: {str(e)}")
 
-        # Cap at exactly the required amount
-        final_ai_insight["universities"] = valid_universities[:min_required_unis]
-
+        # Limit to the required amount and update insight
+        ai_insight["universities"] = valid_universities[:min_required_unis]
         # Failsafe if 0 were found
         if len(final_ai_insight["universities"]) == 0:
             final_ai_insight["universities"] = [{
