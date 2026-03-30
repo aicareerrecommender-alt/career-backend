@@ -110,7 +110,7 @@ def get_course_urls_batched(university_list, course_name):
 
     try:
         response = client_groq.chat.completions.create(
-            model="llama3-8b-8192", # Reliable for structured tasks
+            model="llama-3.3-70b-versatile", # Reliable for structured tasks
             messages=[{"role": "user", "content": prompt}],
             temperature=0
         )
