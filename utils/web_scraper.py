@@ -4,8 +4,10 @@ import json
 import logging
 import requests
 import threading
+import time
+import random
 from tenacity import retry, stop_after_attempt, wait_exponential
-from groq import Groq  # <-- Added this import
+from groq import Groq
 
 # --- INITIALIZE GROQ CLIENT ---
 # This assumes you have GROQ_API_KEY in your .env file
@@ -90,9 +92,17 @@ def get_course_url(university_name, course_name):
         "Return ONLY the direct raw URL string."
     )
 
+    # --- RATE LIMIT JITTER FIX ---
+    # Sleeps for a random duration between 1 and 2.5 seconds to space out concurrent requests
+    jitter = random.uniform(1.0, 2.5)
+    logging.info(f"⏳ Jitter added: Sleeping for {jitter:.2f}s to respect rate limits.")
+    time.sleep(jitter)
+    # ----------------------------
+
     try:
         response = client_groq.chat.completions.create(
-            model="groq/compound", 
+            # --- MODEL FIX: Changed from groq/compound to a valid, fast model ---
+            model="llama-3.1-8b-instant", 
             messages=[{"role": "user", "content": prompt}],
             temperature=0
         )
