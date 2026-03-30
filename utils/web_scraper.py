@@ -4,17 +4,11 @@ import json
 import logging
 import requests
 import threading
-import urllib3
-import warnings
 from tenacity import retry, stop_after_attempt, wait_exponential
-from groq import Groq
-
-# Suppress SSL warnings for inconsistent university sites
-warnings.filterwarnings("ignore", category=RuntimeWarning)
-urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-logging.getLogger("httpx").setLevel(logging.WARNING)
+from groq import Groq  # <-- Added this import
 
 # --- INITIALIZE GROQ CLIENT ---
+# This assumes you have GROQ_API_KEY in your .env file
 client_groq = Groq(api_key=os.environ.get("GROQ_API_KEY"))
 
 # --- CONFIGURATION ---
@@ -42,6 +36,7 @@ def load_kenet_domains():
                     domains[name] = url_match.group(1).replace('www.', '')
     return domains
 
+# Global KENET dictionary for the session
 KENET_DOMAINS = load_kenet_domains()
 
 def get_cached_url(uni_name, course_name):
@@ -74,76 +69,54 @@ def save_to_cache(uni_name, course_name, url):
         with open(CACHE_FILE, 'w') as f:
             json.dump(cache, f, indent=4)
 
-# ==========================================
-# 🚀 BATCHED GROQ SEARCH
-# ==========================================
-def get_course_urls_batched(university_list, course_name):
-    """Queries Groq in ONE API call for a list of universities."""
-    results = {}
-    missing_unis = []
+@retry(wait=wait_exponential(multiplier=1, min=2, max=10), stop=stop_after_attempt(2))
+def get_course_url(university_name, course_name):
+    uni_key = university_name.lower().strip()
     course_key = course_name.lower().strip()
 
-    # LAYER 1: Check cache for each university first
-    for uni in university_list:
-        uni_key = uni.lower().strip()
-        cached_url = get_cached_url(uni_key, course_key)
-        if cached_url:
-            logging.info(f"⚡ [CACHE HIT] {uni}")
-            results[uni] = cached_url
-        else:
-            missing_unis.append(uni)
+    # 1. LAYER ONE: INSTANT CACHE CHECK
+    cached = get_cached_url(uni_key, course_key)
+    if cached:
+        logging.info(f"⚡ [CACHE HIT] {university_name}: {course_name}")
+        return cached
 
-    if not missing_unis:
-        return results
-
-    # LAYER 2: Dynamic Batched Prompt
-    logging.info(f"🧠 [GROQ BATCH] Searching for {len(missing_unis)} universities simultaneously...")
-    prompt_lines = [f"{i+1}. {uni}" for i, uni in enumerate(missing_unis)]
-    formatted_list = "\n".join(prompt_lines)
-
+    # 2. LAYER TWO: KENET + GROQ COMPOUND
+    domain_hint = next((dom for name, dom in KENET_DOMAINS.items() if name in uni_key), None)
+    domain_instruction = f"Search specifically on '{domain_hint}'. " if domain_hint else ""
+    
     prompt = (
-        f"Find the direct official undergraduate course page for '{course_name}' "
-        f"at these Kenyan institutions:\n{formatted_list}\n\n"
-        "Return STRICTLY a raw JSON object. Keys must be the EXACT university names, "
-        "and values must be the direct raw URLs. No markdown."
+        f"{domain_instruction}Find the official undergraduate course page for "
+        f"'{course_name}' at '{university_name}' in Kenya. "
+        "Return ONLY the direct raw URL string."
     )
 
     try:
         response = client_groq.chat.completions.create(
-            model="llama-3.3-70b-versatile", # Reliable for structured tasks
+            model="groq/compound", 
             messages=[{"role": "user", "content": prompt}],
             temperature=0
         )
-        
-        raw_content = response.choices[0].message.content.strip()
-        clean_json = re.sub(r'```json|```', '', raw_content).strip()
-        groq_results = json.loads(clean_json)
+        found_url = re.sub(r'[`"\'\s]', '', response.choices[0].message.content.strip())
 
-        # LAYER 3: Verification Ping
-        for uni, url in groq_results.items():
-            if url and url.startswith("http"):
-                try:
-                    resp = requests.get(url, timeout=5, verify=False)
-                    if resp.status_code == 200:
-                        results[uni] = url
-                        save_to_cache(uni.lower().strip(), course_key, url)
-                        logging.info(f"✅ [VERIFIED] Saved {uni} to cache.")
-                except:
-                    logging.warning(f"❌ [DEAD LINK] Bad link for {uni}: {url}")
+        # 3. LAYER THREE: PYTHON PING (VERIFICATION)
+        if found_url.startswith("http"):
+            # Quick status check
+            resp = requests.get(found_url, timeout=7, verify=False)
+            if resp.status_code == 200:
+                # SUCCESS: Save to file for future speed
+                save_to_cache(uni_key, course_key, found_url)
+                logging.info(f"✅ [NEW VERIFIED] Saved to cache: {found_url}")
+                return found_url
 
     except Exception as e:
-        logging.error(f"🚨 Batch search failed: {e}")
+        logging.error(f"🚨 Groq search failed: {e}")
+    
+    return None
 
-    return results
-
-# Required to maintain compatibility with other parts of your code
-@retry(wait=wait_exponential(multiplier=1, min=2, max=10), stop=stop_after_attempt(2))
-def get_course_url(university_name, course_name):
-    result = get_course_urls_batched([university_name], course_name)
-    return result.get(university_name)
-
+# --- Dummy healer class to satisfy your app.py imports ---
 class Healer:
     def _internal_navigation_crawl(self, url, name, course):
-        return "HEALER_PLACEHOLDER"
+        # Your existing healer logic here or pass-through
+        return "PLACEHOLDER_FOR_HEALER"
 
 healer = Healer()
