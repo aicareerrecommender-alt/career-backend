@@ -13,9 +13,8 @@ load_dotenv()
 from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
 # 'scraper' is the global instance in your new web_scraper.py
-from utils.web_scraper import  get_course_url
-from utils.web_scraper import get_course_url, verify_with_groq
 
+from utils.web_scraper import get_course_url, get_course_urls_batched
 
 
 
@@ -531,20 +530,7 @@ def recommend():
                 if uni_name not in failed_universities:
                     failed_universities.append(uni_name)
         # --- END OF BATCHING UPDATE ---
-            # 🚀 ThreadPoolExecutor handles multiple Groq requests simultaneously
-            with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
-                healed_results = list(executor.map(verify_with_groq, raw_unis))
-             
-            # Filter out the ones Groq couldn't verify
-            for original_uni, healed_uni in zip(raw_unis, healed_results):
-                if healed_uni is not None:
-                    if not any(u.get('name') == healed_uni.get('name') for u in valid_universities):
-                        valid_universities.append(healed_uni)
-                else:
-                    bad_name = original_uni.get('name')
-                    if bad_name not in failed_universities:
-                        failed_universities.append(bad_name)
-
+           
         if not final_ai_insight:
             return jsonify({"error": "Failed to generate AI response. Please try again."}), 500
 

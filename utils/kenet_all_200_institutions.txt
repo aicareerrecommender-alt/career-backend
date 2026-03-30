@@ -170,7 +170,6 @@ Kenya Medical Research Institute (KEMRI) -> https://www.kemri.go.ke/
 Kenya Veterinary Vaccines Production Institute -> https://kevevapi.or.ke/
 Kenya Marine and Fisheries Research Institute -> https://www.kmfri.go.ke/
 Kenya Space agency -> https://ksa.go.ke/
-National Museums of Kenya -> https://museums.or.ke/
 Tegemeo Institute of Agricultural Policy and Development -> https://tegemeo.egerton.ac.ke/
 Tourism Research Institute -> https://tri.go.ke/
 Wildlife Research and Training Institute -> https://wrti.go.ke/
