@@ -14,6 +14,7 @@ from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
 # 'scraper' is the global instance in your new web_scraper.py
 from utils.web_scraper import  get_course_url
+from utils.web_scraper import get_course_url, verify_with_groq
 
 
 
@@ -64,6 +65,13 @@ app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME')
 app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')
 mail = Mail(app)
 
+# Note: Python's ThreadPoolExecutor uses 'max_workers'
+executor = concurrent.futures.ThreadPoolExecutor(max_workers=4)
+
+def send_async_email(app, msg):
+    with app.app_context():
+        mail.send(msg)
+        
 # --- POSTGRESQL DATABASE CONFIGURATION ---
 # Render provides the DATABASE_URL environment variable automatically
 # FALLBACK db URL preserved for local development
@@ -494,32 +502,35 @@ def recommend():
             primary = ai_insight.get("primary_recommendation", {})
             main_course_name = primary.get("course_name", "")
             
-            raw_unis = ai_insight.get("universities", [])
+           # --- REPLACING OLD LOOP & THREADPOOL WITH BATCHING ---
+        raw_unis = ai_insight.get("universities", [])
+        main_course_name = ai_insight.get("primary_recommendation", {}).get("course_name", "")
+        course_name_to_search = main_course_name or user_interest
 
-            # ⚡ OPTIMIZED GROQ VERIFICATION FUNCTION
-            def verify_with_groq(uni):
-                safe_uni = dict(uni)
-                uni_name = safe_uni.get("name")
-                course_name = safe_uni.get("specific_course", main_course_name or user_interest)
+        # 1. Prepare the list of university names for the batcher
+        uni_names_to_verify = [uni.get("name") for uni in raw_unis if uni.get("name")]
+        
+        logging.info(f"🧠 [BATCHING] Firing 1 single Groq request for {len(uni_names_to_verify)} universities...")
+
+        # 2. Call the batcher (Make sure to import this at the top of app.py)
+        # from utils.web_scraper import get_course_urls_batched
+        from utils.web_scraper import get_course_urls_batched
+        batched_results = get_course_urls_batched(uni_names_to_verify, course_name_to_search)
+
+        # 3. Map the results back to your university objects
+        for uni in raw_unis:
+            uni_name = uni.get("name")
+            if uni_name in batched_results:
+                uni["website_url"] = batched_results[uni_name]
+                uni["verified_offering"] = True
                 
-                try:
-                    # Dispatch to your Groq implementation
-                    url = get_course_url(uni_name, course_name) 
-                    
-                    if url and url != "PLACEHOLDER_FOR_HEALER":
-                        safe_uni["website_url"] = url
-                        safe_uni["verified_offering"] = True
-                        return safe_uni
-                    else:
-                        logging.warning(f"⚠️ Groq could not verify {course_name} at {uni_name}")
-                        return None
-                        
-                except Exception as e:
-                    logging.error(f"🚨 Groq AI Error verifying {uni_name}: {e}")
-                    return None
-
-            logging.info("⚡ [GROQ AI] Firing concurrent URL verification requests...")
-            
+                # Prevent duplicates in valid_universities
+                if not any(u.get('name') == uni_name for u in valid_universities):
+                    valid_universities.append(uni)
+            else:
+                if uni_name not in failed_universities:
+                    failed_universities.append(uni_name)
+        # --- END OF BATCHING UPDATE ---
             # 🚀 ThreadPoolExecutor handles multiple Groq requests simultaneously
             with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
                 healed_results = list(executor.map(verify_with_groq, raw_unis))
@@ -859,8 +870,11 @@ def send_report():
         pdf_bytes = base64.b64decode(base64_pdf)
         msg.attach("CareerPath_Report.pdf", "application/pdf", pdf_bytes)
         
-        mail.send(msg)
-        return jsonify({"status": "success", "message": "Email sent successfully with PDF attached!"}), 200
+      # This offloads the heavy lifting to the background thread!
+        executor.submit(send_async_email, app._get_current_object(), msg)
+        
+        # Let the user know it's on the way instantly
+        return jsonify({"status": "sending", "message": "Email is being sent in the background!"}), 202
 
     except Exception as e:
         logging.error(f"Error sending email: {str(e)}")
