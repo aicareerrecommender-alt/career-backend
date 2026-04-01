@@ -84,26 +84,37 @@ def call_groq_api(prompt):
         time.sleep(2.1) 
         return response
 
-def get_course_url(university_name, course_name):
+# Update the signature to include target_type with a default value
+def get_course_url(university_name, course_name, target_type="kuccps"):
     uni_key = university_name.lower().strip()
-    course_key = course_name.lower().strip()
+    # Unique cache key for each link type
+    course_key = f"{course_name.lower().strip()}_{target_type}"
 
     # 1. LAYER ONE: INSTANT CACHE CHECK
     cached = get_cached_url(uni_key, course_key)
     if cached:
-        logging.info(f"⚡ [CACHE HIT] {university_name}: {course_name}")
+        logging.info(f"⚡ [CACHE HIT] {university_name}: {course_name} ({target_type})")
         return cached
 
-    # 2. LAYER TWO: KENET + GROQ COMPOUND
+    # 2. LAYER TWO: DYNAMIC PROMPT GENERATION
     domain_hint = next((dom for name, dom in KENET_DOMAINS.items() if name in uni_key), None)
-    domain_instruction = f"Search specifically on '{domain_hint}'. " if domain_hint else ""
-    # 👇 UPDATED PROMPT: Now works for Degrees, Diplomas, and Certificates!
-    prompt = (
-        f"{domain_instruction}Find the official course information page for "
-        f"the specific program '{course_name}' offered at '{university_name}' in Kenya. "
-        "Return ONLY the direct raw URL string."
-    )
-   
+    
+    if target_type == "kuccps":
+        # Specific search for the government portal
+        prompt = (
+            f"Find the EXACT KUCCPS students portal link for '{course_name}' at '{university_name}'. "
+            "The URL MUST start with 'https://students.kuccps.net/programmes/'. "
+            "Return ONLY the raw URL string."
+        )
+    else:
+        # Specific search for the University's own website
+        domain_instruction = f"Search specifically on '{domain_hint}'. " if domain_hint else ""
+        prompt = (
+            f"{domain_instruction}Find the official institution course information page for "
+            f"'{course_name}' at '{university_name}' in Kenya. "
+            "Return ONLY the direct raw URL string."
+        )
+
     try:
         # Calls the rate-limited wrapper
         response = call_groq_api(prompt)
@@ -114,29 +125,54 @@ def get_course_url(university_name, course_name):
             resp = requests.get(found_url, timeout=7, verify=False)
             if resp.status_code == 200:
                 save_to_cache(uni_key, course_key, found_url)
-                logging.info(f"✅ [NEW VERIFIED] Saved to cache: {found_url}")
+                logging.info(f"✅ [NEW VERIFIED] Saved {target_type} to cache: {found_url}")
                 return found_url
 
     except RateLimitError:
-        logging.warning(f"⏳ Rate limit hit for {university_name}. Retrying automatically...")
+        logging.warning(f"⏳ Rate limit hit for {university_name}. Using safe fallback.")
     except Exception as e:
         logging.error(f"🚨 Groq search failed: {e}")
     
-    return None
+    # 4. LAYER FOUR: SAFE FALLBACK (Prevents 'None' crashes)
+    return "https://students.kuccps.net/programmes/" if target_type == "kuccps" else "https://google.com"
+
 def healer(ai_response_json):
     """
-    Iterates through the AI response and replaces the PLACEHOLDER_FOR_HEALER
-    tags with actual verified URLs from DuckDuckGo/KUCCPS.
+    Heals the AI response by fetching both KUCCPS and Institution URLs.
     """
     if not ai_response_json or "universities" not in ai_response_json:
         return ai_response_json
         
     for uni in ai_response_json["universities"]:
-        if uni.get("website_url") == "PLACEHOLDER_FOR_HEALER":
-            uni_name = uni.get("name", "")
-            course_name = uni.get("specific_course", "")
+        uni_name = uni.get("name", "")
+        course_name = uni.get("specific_course", "")
+        
+        # Heal KUCCPS link (checks if field exists or is placeholder)
+        if not uni.get("kuccps_url") or uni.get("kuccps_url") == "PLACEHOLDER_FOR_HEALER":
+            uni["kuccps_url"] = get_course_url(uni_name, course_name, target_type="kuccps")
             
-            # Fetch the real KUCCPS URL and replace the placeholder
-            uni["website_url"] = get_course_url(uni_name, course_name)
+        # Heal Institution link
+        if not uni.get("institution_url") or uni.get("institution_url") == "PLACEHOLDER_FOR_HEALER":
+            uni["institution_url"] = get_course_url(uni_name, course_name, target_type="institution")
+            
+    return ai_response_json
+def healer(ai_response_json):
+    """
+    Heals the AI response by fetching both KUCCPS and Institution URLs.
+    """
+    if not ai_response_json or "universities" not in ai_response_json:
+        return ai_response_json
+        
+    for uni in ai_response_json["universities"]:
+        uni_name = uni.get("name", "")
+        course_name = uni.get("specific_course", "")
+        
+        # Heal KUCCPS link (checks if field exists or is placeholder)
+        if not uni.get("kuccps_url") or uni.get("kuccps_url") == "PLACEHOLDER_FOR_HEALER":
+            uni["kuccps_url"] = get_course_url(uni_name, course_name, target_type="kuccps")
+            
+        # Heal Institution link
+        if not uni.get("institution_url") or uni.get("institution_url") == "PLACEHOLDER_FOR_HEALER":
+            uni["institution_url"] = get_course_url(uni_name, course_name, target_type="institution")
             
     return ai_response_json
