@@ -123,3 +123,20 @@ def get_course_url(university_name, course_name):
         logging.error(f"🚨 Groq search failed: {e}")
     
     return None
+def healer(ai_response_json):
+    """
+    Iterates through the AI response and replaces the PLACEHOLDER_FOR_HEALER
+    tags with actual verified URLs from DuckDuckGo/KUCCPS.
+    """
+    if not ai_response_json or "universities" not in ai_response_json:
+        return ai_response_json
+        
+    for uni in ai_response_json["universities"]:
+        if uni.get("website_url") == "PLACEHOLDER_FOR_HEALER":
+            uni_name = uni.get("name", "")
+            course_name = uni.get("specific_course", "")
+            
+            # Fetch the real KUCCPS URL and replace the placeholder
+            uni["website_url"] = get_course_url(uni_name, course_name)
+            
+    return ai_response_json
