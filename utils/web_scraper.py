@@ -97,13 +97,13 @@ def get_course_url(university_name, course_name):
     # 2. LAYER TWO: KENET + GROQ COMPOUND
     domain_hint = next((dom for name, dom in KENET_DOMAINS.items() if name in uni_key), None)
     domain_instruction = f"Search specifically on '{domain_hint}'. " if domain_hint else ""
-    
+    # 👇 UPDATED PROMPT: Now works for Degrees, Diplomas, and Certificates!
     prompt = (
-        f"{domain_instruction}Find the official undergraduate course page for "
-        f"'{course_name}' at '{university_name}' in Kenya. "
+        f"{domain_instruction}Find the official course information page for "
+        f"the specific program '{course_name}' offered at '{university_name}' in Kenya. "
         "Return ONLY the direct raw URL string."
     )
-
+   
     try:
         # Calls the rate-limited wrapper
         response = call_groq_api(prompt)
