@@ -187,7 +187,6 @@ def validate_ai_response(ai_data, user_grades, expected_level):
     if len(valid_unis) == 0:
         errors.append("CRITICAL ERROR: ALL universities generated had requirements higher than the student's actual grades.")
     return errors
-
 def fetch_from_groq(system_instruction, base_prompt, grades, expected_level):
     if not client_groq: return None
     max_retries = 3 
@@ -199,43 +198,30 @@ def fetch_from_groq(system_instruction, base_prompt, grades, expected_level):
         try:
             res = client_groq.chat.completions.create(
                 messages=[{"role": "system", "content": system_instruction}, {"role": "user", "content": current_prompt}],
-                model="llama-3.1-8b-instant", response_format={"type": "json_object"}, temperature=0.3 
+                model="llama-3.1-8b-instant", 
+                response_format={"type": "json_object"}, 
+                temperature=0.3 
             )
             data = json.loads(res.choices[0].message.content)
             errors = validate_ai_response(data, grades, expected_level)
             if not errors: 
                 return validate_course_names(data)
+            
+            # 🚨 ADJUSTMENT: If validation fails, sleep before retrying
             error_feedback = "\n- ".join(errors)
+            logging.warning(f"⏳ Groq validation failed. Attempt {retry_count+1}. Sleeping 10s...")
+            time.sleep(10) 
             retry_count += 1
-        except Exception:
+
+        except Exception as e:
+            # 🚨 ADJUSTMENT: If API hits a rate limit (429), sleep longer
+            logging.error(f"🚨 Groq API Error: {e}. Sleeping 15s...")
+            time.sleep(15) 
             error_feedback = "Ensure ONLY valid JSON."
             retry_count += 1
+            
     return None
 
-def fetch_from_gemini(system_instruction, base_prompt, grades, expected_level):
-    if not client_gemini: return None
-    max_retries = 3 
-    retry_count = 0
-    error_feedback = ""
-    
-    while retry_count < max_retries:
-        current_prompt = base_prompt + (f"\n\n🚨 LAST RESPONSE FAILED:\n{error_feedback}\nFIX THIS." if error_feedback else "")
-        try:
-            res = client_gemini.models.generate_content(
-                model='gemini-2.0-flash', contents=current_prompt,
-                config=types.GenerateContentConfig(system_instruction=system_instruction, response_mime_type="application/json", temperature=0.3)
-            )
-            data = json.loads(res.text)
-            errors = validate_ai_response(data, grades, expected_level)
-            if not errors: 
-                return validate_course_names(data)
-            error_feedback = "\n- ".join(errors)
-            retry_count += 1
-        except Exception as e:
-            if "429" in str(e): time.sleep((retry_count + 1) * 4)
-            error_feedback = "Ensure ONLY valid JSON."
-            retry_count += 1
-    return None
 
 # ==========================================
 # 🧠 CORE HYBRID ENGINE
@@ -249,7 +235,7 @@ def ask_hybrid_career_advice(student_name, interest, grades, calculated_points, 
         sample_list = MASTER_COURSE_LIST[100:120] if len(MASTER_COURSE_LIST) > 120 else MASTER_COURSE_LIST[:20]
         style_sample = f"\n7. Formatting Examples of VALID KUCCPS courses: {', '.join(sample_list)}..."
 
-    # 👇 WE INJECTED THE TVET PIVOT STRATEGY HERE
+    # 1. System Instruction (Unchanged)
     system_instruction = f"""
     You are a strict, factual Kenyan KUCCPS career advisor API. 
     
@@ -297,14 +283,16 @@ def ask_hybrid_career_advice(student_name, interest, grades, calculated_points, 
     """
     full_prompt = base_prompt + "\n" + json_structure
 
-    # 🚨 REPLACED THE THREADPOOL AND GEMINI MERGE WITH A SINGLE GROQ CALL
+    # 🚨 THE FIX: REMOVED THREADPOOL AND GEMINI. CALLING GROQ DIRECTLY.
+    # This uses the fetch_from_groq function you defined earlier in the file.
     final_data = fetch_from_groq(system_instruction, full_prompt, grades, expected_level)
 
-    # If Groq hits a rate limit and fails 3 times, it returns None. 
-    # We pass that 'None' back so app.py can gracefully show a 503 error instead of crashing.
+    # If Groq fails or hits rate limits after its internal retries, we return None
+    # so that app.py can catch it and show a 503 error.
     if not final_data: 
         return None
 
+    # Final metadata additions
     final_data["popularity"] = f"👥 {pop_count} other {'student' if pop_count == 1 else 'students'} asked about this!" if pop_count > 0 else "✨ You are the first to pioneer this unique career path!"
     final_data["timestamp"] = datetime.now().strftime("%Y-%m-%d %H:%M")
     

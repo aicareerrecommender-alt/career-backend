@@ -494,6 +494,13 @@ def recommend():
             if not ai_insight:
                 logging.error("AI returned None. Stopping loop.")
                 break
+            if not final_ai_insight:
+              logging.error("❌ AI Engine failed to generate data. Sending 503 to frontend.")
+            return jsonify({
+                "error": "AI servers are currently busy. Please wait 30 seconds and try again.",
+                "status": "rate_limited"
+            }), 503
+
 
             if attempt == 1:
                 final_ai_insight = dict(ai_insight)
