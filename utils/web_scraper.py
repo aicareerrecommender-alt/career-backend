@@ -8,7 +8,9 @@ import time
 import urllib.parse
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 from groq import Groq, RateLimitError
-
+import urllib3
+# Add this at the top level
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 client_groq = Groq(api_key=os.environ.get("GROQ_API_KEY") , default_headers={"Groq-Model-Version": "latest"}  # 👈 CRITICAL for visit_website
 )
 
@@ -102,6 +104,7 @@ def call_groq_api(prompt):
 def get_course_url(university_name, course_name, target_type="kuccps"):
     uni_key = university_name.lower().strip()
     course_key = f"{course_name.lower().strip()}_{target_type}"
+    
 
     # Cache Check
     cached = get_cached_url(uni_key, course_key)
@@ -127,11 +130,14 @@ def get_course_url(university_name, course_name, target_type="kuccps"):
 
     max_attempts = 3
     bad_urls = []
-    
     for attempt in range(max_attempts):
         current_prompt = base_prompt
+        
+        # --- 🚨 THE FIX: PREVENT 413 PAYLOAD ERRORS ---
         if bad_urls:
-            current_prompt += f"\n\nIMPORTANT: Do NOT return these dead URLs: {', '.join(bad_urls)}. They resulted in a 404. Find an ALTERNATIVE working link."
+            # Only keep the 2 most recent dead URLs so the prompt doesn't snowball
+            recent_bad_urls = bad_urls[-2:] 
+            current_prompt += f"\n\nIMPORTANT: Do NOT return these dead URLs: {', '.join(recent_bad_urls)}. They resulted in a 404. Find an ALTERNATIVE working link."
 
         try:
             # ASK GROQ
@@ -181,7 +187,7 @@ def get_course_url(university_name, course_name, target_type="kuccps"):
     logging.warning(f"❌ All {max_attempts} attempts failed for {university_name}. Using Fallback.")
     return fallback_url
 
-
+    
 # --- 3. THE HEALER FUNCTION ---
 def healer(ai_response_json):
     """
