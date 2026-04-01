@@ -311,14 +311,18 @@ def ask_hybrid_career_advice(student_name, interest, grades, calculated_points, 
     """
     full_prompt = base_prompt + "\n" + json_structure
 
-    # --- 5. EXECUTE GROQ CALL ---
+   # --- 5. EXECUTE GROQ CALL ---
     final_data = fetch_from_groq(system_instruction, full_prompt, grades, expected_level)
-
-    if not final_data: 
+    
+    # If Groq failed OR if the validator stripped all universities due to grade mismatches
+    if not final_data or not final_data.get("universities"): 
+        logging.error(f"❌ Engine Failure: No valid data or universities for {student_name}")
         return None
 
     # --- 6. METADATA & RETURN ---
+    # Ensure these keys exist in the dictionary
     final_data["popularity"] = f"👥 {pop_count} other students asked about this!" if pop_count > 0 else "✨ You are the first to pioneer this path!"
     final_data["timestamp"] = datetime.now().strftime("%Y-%m-%d %H:%M")
     
+    logging.info(f"✅ SUCCESS: Returning validated data for {student_name}")
     return final_data
