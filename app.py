@@ -491,25 +491,17 @@ def recommend():
                 user_name, user_interest, user_grades, calculated_points, expected_level, 0, failed_universities, successful_names
             )
             
+            # --- THE PROBLEM AREA ---
             if not ai_insight:
                 logging.error("AI returned None. Stopping loop.")
                 break
-            if not final_ai_insight:
-              logging.error("❌ AI Engine failed to generate data. Sending 503 to frontend.")
-            return jsonify({
-                "error": "AI servers are currently busy. Please wait 30 seconds and try again.",
-                "status": "rate_limited"
-            }), 503
 
+            # 3. ✅ FIX: Assign the data IMMEDIATELY
+            if attempt == 1:
+                final_ai_insight = dict(ai_insight)
 
-        if attempt == 1:
-            final_ai_insight = dict(ai_insight)
-            
-        primary = ai_insight.get("primary_recommendation", {})
-        main_course_name = primary.get("course_name", "")
-        
-        # --- NON-BATCHED INDIVIDUAL VERIFICATION ---
-        raw_unis = ai_insight.get("universities", [])
+            # --- NON-BATCHED INDIVIDUAL VERIFICATION ---
+            raw_unis = ai_insight.get("universities", [])
         valid_universities = []
         
         # Determine the course name to search for
