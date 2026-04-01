@@ -19,34 +19,31 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 COURSES_DB_PATH = os.path.join(BASE_DIR,'kuccps_courses.json')
 
 def normalize_course_name(name):
-    """
-    Lowercase, replace common KUCCPS synonyms/abbreviations, 
-    and remove non-alphanumerics for lenient fuzzy matching.
-    """
     if not name: 
         return ""
-        
-    name = str(name).lower()
     
-    # Replace common synonyms/abbreviations before stripping characters
-    # Using a dictionary makes it easy to add new rules later
+    # Lowercase and strip whitespace
+    name = str(name).lower().strip()
+    
+    # Standardize common variations to match your JSON DB
     replacements = {
         "bachelor of science": "bsc",
         "bachelor of arts": "ba",
         "bachelor of education": "bed",
-        "diploma in": "dip",
-        "certificate in": "cert",
-        " in ": "",
-        " of ": "",
-        " and ": ""
+        "diploma in": "diploma",
+        "certificate in": "certificate",
+        "information technology": "it",
+        "information communication technology": "ict",
+        "computing": "computer",
     }
     
     for old_val, new_val in replacements.items():
         name = name.replace(old_val, new_val)
         
-    # Strip non-alphanumeric characters (removes spaces, hyphens, ampersands, etc.)
-    return re.sub(r'[^a-z0-9]', '', name)
-
+    # Remove non-alphanumeric but KEEP spaces temporarily to avoid 'certit' vs 'certificateit'
+    name = re.sub(r'[^a-z0-9\s]', '', name)
+    # Finally, remove all whitespace for the final comparison string
+    return "".join(name.split())
 def load_master_courses():
     """Loads the real KUCCPS courses and creates a fast, lookup list."""
     try:
@@ -244,7 +241,8 @@ def ask_hybrid_career_advice(student_name, interest, grades, calculated_points, 
     3. NO HALLUCINATIONS: Do not invent courses. If 'Computer Engineering' is not in the list, you MUST suggest 'BSc. Computer Science' or 'BSc. Software Engineering' instead.
     4. INSTITUTION RADIUS: Provide AT LEAST 8 DIFFERENT real Kenyan institutions offering the exact same course.
     5. URL POLICY: Output EXACTLY "PLACEHOLDER_FOR_HEALER" for website_url.
-    6. TECH OVERRIDE: For Artisan/Certificate levels with IT passion, use 'Artisan in ICT' or 'Certificate in IT'.
+    # Check your kuccps_courses.json. If the course is "Certificate in Information Technology", change the rule to:
+"6. TECH OVERRIDE: For IT passions at Certificate level, use the EXACT DB name: 'Certificate in Information Technology'.".
     
     🚨 THE PIVOT STRATEGY (CRITICAL): 
     If a student has a low grade (e.g., an 'E' in Math or a 'D' overall) but wants a highly technical field like "Engineering" or "Medicine", DO NOT recommend a University Degree. 
