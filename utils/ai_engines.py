@@ -234,6 +234,7 @@ def ask_hybrid_career_advice(student_name, interest, grades, calculated_points, 
 
     # 1. System Instruction (Unchanged)
     system_instruction = f"""
+    
     You are a strict, factual Kenyan KUCCPS career advisor API. 
     
     1. DATABASE CONSTRAINTS: You MUST only recommend course titles that match this specific naming convention: {', '.join(MASTER_COURSE_LIST[:10])}.
@@ -247,7 +248,11 @@ def ask_hybrid_career_advice(student_name, interest, grades, calculated_points, 
     🚨 THE PIVOT STRATEGY (CRITICAL): 
     If a student has a low grade (e.g., an 'E' in Math or a 'D' overall) but wants a highly technical field like "Engineering" or "Medicine", DO NOT recommend a University Degree. 
     Instead, maintain their exact interest but pivot the institution and course level. Recommend Artisan Certificates, Craft Certificates, or Diplomas at recognized Kenyan TVETs (e.g., Kabete National Polytechnic, Sigalagala National Polytechnic, Kenya Coast National Polytechnic).
-    
+    🚨 CRITICAL GRADE RULES:
+- Student has {calculated_points} points (D+ range).
+- DO NOT suggest Degrees or Diplomas.
+- ONLY suggest 'Certificate' or 'Artisan' level courses.
+- If you suggest a Diploma, the validator will REJECT it and the app will fail.
     {style_sample}
     """
     
