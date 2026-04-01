@@ -613,18 +613,26 @@ def recommend():
                     {"subject": "General Requirement", "required": "Check University Website", "status": "Pending"}
                 ]
 
-        # Ensure alternative careers are completely stripped before returning to the frontend
+      # --- 1. CLEAN THE DATA (Replace the 'del' logic with this) ---
         if "alternative_careers" in ai_insight:
-            del ai_insight["alternative_careers"]
-        if "alternatives" in ai_insight:
-            del ai_insight["alternatives"]
+            clean_alts = []
+            for alt in ai_insight["alternative_careers"]:
+                # This ensures the frontend ALWAYS finds 'name', 'description', and 'fit'
+                clean_alts.append({
+                    "name": alt.get("name") or alt.get("title") or "Alternative Career",
+                    "description": alt.get("description") or alt.get("desc") or "A great related field to explore.",
+                    "fit": alt.get("fit") or alt.get("match_reason") or alt.get("reason") or "Matches your profile."
+                })
+            # Put the clean list back into the original key
+            ai_insight["alternative_careers"] = clean_alts
 
-        logging.info(f"✅ [SUCCESS] Request successfully completed and dispatched to frontend for {user_name}!")
+        # --- 2. LOG AND RETURN ---
+        logging.info(f"✅ [SUCCESS] Sending data to frontend for {user_name}")
         return jsonify(ai_insight), 200
 
     except Exception as e:
-        logging.error(f"🚨 Critical Error in /recommend: {str(e)}")
-        return jsonify({"error": "An internal server error occurred.", "details": str(e)}), 500
+        logging.error(f"❌ [ERROR] Recommendation failed: {str(e)}")
+        return jsonify({"error": "Failed to generate recommendations"}), 500
 @app.route('/resend-code', methods=['POST'])
 def resend_code():
     data = request.json
