@@ -297,23 +297,15 @@ def ask_hybrid_career_advice(student_name, interest, grades, calculated_points, 
     """
     full_prompt = base_prompt + "\n" + json_structure
 
-    with concurrent.futures.ThreadPoolExecutor() as executor:
-        future_groq = executor.submit(fetch_from_groq, system_instruction, full_prompt, grades, expected_level)
-        future_gemini = executor.submit(fetch_from_gemini, system_instruction, full_prompt, grades, expected_level)
-        groq_data, gemini_data = future_groq.result(), future_gemini.result()
+    # 🚨 REPLACED THE THREADPOOL AND GEMINI MERGE WITH A SINGLE GROQ CALL
+    final_data = fetch_from_groq(system_instruction, full_prompt, grades, expected_level)
 
-    final_data = groq_data or gemini_data
-    if not final_data: return None
-
-    # Merge results from both APIs if available
-    if groq_data and gemini_data:
-        seen_unis = {u.get("name", "").lower() for u in final_data.get("universities", [])}
-        for uni in gemini_data.get("universities", []):
-            uni_name = uni.get("name", "").lower()
-            if uni_name not in seen_unis:
-                final_data["universities"].append(uni)
-                seen_unis.add(uni_name)
+    # If Groq hits a rate limit and fails 3 times, it returns None. 
+    # We pass that 'None' back so app.py can gracefully show a 503 error instead of crashing.
+    if not final_data: 
+        return None
 
     final_data["popularity"] = f"👥 {pop_count} other {'student' if pop_count == 1 else 'students'} asked about this!" if pop_count > 0 else "✨ You are the first to pioneer this unique career path!"
     final_data["timestamp"] = datetime.now().strftime("%Y-%m-%d %H:%M")
+    
     return final_data
