@@ -221,9 +221,38 @@ def fetch_from_groq(system_instruction, base_prompt, grades, expected_level):
             error_feedback = "Ensure ONLY valid JSON."
             retry_count += 1
             
-    return None
+    return None 
+def get_eligible_context(interest, grades):
+    """Finds courses in the JSON that the student actually qualifies for."""
+    eligible_matches = []
+    keywords = [k.lower() for k in interest.split() if len(k) > 2]
+    
+    try:
+        with open(COURSES_DB_PATH, 'r') as f:
+            db = json.load(f)
 
-
+        for entry in db:
+            if not any(kw in entry.lower() for kw in keywords):
+                continue
+            
+            # Check requirements (e.g., 'Bio:C+')
+            req_matches = re.findall(r'([A-Za-z/]+)(?:\(\d+\))?:([A-Z][+-]?)', entry)
+            is_eligible = True
+            for subj_name, req_grade in req_matches:
+                actual_grade = "E"
+                for u_subj, u_grade in grades.items():
+                    if subj_name.lower()[:3] in u_subj.lower():
+                        actual_grade = u_grade.get("grade", "E") if isinstance(u_grade, dict) else str(u_grade)
+                        break
+                if grade_to_int(actual_grade) < grade_to_int(req_grade):
+                    is_eligible = False; break
+            
+            if is_eligible:
+                clean_name = re.split(r'\d+\.\d+|-', entry)[0].strip()
+                eligible_matches.append(clean_name)
+    except Exception as e:
+        logging.error(f"Context filter error: {e}")
+    return list(set(eligible_matches))[:15]
 # ==========================================
 # 🧠 CORE HYBRID ENGINE
 # ==========================================
@@ -231,16 +260,25 @@ def fetch_from_groq(system_instruction, base_prompt, grades, expected_level):
 # 🧠 CORE HYBRID ENGINE
 # ==========================================
 def ask_hybrid_career_advice(student_name, interest, grades, calculated_points, expected_level, pop_count=0, exclude_unis=None, successful_unis=None):
-    style_sample = ""
-    if MASTER_COURSE_LIST:
-        sample_list = MASTER_COURSE_LIST[100:120] if len(MASTER_COURSE_LIST) > 120 else MASTER_COURSE_LIST[:20]
-        style_sample = f"\n7. Formatting Examples of VALID KUCCPS courses: {', '.join(sample_list)}..."
+    # --- NEW: FILTER DATABASE FIRST ---
+    valid_courses = get_eligible_context(interest, grades)
+    
+    # --- AUTO TIER-SHIFT ---
+    # If no Degrees match (e.g. because of a C- in Chem), shift search to Diplomas
+    if not valid_courses and expected_level == "Degree":
+        logging.info(f"No Degrees found for {interest}. Shifting to Diploma tier.")
+        valid_courses = get_eligible_context(f"Diploma {interest}", grades)
+        expected_level = "Diploma"
 
-    # 1. System Instruction (Unchanged)
+    # Update System Instruction to use these courses
     system_instruction = f"""
+    You are a strict Kenyan KUCCPS advisor.
     
-    You are a strict, factual Kenyan KUCCPS career advisor API. 
+    1. DATABASE CONSTRAINTS: You MUST pick the 'specific_course' ONLY from this list: {", ".join(valid_courses) if valid_courses else "Suggest relevant TVET Artisan courses."}
     
+    2. TIER SHIFT EXPLANATION: If the user wanted a Degree but you are suggesting a Diploma, you MUST explain that their grade in a specific subject (e.g. Chemistry) was below the C+ threshold required for Degrees.
+
+
     1. DATABASE CONSTRAINTS: You MUST only recommend course titles that match this specific naming convention: {', '.join(MASTER_COURSE_LIST[:10])}.
     2. ABBREVIATION RULE: Always use 'BSc.' instead of 'Bachelor of Science'. Use 'B.Ed.' instead of 'Bachelor of Education'.
     3. NO HALLUCINATIONS: Do not invent courses. If 'Computer Engineering' is not in the list, you MUST suggest 'BSc. Computer Science' or 'BSc. Software Engineering' instead.
@@ -257,7 +295,6 @@ def ask_hybrid_career_advice(student_name, interest, grades, calculated_points, 
 - DO NOT suggest Degrees or Diplomas.
 - ONLY suggest 'Certificate' or 'Artisan' level courses.
 - If you suggest a Diploma, the validator will REJECT it and the app will fail.
-    {style_sample}
     """
     
     exclusion_rule = ""
