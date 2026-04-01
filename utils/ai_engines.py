@@ -240,14 +240,17 @@ def fetch_from_gemini(system_instruction, base_prompt, grades, expected_level):
 # ==========================================
 # 🧠 CORE HYBRID ENGINE
 # ==========================================
+# ==========================================
+# 🧠 CORE HYBRID ENGINE
+# ==========================================
 def ask_hybrid_career_advice(student_name, interest, grades, calculated_points, expected_level, pop_count=0, exclude_unis=None, successful_unis=None):
     style_sample = ""
     if MASTER_COURSE_LIST:
         sample_list = MASTER_COURSE_LIST[100:120] if len(MASTER_COURSE_LIST) > 120 else MASTER_COURSE_LIST[:20]
-        style_sample = f"\n6. Formatting Examples of VALID KUCCPS courses: {', '.join(sample_list)}..."
+        style_sample = f"\n7. Formatting Examples of VALID KUCCPS courses: {', '.join(sample_list)}..."
 
+    # 👇 WE INJECTED THE TVET PIVOT STRATEGY HERE
     system_instruction = f"""
-     
     You are a strict, factual Kenyan KUCCPS career advisor API. 
     
     1. DATABASE CONSTRAINTS: You MUST only recommend course titles that match this specific naming convention: {', '.join(MASTER_COURSE_LIST[:10])}.
@@ -256,6 +259,10 @@ def ask_hybrid_career_advice(student_name, interest, grades, calculated_points, 
     4. INSTITUTION RADIUS: Provide AT LEAST 8 DIFFERENT real Kenyan institutions offering the exact same course.
     5. URL POLICY: Output EXACTLY "PLACEHOLDER_FOR_HEALER" for website_url.
     6. TECH OVERRIDE: For Artisan/Certificate levels with IT passion, use 'Artisan in ICT' or 'Certificate in IT'.
+    
+    🚨 THE PIVOT STRATEGY (CRITICAL): 
+    If a student has a low grade (e.g., an 'E' in Math or a 'D' overall) but wants a highly technical field like "Engineering" or "Medicine", DO NOT recommend a University Degree. 
+    Instead, maintain their exact interest but pivot the institution and course level. Recommend Artisan Certificates, Craft Certificates, or Diplomas at recognized Kenyan TVETs (e.g., Kabete National Polytechnic, Sigalagala National Polytechnic, Kenya Coast National Polytechnic).
     
     {style_sample}
     """
@@ -277,11 +284,11 @@ def ask_hybrid_career_advice(student_name, interest, grades, calculated_points, 
         "specific_course": "Specific Name", 
         "level": "Expected Level", 
         "ai_role": "Specific Job Title", 
-        "interest_match_reason": "2-3 sentences.", 
+        "interest_match_reason": "2-3 sentences explaining how this fits their passion.", 
         "ai_roadmap": "A brief 3-step HTML roadmap", 
         "career_exploration_url": "Search URL", 
         "universities": [
-            {"name": "Kenyan University Name", "students": 120, "specific_course": "Exact Name", "reason": "Why this fits", "website_url": "PLACEHOLDER_FOR_HEALER", "verified_offering": true, "requirements_met": [{"subject": "Math", "required": "C-", "attained": "REAL_GRADE"}]}
+            {"name": "Kenyan University or Polytechnic Name", "students": 120, "specific_course": "Exact Name", "reason": "Why this fits", "website_url": "PLACEHOLDER_FOR_HEALER", "verified_offering": true, "requirements_met": [{"subject": "Math", "required": "E", "attained": "REAL_GRADE"}]}
         ],
         "alternative_careers": [
             {"name": "Job Title", "title": "Job Title", "description": "1-2 sentence description of the career.", "fit": "Why this is a great alternative fit for the student."}
