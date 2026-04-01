@@ -201,29 +201,29 @@ def fetch_from_groq(system_instruction, base_prompt, grades, expected_level):
             )
             data = json.loads(res.choices[0].message.content)
             
-            # 1. Run validation to flag potential issues
-            errors = validate_ai_response(data, grades, expected_level)
+            # 1. Run internal grade validation (logs errors, but doesn't stop us)
+            validate_ai_response(data, grades, expected_level)
             
-            # 2. THE BYPASS: If the AI returned any university data at all, 
-            # we ACCEPT it. We don't care if 'errors' list is full.
-            universities = data.get("universities", [])
-            if len(universities) > 0:
-                logging.info(f"✅ Groq delivered {len(universities)} courses on attempt {retry_count + 1}")
-                # We still run name normalization to help the frontend
-                return validate_course_names(data)
+            # 2. Run name normalization (Crucial: assign the result back to data!)
+            data = validate_course_names(data)
             
-            # If universities list is empty, that's a real failure.
-            logging.warning(f"⏳ Empty university list. Attempt {retry_count+1}. Retrying...")
-            time.sleep(2) 
+            # 3. FINAL CHECK: If the AI gave us any universities, WE MUST RETURN.
+            # No more retries if we have data.
+            if data and len(data.get("universities", [])) > 0:
+                logging.info(f"✅ FINAL SUCCESS: Delivering {len(data['universities'])} courses to Emmanuel.")
+                return data
+            
+            logging.warning(f"⚠️ Empty university list on attempt {retry_count+1}. Retrying...")
             retry_count += 1
+            time.sleep(2)
 
         except Exception as e:
-            logging.error(f"🚨 Groq API Error: {e}")
-            time.sleep(5) 
+            logging.error(f"🚨 Groq Execution Error: {e}")
             retry_count += 1
+            time.sleep(2)
             
     return None
-        
+
 def get_eligible_context(interest, grades):
     """Finds courses in the JSON that the student actually qualifies for."""
     eligible_matches = []
