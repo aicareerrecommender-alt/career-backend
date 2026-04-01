@@ -75,24 +75,28 @@ def save_to_cache(uni_name, course_key, url):
 def call_groq_api(prompt):
     """Wraps the actual Groq call with a lock and a delay to respect 30 RPM limits."""
     with groq_lock:
-        response = client_groq.chat.completions.create(
-            model="groq/compound", # ✅ This is correct
-            messages=[
-                {"role": "system", "content": "You are a research assistant. Find the official KUCCPS or University portal URL."},
-                {"role": "user", "content": prompt}
-            ],
-            # 🛠️ REQUIRED for Compound systems to function correctly:
-            extra_body={
-                "compound_custom": {
-                    "tools": {
-                        "enabled_tools": ["web_search", "visit_website"]
+        try:
+            response = client_groq.chat.completions.create(
+                model="groq/compound", # ✅ This is correct
+                messages=[
+                    {"role": "system", "content": "You are a research assistant. Find the official KUCCPS or University portal URL."},
+                    {"role": "user", "content": prompt}
+                ],
+                # 🛠️ REQUIRED for Compound systems to function correctly:
+                extra_body={
+                    "compound_custom": {
+                        "tools": {
+                            "enabled_tools": ["web_search", "visit_website"]
+                        }
                     }
                 }
-            }
-        )
-        time.sleep(2.0) # Respect the 200 RPM limit
-        return response
-        
+            )
+            time.sleep(2.0) # Respect the 200 RPM limit
+            
+            return response.choices[0].message.content
+        except Exception as e:
+            logging.error(f"Compound System Error: {e}")
+            return None
 # --- 2. URL RETRIEVAL & VALIDATION ---
 def get_course_url(university_name, course_name, target_type="kuccps"):
     uni_key = university_name.lower().strip()

@@ -195,7 +195,7 @@ def fetch_from_groq(system_instruction, base_prompt, grades, expected_level):
                     {"role": "system", "content": system_instruction}, 
                     {"role": "user", "content": base_prompt}
                 ],
-                model="llama-3.3-70b-versatile", 
+                model="llama-3.1-8b-instant", 
                 response_format={"type": "json_object"}, 
                 temperature=0.3 
             )
