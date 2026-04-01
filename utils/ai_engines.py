@@ -267,84 +267,63 @@ def get_eligible_context(interest, grades):
 # 🧠 CORE HYBRID ENGINE
 # ==========================================
 def ask_hybrid_career_advice(student_name, interest, grades, calculated_points, expected_level, pop_count=0, exclude_unis=None, successful_unis=None):
-    # --- NEW: FILTER DATABASE FIRST ---
+    # --- 1. FILTER DATABASE FIRST ---
     valid_courses = get_eligible_context(interest, grades)
     
-    # --- AUTO TIER-SHIFT ---
-    # If no Degrees match (e.g. because of a C- in Chem), shift search to Diplomas
-    if not valid_courses and expected_level == "Degree":
-        logging.info(f"No Degrees found for {interest}. Shifting to Diploma tier.")
-        valid_courses = get_eligible_context(f"Diploma {interest}", grades)
-        expected_level = "Diploma"
+    # --- 2. DYNAMIC TIER GUIDANCE ---
+    # Instead of hardcoding "D+ range", we determine guidance by points
+    if calculated_points >= 46:
+        tier_status = "Degree/Diploma"
+        tier_guidance = "The student has strong grades. Prioritize University Degrees."
+    elif calculated_points >= 30:
+        tier_status = "Diploma/Certificate"
+        tier_guidance = "Recommend Diplomas at National Polytechnics or Universities."
+    else:
+        tier_status = "Certificate/Artisan"
+        tier_guidance = "Recommend Certificates or Artisan courses at TVET institutions."
 
-    # Update System Instruction to use these courses
+    # --- 3. DYNAMIC SYSTEM INSTRUCTION ---
     system_instruction = f"""
     You are a strict Kenyan KUCCPS advisor.
     
-    1. DATABASE CONSTRAINTS: You MUST pick the 'specific_course' ONLY from this list: {", ".join(valid_courses) if valid_courses else "Suggest relevant TVET Artisan courses."}
+    1. DATABASE CONSTRAINTS: You MUST pick the 'specific_course' ONLY from this list: {", ".join(valid_courses) if valid_courses else "Suggest relevant TVET courses."}
+    2. ABBREVIATION RULE: Always use 'BSc.', 'B.Ed.', or 'Diploma' correctly.
+    3. INSTITUTION RADIUS: Provide AT LEAST 8 DIFFERENT real Kenyan institutions.
+    4. URL POLICY: Output EXACTLY "PLACEHOLDER_FOR_HEALER" for website_url.
     
-    2. TIER SHIFT EXPLANATION: If the user wanted a Degree but you are suggesting a Diploma, you MUST explain that their grade in a specific subject (e.g. Chemistry) was below the C+ threshold required for Degrees.
-
-
-    1. DATABASE CONSTRAINTS: You MUST only recommend course titles that match this specific naming convention: {', '.join(MASTER_COURSE_LIST[:10])}.
-    2. ABBREVIATION RULE: Always use 'BSc.' instead of 'Bachelor of Science'. Use 'B.Ed.' instead of 'Bachelor of Education'.
-    3. NO HALLUCINATIONS: Do not invent courses. If 'Computer Engineering' is not in the list, you MUST suggest 'BSc. Computer Science' or 'BSc. Software Engineering' instead.
-    4. INSTITUTION RADIUS: Provide AT LEAST 8 DIFFERENT real Kenyan institutions offering the exact same course.
-    5. URL POLICY: Output EXACTLY "PLACEHOLDER_FOR_HEALER" for website_url.
-    # Check your kuccps_courses.json. If the course is "Certificate in Information Technology", change the rule to:
-"6. TECH OVERRIDE: For IT passions at Certificate level, use the EXACT DB name: 'Certificate in Information Technology'.".
-    
-    🚨 THE PIVOT STRATEGY (CRITICAL): 
-    If a student has a low grade (e.g., an 'E' in Math or a 'D' overall) but wants a highly technical field like "Engineering" or "Medicine", DO NOT recommend a University Degree. 
-    Instead, maintain their exact interest but pivot the institution and course level. Recommend Artisan Certificates, Craft Certificates, or Diplomas at recognized Kenyan TVETs (e.g., Kabete National Polytechnic, Sigalagala National Polytechnic, Kenya Coast National Polytechnic).
-    🚨 CRITICAL GRADE RULES:
-- Student has {calculated_points} points (D+ range).
-- DO NOT suggest Degrees or Diplomas.
-- ONLY suggest 'Certificate' or 'Artisan' level courses.
-- If you suggest a Diploma, the validator will REJECT it and the app will fail.
+    🚨 GRADE-BASED STRATEGY:
+    - Student Total Points: {calculated_points}/84.
+    - Guidance: {tier_guidance}
+    - If the student's grades in core subjects (Math/Science) are low, pivot level down (e.g., Degree to Diploma) but keep the interest.
     """
     
     exclusion_rule = ""
     if exclude_unis:
-        bad_unis_str = ", ".join(exclude_unis)
-        exclusion_rule += f"\n🚨 FAILED HALLUCINATIONS: The following institutions DO NOT offer this course or have broken links. YOU MUST NOT suggest any of these: {bad_unis_str}."
+        exclusion_rule += f"\n🚨 DO NOT suggest: {', '.join(exclude_unis)}."
 
-    if successful_unis:
-        good_unis_str = ", ".join(successful_unis)
-        exclusion_rule += f"\n✅ ALREADY VERIFIED: You have already successfully recommended these institutions: {good_unis_str}. DO NOT output them again. Generate DIFFERENT institutions to complete the list."
-
-    base_prompt = f"Student: {student_name} | Points: {calculated_points}/84 | Tier: {expected_level} | Passion: {interest}\nSubject Grades: {json.dumps(grades)}{exclusion_rule}"
+    # --- 4. PREPARE THE PROMPT ---
+    base_prompt = f"Student: {student_name} | Points: {calculated_points}/84 | Requested Tier: {expected_level} | Passion: {interest}\nSubject Grades: {json.dumps(grades)}{exclusion_rule}"
 
     json_structure = """
-    Respond ONLY with valid JSON matching this exact structure:
+    Respond ONLY with valid JSON:
     {
-        "specific_course": "Specific Name", 
-        "level": "Expected Level", 
-        "ai_role": "Specific Job Title", 
-        "interest_match_reason": "2-3 sentences explaining how this fits their passion.", 
-        "ai_roadmap": "A brief 3-step HTML roadmap", 
+        "specific_course": "Name", "level": "Level", "ai_role": "Job", 
+        "interest_match_reason": "Reason", "ai_roadmap": "HTML steps", 
         "career_exploration_url": "Search URL", 
-        "universities": [
-            {"name": "Kenyan University or Polytechnic Name", "students": 120, "specific_course": "Exact Name", "reason": "Why this fits", "website_url": "PLACEHOLDER_FOR_HEALER", "verified_offering": true, "requirements_met": [{"subject": "Math", "required": "E", "attained": "REAL_GRADE"}]}
-        ],
-        "alternative_careers": [
-            {"name": "Job Title", "title": "Job Title", "description": "1-2 sentence description of the career.", "fit": "Why this is a great alternative fit for the student."}
-        ]
+        "universities": [{"name": "Uni Name", "students": 100, "specific_course": "Course", "reason": "Why", "website_url": "PLACEHOLDER_FOR_HEALER", "verified_offering": true, "requirements_met": [{"subject": "Math", "required": "C", "attained": "B"}]}],
+        "alternative_careers": [{"name": "Job", "title": "Job", "description": "Desc", "fit": "Why"}]
     }
     """
     full_prompt = base_prompt + "\n" + json_structure
 
-    # 🚨 THE FIX: REMOVED THREADPOOL AND GEMINI. CALLING GROQ DIRECTLY.
-    # This uses the fetch_from_groq function you defined earlier in the file.
+    # --- 5. EXECUTE GROQ CALL ---
     final_data = fetch_from_groq(system_instruction, full_prompt, grades, expected_level)
 
-    # If Groq fails or hits rate limits after its internal retries, we return None
-    # so that app.py can catch it and show a 503 error.
     if not final_data: 
         return None
 
-    # Final metadata additions
-    final_data["popularity"] = f"👥 {pop_count} other {'student' if pop_count == 1 else 'students'} asked about this!" if pop_count > 0 else "✨ You are the first to pioneer this unique career path!"
+    # --- 6. METADATA & RETURN ---
+    final_data["popularity"] = f"👥 {pop_count} other students asked about this!" if pop_count > 0 else "✨ You are the first to pioneer this path!"
     final_data["timestamp"] = datetime.now().strftime("%Y-%m-%d %H:%M")
     
     return final_data
