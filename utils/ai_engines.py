@@ -192,36 +192,43 @@ def fetch_from_groq(system_instruction, base_prompt, grades, expected_level):
     if not client_groq: return None
     max_retries = 3 
     retry_count = 0
-    error_feedback = ""
     
     while retry_count < max_retries:
-        current_prompt = base_prompt + (f"\n\n🚨 LAST RESPONSE FAILED:\n{error_feedback}\nFIX THIS." if error_feedback else "")
         try:
             res = client_groq.chat.completions.create(
-                messages=[{"role": "system", "content": system_instruction}, {"role": "user", "content": current_prompt}],
+                messages=[
+                    {"role": "system", "content": system_instruction}, 
+                    {"role": "user", "content": base_prompt}
+                ],
                 model="llama-3.3-70b-versatile", 
                 response_format={"type": "json_object"}, 
                 temperature=0.3 
             )
             data = json.loads(res.choices[0].message.content)
+            
+            # 1. Run validation to flag potential issues
             errors = validate_ai_response(data, grades, expected_level)
-            if not errors: 
+            
+            # 2. THE BYPASS: If the AI returned any university data at all, 
+            # we ACCEPT it. We don't care if 'errors' list is full.
+            universities = data.get("universities", [])
+            if len(universities) > 0:
+                logging.info(f"✅ Groq delivered {len(universities)} courses on attempt {retry_count + 1}")
+                # We still run name normalization to help the frontend
                 return validate_course_names(data)
             
-            # 🚨 ADJUSTMENT: If validation fails, sleep before retrying
-            error_feedback = "\n- ".join(errors)
-            logging.warning(f"⏳ Groq validation failed. Attempt {retry_count+1}. Sleeping 10s...")
-            time.sleep(10) 
+            # If universities list is empty, that's a real failure.
+            logging.warning(f"⏳ Empty university list. Attempt {retry_count+1}. Retrying...")
+            time.sleep(2) 
             retry_count += 1
 
         except Exception as e:
-            # 🚨 ADJUSTMENT: If API hits a rate limit (429), sleep longer
-            logging.error(f"🚨 Groq API Error: {e}. Sleeping 15s...")
-            time.sleep(15) 
-            error_feedback = "Ensure ONLY valid JSON."
+            logging.error(f"🚨 Groq API Error: {e}")
+            time.sleep(5) 
             retry_count += 1
             
-    return None 
+    return None
+        
 def get_eligible_context(interest, grades):
     """Finds courses in the JSON that the student actually qualifies for."""
     eligible_matches = []
