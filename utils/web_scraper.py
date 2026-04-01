@@ -76,17 +76,23 @@ def call_groq_api(prompt):
     """Wraps the actual Groq call with a lock and a delay to respect 30 RPM limits."""
     with groq_lock:
         response = client_groq.chat.completions.create(
-            model="groq/compound", # Using the requested Compound model
+            model="groq/compound", # ✅ This is correct
             messages=[
-                {"role": "system", "content": "You are an expert Kenyan web search assistant. Return ONLY a valid URL starting with http/https. No conversational text."},
+                {"role": "system", "content": "You are a research assistant. Find the official KUCCPS or University portal URL."},
                 {"role": "user", "content": prompt}
             ],
-            temperature=0
+            # 🛠️ REQUIRED for Compound systems to function correctly:
+            extra_body={
+                "compound_custom": {
+                    "tools": {
+                        "enabled_tools": ["web_search", "visit_website"]
+                    }
+                }
+            }
         )
-        # 30 RPM means max 1 request every 2 seconds. Sleep ensures we stay under ceiling.
-        time.sleep(2.1) 
+        time.sleep(2.0) # Respect the 200 RPM limit
         return response
-
+        
 # --- 2. URL RETRIEVAL & VALIDATION ---
 def get_course_url(university_name, course_name, target_type="kuccps"):
     uni_key = university_name.lower().strip()
