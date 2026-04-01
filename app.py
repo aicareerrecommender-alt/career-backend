@@ -502,13 +502,13 @@ def recommend():
             }), 503
 
 
-            if attempt == 1:
-                final_ai_insight = dict(ai_insight)
-                
-            primary = ai_insight.get("primary_recommendation", {})
-            main_course_name = primary.get("course_name", "")
+        if attempt == 1:
+            final_ai_insight = dict(ai_insight)
             
-       # --- NON-BATCHED INDIVIDUAL VERIFICATION ---
+        primary = ai_insight.get("primary_recommendation", {})
+        main_course_name = primary.get("course_name", "")
+        
+        # --- NON-BATCHED INDIVIDUAL VERIFICATION ---
         raw_unis = ai_insight.get("universities", [])
         valid_universities = []
         
