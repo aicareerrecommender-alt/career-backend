@@ -85,77 +85,93 @@ def call_groq_api(prompt):
         return response
 
 # Update the signature to include target_type with a default value
+import urllib.parse
+import re
+import requests
+import logging
+
 def get_course_url(university_name, course_name, target_type="kuccps"):
     uni_key = university_name.lower().strip()
-    # Unique cache key for each link type
     course_key = f"{course_name.lower().strip()}_{target_type}"
 
-    # 1. LAYER ONE: INSTANT CACHE CHECK
+    # 1. CACHE CHECK
     cached = get_cached_url(uni_key, course_key)
-    if cached:
-        logging.info(f"⚡ [CACHE HIT] {university_name}: {course_name} ({target_type})")
-        return cached
+    if cached: return cached
 
-    # 2. LAYER TWO: DYNAMIC PROMPT GENERATION
     domain_hint = next((dom for name, dom in KENET_DOMAINS.items() if name in uni_key), None)
     
+    # Base Google Fallback (If all 3 Groq attempts fail)
+    safe_query = urllib.parse.quote_plus(f"{course_name} {university_name} Kenya")
+    
     if target_type == "kuccps":
-        # Specific search for the government portal
-        prompt = (
-            f"Find the EXACT KUCCPS students portal link for '{course_name}' at '{university_name}'. "
-            "The URL MUST start with 'https://students.kuccps.net/programmes/'. "
-            "Return ONLY the raw URL string."
+        fallback_url = f"https://www.google.com/search?q=site:students.kuccps.net+{safe_query}"
+        base_prompt = (
+            f"Find the EXACT KUCCPS portal URL (starts with https://students.kuccps.net/programmes/) "
+            f"for '{course_name}' at '{university_name}'. Return ONLY the raw URL string."
         )
     else:
-        # Specific search for the University's own website
         domain_instruction = f"Search specifically on '{domain_hint}'. " if domain_hint else ""
-        prompt = (
+        fallback_url = f"https://www.google.com/search?q={safe_query}+course"
+        base_prompt = (
             f"{domain_instruction}Find the official institution course information page for "
-            f"'{course_name}' at '{university_name}' in Kenya. "
-            "Return ONLY the direct raw URL string."
+            f"'{course_name}' at '{university_name}' in Kenya. Return ONLY the direct raw URL string."
         )
 
-    try:
-        # Calls the rate-limited wrapper
-        response = call_groq_api(prompt)
-        found_url = re.sub(r'[`"\'\s]', '', response.choices[0].message.content.strip())
-
-        # 3. LAYER THREE: PYTHON PING (VERIFICATION)
-        if found_url.startswith("http"):
-            resp = requests.get(found_url, timeout=7, verify=False)
-            if resp.status_code == 200:
-                save_to_cache(uni_key, course_key, found_url)
-                logging.info(f"✅ [NEW VERIFIED] Saved {target_type} to cache: {found_url}")
-                return found_url
-
-    except RateLimitError:
-        logging.warning(f"⏳ Rate limit hit for {university_name}. Using safe fallback.")
-    except Exception as e:
-        logging.error(f"🚨 Groq search failed: {e}")
+    # ---------------------------------------------------------
+    # 2. THE AI RETRY LOOP (Max 3 attempts)
+    # ---------------------------------------------------------
+    max_attempts = 3
+    bad_urls = []  # Keep track of hallucinated/dead links
     
-    # 4. LAYER FOUR: SAFE FALLBACK (Prevents 'None' crashes)
-    return "https://students.kuccps.net/programmes/" if target_type == "kuccps" else "https://google.com"
+    for attempt in range(max_attempts):
+        # Dynamically update the prompt if we have failed before
+        current_prompt = base_prompt
+        if bad_urls:
+            current_prompt += f"\n\nIMPORTANT: Do NOT return these dead URLs: {', '.join(bad_urls)}. They resulted in a 404. Find an ALTERNATIVE working link."
 
-def healer(ai_response_json):
-    """
-    Heals the AI response by fetching both KUCCPS and Institution URLs.
-    """
-    if not ai_response_json or "universities" not in ai_response_json:
-        return ai_response_json
-        
-    for uni in ai_response_json["universities"]:
-        uni_name = uni.get("name", "")
-        course_name = uni.get("specific_course", "")
-        
-        # Heal KUCCPS link (checks if field exists or is placeholder)
-        if not uni.get("kuccps_url") or uni.get("kuccps_url") == "PLACEHOLDER_FOR_HEALER":
-            uni["kuccps_url"] = get_course_url(uni_name, course_name, target_type="kuccps")
+        try:
+            # ASK GROQ
+            response = call_groq_api(current_prompt)
+            match = re.search(r'(https?://[^\s"\'\`]+)', response.choices[0].message.content)
             
-        # Heal Institution link
-        if not uni.get("institution_url") or uni.get("institution_url") == "PLACEHOLDER_FOR_HEALER":
-            uni["institution_url"] = get_course_url(uni_name, course_name, target_type="institution")
-            
-    return ai_response_json
+            if match:
+                found_url = match.group(1)
+                
+                # 3. ADVANCED PYTHON PING (Catches 404s and Soft 404s)
+                headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
+                resp = requests.get(found_url, headers=headers, timeout=5, verify=False)
+                
+                if resp.status_code == 200:
+                    html_lower = resp.text.lower()
+                    
+                    # Detect Soft 404s
+                    is_soft_404 = any(phrase in html_lower for phrase in [
+                        "page not found", "404 error", "cannot be found", "could not be found"
+                    ])
+                    
+                    if not is_soft_404:
+                        # SUCCESS! Save and return
+                        save_to_cache(uni_key, course_key, found_url)
+                        logging.info(f"✅ [VERIFIED] Attempt {attempt+1}: {found_url}")
+                        return found_url
+                    else:
+                        logging.warning(f"⚠️ [SOFT 404] Attempt {attempt+1}: {found_url} is dead text. Retrying...")
+                        bad_urls.append(found_url)
+                else:
+                    logging.warning(f"⚠️ [HTTP {resp.status_code}] Attempt {attempt+1}: {found_url} is dead. Retrying...")
+                    bad_urls.append(found_url)
+            else:
+                logging.warning(f"⚠️ Attempt {attempt+1}: Groq didn't return a URL. Retrying...")
+
+        except RateLimitError:
+            logging.error(f"⏳ Rate limit hit on attempt {attempt+1}. Stopping loop.")
+            break # Exit the loop immediately to avoid hitting the API further
+        except Exception as e:
+            logging.error(f"🚨 Ping/Search failed on attempt {attempt+1}: {e}")
+
+    # 4. IF ALL ATTEMPTS FAIL: Use the Unbreakable Google Fallback
+    logging.warning(f"❌ All {max_attempts} attempts failed for {university_name}. Using Fallback.")
+    return fallback_url
 def healer(ai_response_json):
     """
     Heals the AI response by fetching both KUCCPS and Institution URLs.
