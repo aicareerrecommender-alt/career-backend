@@ -115,30 +115,25 @@ def calculate_total_points(student_grades):
 # 🛡️ VALIDATORS & AI FETCHERS
 def validate_course_names(ai_response_data):
     """
-    Cross-references AI suggestions but NO LONGER blocks the response
-    if a perfect match isn't found. This prevents 503 retry loops.
+    Flags mismatches but ALLOWS the data to pass to prevent 503 errors.
     """
     if not ai_response_data or "universities" not in ai_response_data:
         return ai_response_data
 
     for uni in ai_response_data.get("universities", []):
         course_name = uni.get("specific_course", "")
-        
-        # Safe, normalized matching
         ai_norm = normalize_course_name(course_name)
         
+        # Check against your O(1) set
         if NORMALIZED_MASTER_LIST and ai_norm in NORMALIZED_MASTER_LIST:
             uni["db_verified_name"] = True
         else:
-            # LOG the mismatch for your own debugging
-            logging.warning(f"⚠️ Non-standard Course Name: {course_name}")
-            # FORCE this to True so the retry loop in fetch_from_groq stops!
-            uni["db_verified_name"] = True 
-            # (Optional) You can add a flag to show a small 'Unverified' badge on frontend
+            # 💡 CHANGE: Log the warning but DO NOT block the response
+            logging.warning(f"⚠️ Mismatch (Allowed): {course_name}")
+            uni["db_verified_name"] = False 
             uni["needs_manual_verification"] = True 
             
     return ai_response_data
-
 def validate_ai_response(ai_data, user_grades, expected_level):
     errors = []
     course_name = ai_data.get("specific_course", "").lower()
