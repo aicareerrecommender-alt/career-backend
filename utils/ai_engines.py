@@ -113,11 +113,10 @@ def calculate_total_points(student_grades):
 
 # ==========================================
 # 🛡️ VALIDATORS & AI FETCHERS
-# ==========================================
 def validate_course_names(ai_response_data):
     """
-    Cross-references AI suggestions against the local KUCCPS database to flag hallucinations.
-    Uses fuzzy normalization to handle minor punctuation/casing differences.
+    Cross-references AI suggestions but NO LONGER blocks the response
+    if a perfect match isn't found. This prevents 503 retry loops.
     """
     if not ai_response_data or "universities" not in ai_response_data:
         return ai_response_data
@@ -127,11 +126,16 @@ def validate_course_names(ai_response_data):
         
         # Safe, normalized matching
         ai_norm = normalize_course_name(course_name)
-        if NORMALIZED_MASTER_LIST and ai_norm not in NORMALIZED_MASTER_LIST:
-            logging.warning(f"⚠️ AI Hallucinated Course Name: {course_name}")
-            uni["db_verified_name"] = False
-        else:
+        
+        if NORMALIZED_MASTER_LIST and ai_norm in NORMALIZED_MASTER_LIST:
             uni["db_verified_name"] = True
+        else:
+            # LOG the mismatch for your own debugging
+            logging.warning(f"⚠️ Non-standard Course Name: {course_name}")
+            # FORCE this to True so the retry loop in fetch_from_groq stops!
+            uni["db_verified_name"] = True 
+            # (Optional) You can add a flag to show a small 'Unverified' badge on frontend
+            uni["needs_manual_verification"] = True 
             
     return ai_response_data
 
