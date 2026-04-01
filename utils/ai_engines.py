@@ -198,7 +198,7 @@ def fetch_from_groq(system_instruction, base_prompt, grades, expected_level):
         try:
             res = client_groq.chat.completions.create(
                 messages=[{"role": "system", "content": system_instruction}, {"role": "user", "content": current_prompt}],
-                model="llama-3.1-8b-instant", 
+                model="llama-3.3-70b-specdec", 
                 response_format={"type": "json_object"}, 
                 temperature=0.3 
             )
