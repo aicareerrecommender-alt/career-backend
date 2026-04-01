@@ -9,7 +9,8 @@ import urllib.parse
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 from groq import Groq, RateLimitError
 
-client_groq = Groq(api_key=os.environ.get("GROQ_API_KEY"))
+client_groq = Groq(api_key=os.environ.get("GROQ_API_KEY") , default_headers={"Groq-Model-Version": "latest"}  # 👈 CRITICAL for visit_website
+)
 
 DATA_FOLDER = "data"
 CACHE_FILE = os.path.join(DATA_FOLDER, "verified_urls.json")
@@ -134,9 +135,15 @@ def get_course_url(university_name, course_name, target_type="kuccps"):
 
         try:
             # ASK GROQ
-            response = call_groq_api(current_prompt)
-            match = re.search(r'(https?://[^\s"\'\`]+)', response.choices[0].message.content)
+            response_text = call_groq_api(current_prompt)
             
+            # Add a safety check in case the API returned None
+            if not response_text:
+                logging.warning(f"⚠️ Attempt {attempt+1}: Groq returned None. Retrying...")
+                continue
+                
+            # Search the string directly!
+            match = re.search(r'(https?://[^\s"\'\`]+)', response_text)
             if match:
                 found_url = match.group(1).strip().rstrip('.,')
                 

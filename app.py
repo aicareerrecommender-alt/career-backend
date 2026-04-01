@@ -490,18 +490,32 @@ def recommend():
             ai_insight = ask_hybrid_career_advice(
                 user_name, user_interest, user_grades, calculated_points, expected_level, 0, failed_universities, successful_names
             )
+            # --- ✅ THE FIX: Handle Success AND Failure Correctly ---
             
-            # --- THE PROBLEM AREA ---
-            if not ai_insight:
-                logging.error("AI returned None. Stopping loop.")
-                break
-
-            # 3. ✅ FIX: Assign the data IMMEDIATELY
-            if attempt == 1:
-                final_ai_insight = dict(ai_insight)
-
-            # --- NON-BATCHED INDIVIDUAL VERIFICATION ---
-            raw_unis = ai_insight.get("universities", [])
+            # 1. IF SUCCESS: Save it and STOP the loop!
+            if ai_insight:
+                final_ai_insight = ai_insight
+                logging.info(f"✅ Data successfully generated for {user_name} on attempt {attempt + 1}. Stopping loop.")
+                break  # <--- THIS IS THE MAGIC WORD. It stops Attempt 2 from ruining Attempt 1.
+                
+            # 2. IF FAILURE: Log it, but let the loop try again (don't break immediately)
+            else:
+                logging.warning(f"⚠️ Attempt {attempt + 1} returned None. Retrying...")
+                # It will naturally loop to the next attempt.
+                
+        # --- ✅ AFTER THE LOOP ENDS (The 500 Crash Preventer) ---
+        
+        # If the loop finished all 3 attempts and final_ai_insight is STILL empty:
+        if not final_ai_insight:
+            logging.error(f"❌ AI Engine failed after all attempts for {user_name}. Sending polite 503.")
+            return jsonify({
+                "error": "Our AI servers are experiencing extremely high traffic right now. Please wait a minute and try again.",
+                "status": "rate_limited"
+            }), 503
+            
+        # If we made it here, final_ai_insight is safe to use! No more 'NoneType' crashes.
+        # --- NON-BATCHED INDIVIDUAL VERIFICATION ---
+        raw_unis = final_ai_insight.get("universities", [])
         valid_universities = []
         
         # Determine the course name to search for
