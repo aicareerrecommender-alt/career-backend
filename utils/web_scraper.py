@@ -192,31 +192,18 @@ def get_course_url(university_name, course_name, target_type="kuccps"):
     logging.warning(f"❌ All {max_attempts} attempts failed for {university_name}. Using Fallback.")
     return fallback_url
 
-    
-# --- 3. THE HEALER FUNCTION ---
 def healer(ai_response_json):
-    """
-    Intercepts the data from ai_engines.py and heals the PLACEHOLDER_FOR_HEALER tags.
-    """
-    if not ai_response_json or "universities" not in ai_response_json:
-        return ai_response_json
+    for uni in ai_response_json.get("universities", []):
+        uni_name = uni.get("name")
+        course = uni.get("specific_course")
         
-    for uni in ai_response_json["universities"]:
-        uni_name = uni.get("name", "")
-        course_name = uni.get("specific_course", "")
+        # Attempt to get the specific course link
+        specific_url = get_course_url(uni_name, course, "institution")
         
-        # In ai_engines.py, you set "website_url": "PLACEHOLDER_FOR_HEALER"
-        # We will upgrade this to provide both a KUCCPS and Institution URL
-        
-        # 1. Fetch KUCCPS Link
-        if not uni.get("kuccps_url") or uni.get("kuccps_url") == "PLACEHOLDER_FOR_HEALER" or uni.get("website_url") == "PLACEHOLDER_FOR_HEALER":
-            uni["kuccps_url"] = get_course_url(uni_name, course_name, target_type="kuccps")
-            
-        # 2. Fetch Institution Link
-        if not uni.get("institution_url") or uni.get("institution_url") == "PLACEHOLDER_FOR_HEALER":
-            uni["institution_url"] = get_course_url(uni_name, course_name, target_type="institution")
-        
-        # Override the original website_url to be safe for the frontend
-        uni["website_url"] = uni.get("institution_url", uni.get("kuccps_url"))
+        # If specific_url is None or looks like a search error, get the Official Site
+        if not specific_url or "google.com/search" in specific_url:
+            uni["website_url"] = get_course_url(uni_name, course, "fallback")
+        else:
+            uni["website_url"] = specific_url
             
     return ai_response_json
