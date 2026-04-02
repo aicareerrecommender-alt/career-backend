@@ -70,7 +70,12 @@ def load_master_courses():
         if os.path.exists(COURSES_DB_PATH):
             with open(COURSES_DB_PATH, 'r', encoding='utf-8') as f:
                 courses = json.load(f)
-                return [str(c).strip() for c in courses]
+                clean_courses = []
+                for c in courses:
+                    # 🚨 FIX: Split the string just like the funnel does!
+                    clean_name = re.split(r'\d+\.\d+|-', str(c))[0].strip()
+                    clean_courses.append(clean_name)
+                return clean_courses
         else:
             logging.warning(f"⚠️ Course DB not found at {COURSES_DB_PATH}")
     except Exception as e:

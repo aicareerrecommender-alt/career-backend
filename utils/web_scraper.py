@@ -111,7 +111,7 @@ def get_course_url(university_name, course_name, target_type="kuccps"):
     if cached: return cached
 
     domain_hint = next((dom for name, dom in KENET_DOMAINS.items() if name in uni_key), None)
-    safe_query = urllib.parse.quote_plus(f"{course_name} {university_name} Kenya")
+    safe_query = urllib.parse.quote_plus(f'"{course_name}" {university_name} Kenya')
     
     # Base Google Fallback (If all Groq attempts fail)
     if target_type == "kuccps":
