@@ -115,23 +115,26 @@ def get_course_url(university_name, course_name, target_type="kuccps"):
     cached = get_cached_url(uni_key, course_key)
     if cached: return cached
 
+    # --- FIX: Define the missing variables ---
+    # Retrieve domain hint from KENET list (e.g., 'uonbi.ac.ke')
     domain_hint = next((dom for name, dom in KENET_DOMAINS.items() if name in uni_key), None)
+    
+    # Create a URL-safe query string for Google fallbacks
     safe_query = urllib.parse.quote_plus(f'"{course_name}" {university_name} Kenya')
     
-    # Base Google Fallback (If all Groq attempts fail)
-    if target_type == "kuccps":
-        fallback_url = f"https://www.google.com/search?q=site:students.kuccps.net+{safe_query}"
+    # --- 2. Define Prompts (University Links Only) ---
+    domain_instruction = f"site:{domain_hint} " if domain_hint else ""
+    
+    if target_type == "institution":
         base_prompt = (
-            f"Find the EXACT KUCCPS portal URL (starts with https://students.kuccps.net/programmes/) "
-            f"for '{course_name}' at '{university_name}'. Return ONLY the raw URL string."
+            f"{domain_instruction}Find the official direct course information page for "
+            f"'{course_name}' at '{university_name}' in Kenya. Return ONLY the raw URL string."
         )
+        fallback_url = f"https://www.google.com/search?q={safe_query}+{university_name}+official+course+page"
     else:
-        domain_instruction = f"Search specifically on '{domain_hint}'. " if domain_hint else ""
-        fallback_url = f"https://www.google.com/search?q={safe_query}+course"
-        base_prompt = (
-            f"{domain_instruction}Find the official institution course information page for "
-            f"'{course_name}' at '{university_name}' in Kenya. Return ONLY the direct raw URL string."
-        )
+        # Fallback for general official homepage
+        base_prompt = f"Find the official homepage URL for {university_name} in Kenya. Return ONLY the raw URL."
+        fallback_url = f"https://www.google.com/search?q={urllib.parse.quote_plus(university_name + ' official website')}"
 
     max_attempts = 3
     bad_urls = []
@@ -190,7 +193,7 @@ def get_course_url(university_name, course_name, target_type="kuccps"):
 
     # 4. IF ALL ATTEMPTS FAIL: Use the Unbreakable Google Fallback
     logging.warning(f"❌ All {max_attempts} attempts failed for {university_name}. Using Fallback.")
-    return fallback_url
+   
 
 def healer(ai_response_json):
     for uni in ai_response_json.get("universities", []):
