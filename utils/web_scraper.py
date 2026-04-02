@@ -75,31 +75,36 @@ def save_to_cache(uni_name, course_key, url):
     retry=retry_if_exception_type(RateLimitError),
     reraise=True
 )
+# 👇 MAKE SURE THESE 6 LINES ARE ABOVE THE FUNCTION
+@retry(
+    wait=wait_exponential(multiplier=2, min=3, max=20), 
+    stop=stop_after_attempt(4),
+    retry=retry_if_exception_type(RateLimitError),
+    reraise=True
+)
 def call_groq_api(prompt):
-    """Wraps the actual Groq call with a lock and a delay to respect 30 RPM limits."""
+    """Wraps the actual Groq call with a lock and a delay to respect limits."""
     with groq_lock:
         try:
             response = client_groq.chat.completions.create(
-                model="groq/compound", # ✅ This is correct
+                # Swapped to a fast, reliable standard model
+                model="llama-3.1-8b-instant", 
                 messages=[
-                    {"role": "system", "content": "You are a research assistant. Find the official KUCCPS or University portal URL."},
+                    {"role": "system", "content": "You are a web URL expert. Based on your knowledge, deduce the most likely official URL. Return ONLY the raw URL string with absolutely no other text."},
                     {"role": "user", "content": prompt}
                 ],
-                # 🛠️ REQUIRED for Compound systems to function correctly:
-                extra_body={
-                    "compound_custom": {
-                        "tools": {
-                            "enabled_tools": ["web_search", "visit_website"]
-                        }
-                    }
-                }
+                # Notice: The entire extra_body dictionary has been removed!
+                temperature=0.1 
             )
-            time.sleep(2.0) # Respect the 200 RPM limit
+            time.sleep(2.0) 
             
             return response.choices[0].message.content
         except Exception as e:
-            logging.error(f"Compound System Error: {e}")
+            logging.error(f"Standard Model System Error: {e}")
             return None
+
+
+        
 # --- 2. URL RETRIEVAL & VALIDATION ---
 def get_course_url(university_name, course_name, target_type="kuccps"):
     uni_key = university_name.lower().strip()

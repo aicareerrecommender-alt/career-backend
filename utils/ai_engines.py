@@ -8,29 +8,24 @@ from datetime import datetime
 from groq import Groq
 from google import genai
 from google.genai import types
-from typing import Dict, List, Any
 
-
-# ==========================================
-# 1. CONFIGURATION & GLOBALS
-# ==========================================
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-COURSES_DB_PATH = os.path.join(BASE_DIR, 'kuccps_courses.json')
-
+# --- API KEYS ---
 GROQ_API_KEY = os.environ.get("GROQ_API_KEY") 
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 
+# --- DATABASE LOADING ---
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+# Adjust the path below if your json file is in a different folder (like /data)
+COURSES_DB_PATH = os.path.join(BASE_DIR,'kuccps_courses.json')
 
-# ==========================================
-# 2. HELPER FUNCTIONS (Must be defined first)
-# ==========================================
-def normalize_course_name(name: str) -> str:
+def normalize_course_name(name):
     if not name: 
         return ""
     
     # Lowercase and strip whitespace
     name = str(name).lower().strip()
     
-    # Standardize common variations
+    # Standardize common variations to match your JSON DB
     replacements = {
         "bachelor of science": "bsc",
         "bachelor of arts": "ba",
@@ -45,60 +40,54 @@ def normalize_course_name(name: str) -> str:
     for old_val, new_val in replacements.items():
         name = name.replace(old_val, new_val)
         
-    # Remove non-alphanumeric but KEEP spaces temporarily
+    # Remove non-alphanumeric but KEEP spaces temporarily to avoid 'certit' vs 'certificateit'
     name = re.sub(r'[^a-z0-9\s]', '', name)
-    # Remove all whitespace for the final comparison string
+    # Finally, remove all whitespace for the final comparison string
     return "".join(name.split())
-
-def grade_to_int(grade_str) -> int:
-    """Maps Kenyan grades to integers."""
-    if not isinstance(grade_str, str): 
-        return 0
-    mapping = {
-        'A': 12, 'A-': 11, 'B+': 10, 'B': 9, 'B-': 8, 'C+': 7, 
-        'C': 6, 'C-': 5, 'D+': 4, 'D': 3, 'D-': 2, 'E': 1
-    }
-    clean_grade = grade_str.strip().upper()
-    return mapping.get(clean_grade, 0)
-
-# ==========================================
-# 3. DATABASE & AI INITIALIZATION
-# ==========================================
 def load_master_courses():
-    """Loads the real KUCCPS courses and creates a fast lookup list."""
+    """Loads the real KUCCPS courses and creates a fast, lookup list."""
     try:
         if os.path.exists(COURSES_DB_PATH):
             with open(COURSES_DB_PATH, 'r', encoding='utf-8') as f:
                 courses = json.load(f)
-                clean_courses = []
-                for c in courses:
-                    # 🚨 FIX: Split the string just like the funnel does!
-                    clean_name = re.split(r'\d+\.\d+|-', str(c))[0].strip()
-                    clean_courses.append(clean_name)
-                return clean_courses
+                return [str(c).strip() for c in courses]
         else:
             logging.warning(f"⚠️ Course DB not found at {COURSES_DB_PATH}")
     except Exception as e:
         logging.error(f"Error loading course database: {e}")
     return []
 
-# Load into memory ONCE
+# Load into memory once for speed
 MASTER_COURSE_LIST = load_master_courses()
+# O(1) lookup set for blazing fast normalized validation
 NORMALIZED_MASTER_LIST = {normalize_course_name(c) for c in MASTER_COURSE_LIST}
 
-# Initialize Groq Client
+# --- AI CLIENT INITIALIZATION ---
 client_groq = None
+client_gemini = None
+
 try:
     if GROQ_API_KEY:
         client_groq = Groq(api_key=GROQ_API_KEY, timeout=90.0, max_retries=2)
-    else:
-        logging.warning("⚠️ GROQ_API_KEY missing. AI fetching disabled.")
 except Exception as e: 
     logging.error(f"Groq Init Error: {e}")
 
+try:
+    if GEMINI_API_KEY:
+        client_gemini = genai.Client(api_key=GEMINI_API_KEY)
+except Exception as e: 
+    logging.error(f"Gemini Init Error: {e}")
+
 # ==========================================
-# 4. CORE LOGIC & FUNNELS
+# 🧮 SMART GRADE CALCULATOR
 # ==========================================
+def grade_to_int(grade_str):
+    if not isinstance(grade_str, str): 
+        return 0
+    mapping = {'A': 12, 'A-': 11, 'B+': 10, 'B': 9, 'B-': 8, 'C+': 7, 'C': 6, 'C-': 5, 'D+': 4, 'D': 3, 'D-': 2, 'E': 1}
+    clean_grade = grade_str.strip().upper()
+    return mapping.get(clean_grade, 0)
+
 def calculate_total_points(student_grades):
     total = 0
     
@@ -119,47 +108,15 @@ def calculate_total_points(student_grades):
 
     print(f"🧮 [MATH ENGINE] Frontend sent: {student_grades}")
     print(f"🧮 [MATH ENGINE] Calculated Total Points: {total}/84")
+    
     return total
 
-def get_eligible_context(interest: str, student_grades: Dict[str, str], db_path: str = COURSES_DB_PATH) -> List[str]:
-    eligible_matches = []
-    keywords = [k.lower() for k in interest.split() if len(k) > 2]
-    
-    try:
-        with open(db_path, 'r', encoding='utf-8') as f:
-            course_database = json.load(f)
-
-        for entry in course_database:
-            if not any(kw in entry.lower() for kw in keywords):
-                continue
-            
-            req_matches = re.findall(r'([A-Za-z/]+)(?:\(\d+\))?:([A-Z][+-]?)', entry)
-            is_eligible = True
-            
-            for req_subject, req_grade in req_matches:
-                actual_grade = "E"
-                for u_subj, u_grade in student_grades.items():
-                    if req_subject.lower()[:3] in u_subj.lower():
-                        actual_grade = u_grade
-                        break
-                
-                if grade_to_int(actual_grade) < grade_to_int(req_grade):
-                    is_eligible = False
-                    break
-            
-            if is_eligible:
-                clean_name = re.split(r'\d+\.\d+|-', entry)[0].strip()
-                eligible_matches.append(clean_name)
-                
-    except Exception as e:
-        logging.error(f"Funnel execution error: {e}")
-    
-    return list(set(eligible_matches))[:20]
-
 # ==========================================
-# 5. VALIDATORS
-# ==========================================
+# 🛡️ VALIDATORS & AI FETCHERS
 def validate_course_names(ai_response_data):
+    """
+    STRICT VALIDATOR: Removes any university suggesting a fake/hallucinated course.
+    """
     if not ai_response_data or "universities" not in ai_response_data:
         return ai_response_data
 
@@ -168,35 +125,37 @@ def validate_course_names(ai_response_data):
         course_name = uni.get("specific_course", "")
         ai_norm = normalize_course_name(course_name)
         
-        # Pylance is happy now because NORMALIZED_MASTER_LIST is globally defined at the top
+        # Check against your O(1) set
         if NORMALIZED_MASTER_LIST and ai_norm in NORMALIZED_MASTER_LIST:
             uni["db_verified_name"] = True
             valid_unis.append(uni)
         else:
+            # 🚨 STRICT BLOCK: Drop this university because the course is fake!
             logging.warning(f"🚨 STRICT BLOCK: Removed hallucinated course '{course_name}'")
             
+    # Replace the old list with ONLY the database-verified universities
     ai_response_data["universities"] = valid_unis
     return ai_response_data
-
 def validate_ai_response(ai_data, user_grades, expected_level):
     errors = []
     course_name = ai_data.get("specific_course", "").lower()
     recommended_level = ai_data.get("level", "").lower()
 
+    # Hardcoded statutory requirements for STEM and Medicine
     if "degree" in recommended_level:
         if "engineer" in course_name or "mechatronic" in course_name:
             if grade_to_int(str(user_grades.get("Mathematics", user_grades.get("Math", "E")))) < 7 or grade_to_int(str(user_grades.get("Physics", "E"))) < 7:
-                return ["CRITICAL ERROR: Engineering Degree requires C+ in Math and Physics."]
+                return ["CRITICAL ERROR: Engineering Degree requires C+ in Math and Physics. Downgrade to Diploma/Cert."]
         if "med" in course_name or "nurs" in course_name or "clinic" in course_name or "surg" in course_name:
             if grade_to_int(str(user_grades.get("Biology", "E"))) < 7 or grade_to_int(str(user_grades.get("Chemistry", "E"))) < 7:
-                return ["CRITICAL ERROR: Medical Degree requires C+ in Bio/Chem."]
+                return ["CRITICAL ERROR: Medical Degree requires C+ in Bio/Chem. Downgrade tier."]
         if "comput" in course_name or "software" in course_name or "it" in course_name:
             if grade_to_int(str(user_grades.get("Mathematics", user_grades.get("Math", "E")))) < 7:
-                return ["CRITICAL ERROR: IT Degree requires C+ in Math."]
+                return ["CRITICAL ERROR: IT Degree requires C+ in Math. Downgrade tier."]
     elif "diploma" in recommended_level:
         if "engineer" in course_name or "comput" in course_name or "software" in course_name or "it" in course_name:
             if grade_to_int(str(user_grades.get("Mathematics", user_grades.get("Math", "E")))) < 5: 
-                return ["CRITICAL ERROR: STEM Diplomas require C- in Math."]
+                return ["CRITICAL ERROR: STEM Diplomas require C- in Math. Downgrade to Certificate."]
 
     valid_unis = []
     for uni in ai_data.get("universities", []):
@@ -209,7 +168,7 @@ def validate_ai_response(ai_data, user_grades, expected_level):
             required_grade = req.get("required", "E")
             actual_grade = "E"
             
-            for user_subj, user_grade in (user_grades.items() if isinstance(user_grades, dict) else []):
+            for user_subj, user_grade in user_grades.items() if isinstance(user_grades, dict) else []:
                 if user_subj.lower().startswith(subject.lower()[:4]):
                     actual_grade = user_grade.get("grade", "E") if isinstance(user_grade, dict) else str(user_grade)
                     break
@@ -224,19 +183,14 @@ def validate_ai_response(ai_data, user_grades, expected_level):
 
     ai_data["universities"] = valid_unis
     if len(valid_unis) == 0:
-        errors.append("CRITICAL ERROR: ALL universities generated had requirements higher than grades.")
+        errors.append("CRITICAL ERROR: ALL universities generated had requirements higher than the student's actual grades.")
     return errors
-
-# ==========================================
-# 6. ORCHESTRATORS / AI FETCHERS
-# ==========================================
 def fetch_from_groq(system_instruction, base_prompt, grades, expected_level):
-    if not client_groq: 
-        logging.error("Groq client not initialized.")
-        return None
-        
+    if not client_groq: return None
     max_retries = 3 
     retry_count = 0
+    
+    # Keep track of the prompt so we can modify it if the AI fails the threshold
     current_prompt = base_prompt 
     
     while retry_count < max_retries:
@@ -252,17 +206,24 @@ def fetch_from_groq(system_instruction, base_prompt, grades, expected_level):
             )
             data = json.loads(res.choices[0].message.content)
             
+            # 1. Run internal grade validation 
             validate_ai_response(data, grades, expected_level)
+            
+            # 2. Run name normalization (and strict stripping of fake courses)
             data = validate_course_names(data)
             
+            # 3. THRESHOLD CHECK: Count how many survived the validator
             valid_count = len(data.get("universities", []))
             
             if valid_count >= 5:
                 logging.info(f"✅ FINAL SUCCESS: Delivering {valid_count} valid courses.")
                 return data
             
-            logging.warning(f"⚠️ Threshold failed: Found {valid_count} courses. Forcing AI top-up...")
-            current_prompt = base_prompt + f"\n\n🚨 SYSTEM FEEDBACK: You only provided {valid_count} valid courses. Provide AT LEAST 8 valid, distinct universities/courses from the list."
+            # --- 🚨 THE TOP-UP MECHANISM ---
+            logging.warning(f"⚠️ Threshold failed: Only found {valid_count} valid courses. Forcing AI to top-up...")
+            
+            # Modify the prompt for the next attempt to scold the AI and demand more
+            current_prompt = base_prompt + f"\n\n🚨 SYSTEM FEEDBACK FROM PREVIOUS ATTEMPT: You only provided {valid_count} valid courses. You MUST provide AT LEAST 8 valid, distinct universities/courses from the allowed database list."
             
             retry_count += 1
             time.sleep(2)
@@ -273,7 +234,39 @@ def fetch_from_groq(system_instruction, base_prompt, grades, expected_level):
             time.sleep(2)
             
     return None
+def get_eligible_context(interest, grades):
+    """Finds courses in the JSON that the student actually qualifies for."""
+    eligible_matches = []
+    keywords = [k.lower() for k in interest.split() if len(k) > 2]
+    
+    try:
+        with open(COURSES_DB_PATH, 'r') as f:
+            db = json.load(f)
 
+        for entry in db:
+            if not any(kw in entry.lower() for kw in keywords):
+                continue
+            
+            # Check requirements (e.g., 'Bio:C+')
+            req_matches = re.findall(r'([A-Za-z/]+)(?:\(\d+\))?:([A-Z][+-]?)', entry)
+            is_eligible = True
+            for subj_name, req_grade in req_matches:
+                actual_grade = "E"
+                for u_subj, u_grade in grades.items():
+                    if subj_name.lower()[:3] in u_subj.lower():
+                        actual_grade = u_grade.get("grade", "E") if isinstance(u_grade, dict) else str(u_grade)
+                        break
+                if grade_to_int(actual_grade) < grade_to_int(req_grade):
+                    is_eligible = False; break
+            
+            if is_eligible:
+                clean_name = re.split(r'\d+\.\d+|-', entry)[0].strip()
+                eligible_matches.append(clean_name)
+    except Exception as e:
+        logging.error(f"Context filter error: {e}")
+    return list(set(eligible_matches))[:15]
+# 🧠 CORE HYBRID ENGINE
+# ==========================================
 # ==========================================
 # 🧠 CORE HYBRID ENGINE
 # ==========================================
@@ -301,7 +294,6 @@ def ask_hybrid_career_advice(student_name, interest, grades, calculated_points, 
     2. ABBREVIATION RULE: Always use 'BSc.', 'B.Ed.', or 'Diploma' correctly.
     3. INSTITUTION RADIUS: Provide AT LEAST 8 DIFFERENT real Kenyan institutions.
     4. URL POLICY: Output EXACTLY "PLACEHOLDER_FOR_HEALER" for website_url.
-    5. STRICT NAMING: The `specific_course` field MUST be an exact, formal degree or diploma name (e.g., 'Bachelor of Science in Mathematics'). NEVER output conversational text, phrases, or student interests in this field.
     
     🚨 GRADE-BASED STRATEGY:
     - Student Total Points: {calculated_points}/84.
