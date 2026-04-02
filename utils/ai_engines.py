@@ -237,33 +237,51 @@ def fetch_from_groq(system_instruction, base_prompt, grades, expected_level):
 def get_eligible_context(interest, grades):
     """Finds courses in the JSON that the student actually qualifies for."""
     eligible_matches = []
-    keywords = [k.lower() for k in interest.split() if len(k) > 2]
+    
+    # FIX 1: Normalize keywords by stripping 's' so "computers" matches "computer"
+    keywords = [k.lower().rstrip('s') for k in interest.split() if len(k) > 2]
     
     try:
-        with open(COURSES_DB_PATH, 'r') as f:
+        if not os.path.exists(COURSES_DB_PATH):
+            logging.warning(f"Course DB not found at {COURSES_DB_PATH}")
+            return []
+
+        with open(COURSES_DB_PATH, 'r', encoding='utf-8') as f:
             db = json.load(f)
 
         for entry in db:
+            # 1. Interest Match
             if not any(kw in entry.lower() for kw in keywords):
                 continue
             
-            # Check requirements (e.g., 'Bio:C+')
-            req_matches = re.findall(r'([A-Za-z/]+)(?:\(\d+\))?:([A-Z][+-]?)', entry)
+            # FIX 2: Updated Regex ([A-Za-z\s/]+) to allow spaces in subject names like "Mat A"
+            req_matches = re.findall(r'([A-Za-z\s/]+)(?:\(\d+\))?:([A-Z][+-]?)', entry)
+            
             is_eligible = True
             for subj_name, req_grade in req_matches:
+                subj_name = subj_name.strip().lower()
                 actual_grade = "E"
+                
+                # Match user grades to DB subject codes
                 for u_subj, u_grade in grades.items():
-                    if subj_name.lower()[:3] in u_subj.lower():
+                    u_subj_clean = u_subj.lower()
+                    # Check if the DB subject (e.g. 'mat a') is in the user's grade key (e.g. 'mathematics')
+                    if subj_name[:3] in u_subj_clean or u_subj_clean[:3] in subj_name:
                         actual_grade = u_grade.get("grade", "E") if isinstance(u_grade, dict) else str(u_grade)
                         break
+                
                 if grade_to_int(actual_grade) < grade_to_int(req_grade):
-                    is_eligible = False; break
+                    is_eligible = False
+                    break
             
             if is_eligible:
+                # Clean the entry to get the course title only
                 clean_name = re.split(r'\d+\.\d+|-', entry)[0].strip()
                 eligible_matches.append(clean_name)
+
     except Exception as e:
         logging.error(f"Context filter error: {e}")
+        
     return list(set(eligible_matches))[:15]
 # 🧠 CORE HYBRID ENGINE
 # ==========================================
