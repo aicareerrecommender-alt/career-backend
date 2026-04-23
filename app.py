@@ -14,8 +14,7 @@ from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
 # 'scraper' is the global instance in your new web_scraper.py
 
-from utils.web_scraper import get_course_url, healer
-
+from utils.web_scraper import get_course_url
 
 
 from flask import Flask, request, jsonify
@@ -32,8 +31,7 @@ from utils.ai_engines import ask_hybrid_career_advice, calculate_total_points, g
 
 
 from google.auth.transport import requests as google_requests
-# Remove 'healer' if you aren't using it. 
-# If 'get_course_url' is also missing, you can comment out the whole line.
+
 
 import base64
 import asyncio 

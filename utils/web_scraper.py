@@ -194,19 +194,3 @@ def get_course_url(university_name, course_name, target_type="kuccps"):
     # 4. IF ALL ATTEMPTS FAIL: Use the Unbreakable Google Fallback
     logging.warning(f"❌ All {max_attempts} attempts failed for {university_name}. Using Fallback.")
    
-
-def healer(ai_response_json):
-    for uni in ai_response_json.get("universities", []):
-        uni_name = uni.get("name")
-        course = uni.get("specific_course")
-        
-        # Attempt to get the specific course link
-        specific_url = get_course_url(uni_name, course, "institution")
-        
-        # If specific_url is None or looks like a search error, get the Official Site
-        if not specific_url or "google.com/search" in specific_url:
-            uni["website_url"] = get_course_url(uni_name, course, "fallback")
-        else:
-            uni["website_url"] = specific_url
-            
-    return ai_response_json
