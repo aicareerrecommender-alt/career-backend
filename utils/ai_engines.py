@@ -5,9 +5,11 @@ import time
 import logging
 import concurrent.futures
 from datetime import datetime
+from functools import lru_cache
 from groq import Groq
 from google import genai
 from google.genai import types
+from utils.kuccps_requirements import normalize_course_title
 
 # --- API KEYS ---
 GROQ_API_KEY = os.environ.get("GROQ_API_KEY") 
@@ -18,6 +20,7 @@ GROQ_MODEL = os.environ.get("GROQ_MODEL", "openai/gpt-oss-20b")
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 # Adjust the path below if your json file is in a different folder (like /data)
 COURSES_DB_PATH = os.path.join(BASE_DIR,'kuccps_courses.json')
+COURSE_URLS_PATH = os.path.join(os.path.dirname(BASE_DIR), "data", "course_urls.json")
 
 def normalize_course_name(name):
     if not name: 
@@ -45,6 +48,77 @@ def normalize_course_name(name):
     name = re.sub(r'[^a-z0-9\s]', '', name)
     # Finally, remove all whitespace for the final comparison string
     return "".join(name.split())
+
+
+@lru_cache(maxsize=1)
+def _read_saved_course_catalog(modified_time_ns, file_size):
+    try:
+        with open(COURSE_URLS_PATH, "r", encoding="utf-8") as file:
+            data = json.load(file)
+    except (OSError, json.JSONDecodeError) as error:
+        logging.error("Could not load saved course catalogue from %s: %s", COURSE_URLS_PATH, error)
+        return (), ()
+
+    entries = data.get("entries") if isinstance(data, dict) else None
+    if not isinstance(entries, list):
+        logging.error("Saved course catalogue at %s has an invalid format.", COURSE_URLS_PATH)
+        return (), ()
+
+    all_courses = []
+    verified_courses = []
+    seen_courses = set()
+    seen_verified = set()
+    for entry in entries:
+        if not isinstance(entry, dict):
+            continue
+        course = entry.get("course")
+        if not isinstance(course, str) or not course.strip():
+            continue
+        course = course.strip()
+        key = normalize_course_name(course)
+        if key and key not in seen_courses:
+            seen_courses.add(key)
+            all_courses.append(course)
+        if (
+            key
+            and key not in seen_verified
+            and entry.get("verified") is True
+            and entry.get("status") == "verified"
+            and isinstance(entry.get("url"), str)
+        ):
+            seen_verified.add(key)
+            verified_courses.append(course)
+    return tuple(all_courses), tuple(verified_courses)
+
+
+def _saved_course_catalog():
+    try:
+        stat = os.stat(COURSE_URLS_PATH)
+    except OSError as error:
+        logging.error("Could not inspect saved course catalogue at %s: %s", COURSE_URLS_PATH, error)
+        return (), ()
+    return _read_saved_course_catalog(stat.st_mtime_ns, stat.st_size)
+
+
+def canonical_saved_course(course_name, candidates=None):
+    """Return a catalogue's exact saved title when the requested title matches it."""
+    if not isinstance(course_name, str) or not course_name.strip():
+        return None
+    if candidates is None:
+        candidates = _saved_course_catalog()[0]
+    exact_matches = [
+        candidate for candidate in candidates
+        if isinstance(candidate, str)
+        and normalize_course_name(candidate) == normalize_course_name(course_name)
+    ]
+    if len(exact_matches) == 1:
+        return exact_matches[0]
+    key = normalize_course_title(course_name)
+    matches = [
+        candidate for candidate in candidates
+        if isinstance(candidate, str) and normalize_course_title(candidate) == key
+    ]
+    return matches[0] if len(matches) == 1 else None
 
 
 def clean_course_catalog_entry(entry):
@@ -85,6 +159,9 @@ def is_course_in_catalog(course_name):
     })
     if not name_tokens:
         return False
+
+    if canonical_saved_course(course_name):
+        return True
 
     normalized_name = normalize_course_name(course_name)
     if normalized_name in NORMALIZED_MASTER_LIST:
@@ -171,77 +248,11 @@ def validate_course_names(ai_response_data):
     ai_response_data["universities"] = valid_unis
     return ai_response_data
 def validate_ai_response(ai_data, user_grades, expected_level):
-    errors = []
-    course_name = ai_data.get("specific_course", "").lower()
-    recommended_level = ai_data.get("level", "").lower()
-    user_grades = user_grades if isinstance(user_grades, dict) else {}
-    has_grades = bool(user_grades)
+    """Admission assessment is sourced separately; never infer statutory minima here."""
+    return []
 
-    # Hardcoded statutory requirements for STEM and Medicine
-    if has_grades and "degree" in recommended_level:
-        if "engineer" in course_name or "mechatronic" in course_name:
-            if (
-                grade_to_int(str(user_grades.get("Mathematics", user_grades.get("Math", "E")))) < 7
-                or grade_to_int(str(user_grades.get("Physics", "E"))) < 7
-            ) and all(key in user_grades for key in ("Mathematics", "Physics")):
-                return ["CRITICAL ERROR: Engineering Degree requires C+ in Math and Physics. Downgrade to Diploma/Cert."]
-        if "med" in course_name or "nurs" in course_name or "clinic" in course_name or "surg" in course_name:
-            if (
-                grade_to_int(str(user_grades.get("Biology", "E"))) < 7
-                or grade_to_int(str(user_grades.get("Chemistry", "E"))) < 7
-            ) and all(key in user_grades for key in ("Biology", "Chemistry")):
-                return ["CRITICAL ERROR: Medical Degree requires C+ in Bio/Chem. Downgrade tier."]
-        if "comput" in course_name or "software" in course_name or "it" in course_name:
-            if (
-                grade_to_int(str(user_grades.get("Mathematics", user_grades.get("Math", "E")))) < 7
-                and ("Mathematics" in user_grades or "Math" in user_grades)
-            ):
-                return ["CRITICAL ERROR: IT Degree requires C+ in Math. Downgrade tier."]
-    elif has_grades and "diploma" in recommended_level:
-        if "engineer" in course_name or "comput" in course_name or "software" in course_name or "it" in course_name:
-            if (
-                grade_to_int(str(user_grades.get("Mathematics", user_grades.get("Math", "E")))) < 5
-                and ("Mathematics" in user_grades or "Math" in user_grades)
-            ):
-                return ["CRITICAL ERROR: STEM Diplomas require C- in Math. Downgrade to Certificate."]
 
-    valid_unis = []
-    for uni in ai_data.get("universities", []):
-        reqs = uni.get("requirements_met", [])
-        if not reqs:
-            valid_unis.append(uni)
-            continue
-            
-        uni_is_valid = True
-        for req in reqs:
-            subject = str(req.get("subject", ""))
-            required_grade = req.get("required", "E")
-            actual_grade = None
-            
-            for user_subj, user_grade in user_grades.items():
-                if isinstance(user_subj, str) and user_subj.lower().startswith(subject.lower()[:4]):
-                    actual_grade = user_grade.get("grade", "E") if isinstance(user_grade, dict) else str(user_grade)
-                    break
-            
-            if actual_grade is None:
-                req["attained"] = "Not provided"
-                req["status"] = "Not checked"
-            elif grade_to_int(actual_grade) < grade_to_int(required_grade):
-                uni_is_valid = False
-                break 
-
-            else:
-                req["attained"] = actual_grade
-                req["status"] = "Met"
-
-        if uni_is_valid:
-            valid_unis.append(uni)
-
-    ai_data["universities"] = valid_unis
-    if has_grades and len(valid_unis) == 0:
-        errors.append("CRITICAL ERROR: ALL universities generated had requirements higher than the student's actual grades.")
-    return errors
-def fetch_from_groq(system_instruction, base_prompt, grades, expected_level):
+def fetch_from_groq(system_instruction, base_prompt, grades, expected_level, allowed_courses=None):
     if not client_groq: return None
     max_retries = 3 
     retry_count = 0
@@ -263,6 +274,19 @@ def fetch_from_groq(system_instruction, base_prompt, grades, expected_level):
             data = json.loads(res.choices[0].message.content)
 
             selected_course = data.get("specific_course", "")
+            if allowed_courses:
+                selected_course = canonical_saved_course(selected_course, allowed_courses)
+                if not selected_course:
+                    logging.warning("The AI selected a course outside the saved course choices.")
+                    current_prompt = (
+                        base_prompt
+                        + "\n\nSYSTEM FEEDBACK: Return specific_course exactly as one of these saved course titles: "
+                        + json.dumps(allowed_courses, ensure_ascii=False)
+                    )
+                    retry_count += 1
+                    time.sleep(2)
+                    continue
+                data["specific_course"] = selected_course
             for university in data.get("universities", []):
                 if isinstance(university, dict):
                     university["specific_course"] = selected_course
@@ -445,57 +469,77 @@ questions in your reply instead. Do not use markdown fences.
 
 
 def get_eligible_context(interest, grades):
-    """Finds courses in the JSON that the student actually qualifies for."""
-    eligible_matches = []
-    
-    # FIX 1: Normalize keywords by stripping 's' so "computers" matches "computer"
-    keywords = [k.lower().rstrip('s') for k in interest.split() if len(k) > 2]
-    grades = grades if isinstance(grades, dict) else {}
-    
-    try:
-        if not os.path.exists(COURSES_DB_PATH):
-            logging.warning(f"Course DB not found at {COURSES_DB_PATH}")
-            return []
+    """Return saved KUCCPS course titles for AI matching, without eligibility filtering."""
+    courses, verified_courses = _saved_course_catalog()
+    if not courses:
+        courses = tuple(dict.fromkeys(MASTER_COURSE_LIST))
+    if not courses:
+        logging.error("No saved course catalogue entries are available for recommendation matching.")
+        return []
 
-        with open(COURSES_DB_PATH, 'r', encoding='utf-8') as f:
-            db = json.load(f)
+    normalized_interest = str(interest or "").casefold()
+    tokens = set(re.findall(r"[a-z0-9]+", normalized_interest))
+    tokens.difference_update({
+        "a", "about", "and", "are", "career", "course", "courses", "for", "i",
+        "in", "interested", "into", "like", "me", "of", "options", "study",
+        "the", "to", "want", "with", "would",
+    })
+    stemmed_tokens = {
+        token[:-3] + "y" if token.endswith("ies") and len(token) > 4
+        else token[:-1] if token.endswith("s") and len(token) > 3
+        else token
+        for token in tokens
+    }
+    aliases = {
+        "computing": ("computer science", "information technology", "ict", "software", "data science"),
+        "technology": ("computer", "information technology", "ict", "software", "engineering"),
+        "cybersecurity": ("computer security", "information security", "computer science"),
+        "medicine": ("medical", "health", "nursing", "clinical", "dental", "pharmacy"),
+        "health": ("medical", "nursing", "clinical", "dental", "pharmacy", "midwifery"),
+        "business": ("commerce", "accounting", "finance", "management", "marketing"),
+        "finance": ("accounting", "commerce", "business", "financial"),
+        "teaching": ("education", "teacher", "special needs"),
+        "teacher": ("education", "teaching", "special needs"),
+        "agriculture": ("agricultural", "agribusiness", "animal", "veterinary"),
+        "animals": ("animal", "veterinary", "agriculture"),
+        "law": ("legal", "criminology", "justice"),
+        "design": ("art", "architecture", "fashion", "creative"),
+        "art": ("design", "music", "creative", "architecture"),
+        "psychology": ("counselling", "counseling", "social work", "community development"),
+        "helping": ("nursing", "social work", "counselling", "community development"),
+        "environment": ("environmental", "conservation", "climate", "natural resources"),
+        "tourism": ("hospitality", "travel", "hotel", "catering"),
+        "hospitality": ("tourism", "travel", "hotel", "catering"),
+        "security": ("criminology", "policing", "forensic", "peace"),
+        "food": ("nutrition", "dietetics", "agriculture"),
+    }
+    expanded_phrases = set()
+    for token in tokens:
+        expanded_phrases.update(aliases.get(token, ()))
+    query_tokens = set(tokens) | stemmed_tokens
+    for phrase in expanded_phrases:
+        query_tokens.update(re.findall(r"[a-z0-9]+", phrase))
 
-        for entry in db:
-            # 1. Interest Match
-            if not any(kw in entry.lower() for kw in keywords):
-                continue
-            
-            # FIX 2: Updated Regex ([A-Za-z\s/]+) to allow spaces in subject names like "Mat A"
-            req_matches = re.findall(r'([A-Za-z\s/]+)(?:\(\d+\))?:([A-Z][+-]?)', entry)
-            
-            is_eligible = True
-            for subj_name, req_grade in req_matches:
-                subj_name = subj_name.strip().lower()
-                actual_grade = None
-                
-                # Match user grades to DB subject codes
-                for u_subj, u_grade in grades.items():
-                    if not isinstance(u_subj, str):
-                        continue
-                    u_subj_clean = u_subj.lower()
-                    # Check if the DB subject (e.g. 'mat a') is in the user's grade key (e.g. 'mathematics')
-                    if subj_name[:3] in u_subj_clean or u_subj_clean[:3] in subj_name:
-                        actual_grade = u_grade.get("grade", "E") if isinstance(u_grade, dict) else str(u_grade)
-                        break
-                
-                if actual_grade is not None and grade_to_int(actual_grade) < grade_to_int(req_grade):
-                    is_eligible = False
-                    break
-            
-            if is_eligible:
-                # Clean the entry to get the course title only
-                clean_name = clean_course_catalog_entry(entry)
-                eligible_matches.append(clean_name)
+    ranked = []
+    for course in courses:
+        title = normalize_course_title(course)
+        title_tokens = set(re.findall(r"[a-z0-9]+", title))
+        score = 3 * len(tokens & title_tokens) + len((query_tokens - tokens) & title_tokens)
+        score += 4 * sum(phrase in title for phrase in expanded_phrases)
+        if score >= 2:
+            ranked.append((score, course))
+    if ranked:
+        ranked.sort(key=lambda item: (-item[0], item[1].casefold()))
+        return [course for _, course in ranked[:60]]
 
-    except Exception as e:
-        logging.error(f"Context filter error: {e}")
-        
-    return list(set(eligible_matches))[:15]
+    verified_keys = {normalize_course_name(course) for course in verified_courses}
+    return sorted(
+        courses,
+        key=lambda course: (
+            normalize_course_name(course) not in verified_keys,
+            course.casefold(),
+        ),
+    )
 # 🧠 CORE HYBRID ENGINE
 # ==========================================
 # ==========================================
@@ -511,7 +555,7 @@ def ask_hybrid_career_advice(student_name, interest, grades, calculated_points, 
     )
     has_complete_grades = valid_grade_count >= 7
 
-    # --- 1. FILTER DATABASE FIRST ---
+    # --- 1. LOAD SAVED COURSE CHOICES ---
     valid_courses = get_eligible_context(interest, grades)
     
     # --- 2. DYNAMIC TIER GUIDANCE ---
@@ -536,19 +580,19 @@ def ask_hybrid_career_advice(student_name, interest, grades, calculated_points, 
     system_instruction = f"""
     You are a helpful, flexible Kenyan education and course advisor.
     
-    1. DATABASE CONSTRAINTS: Prefer a 'specific_course' from this list: {", ".join(valid_courses) if valid_courses else "Use the student's requested course and give general pathway guidance when a database match is unavailable."}
-    2. ABBREVIATION RULE: Always use 'BSc.', 'B.Ed.', or 'Diploma' correctly.
+    1. DATABASE CONSTRAINTS: Match the student's stated field and subfield to the best course in this saved KUCCPS course catalogue. Choose "specific_course" exactly as written in this list; do not invent, rename, or return a null course: {json.dumps(valid_courses, ensure_ascii=False)}
+    2. Use the saved course title exactly, even if its capitalization or wording is unusual.
     3. INSTITUTION POLICY: You may suggest up to five Kenyan institution candidates, but do not claim they offer the course. The server will check official course pages; an empty list is acceptable.
     4. URL POLICY: Do not invent URLs. Output an empty website_url; the server will add only verified official course pages.
        Every university's "specific_course" value must exactly equal the recommendation's top-level "specific_course".
     5. INTERVIEW CONTEXT: Use stated interests and preferences; do not invent facts, offerings, or admission requirements.
-    6. REQUIREMENTS: Do not claim eligibility or specific entry requirements unless confirmed by an official course page.
+    6. REQUIREMENTS: Do not invent entry requirements or claim eligibility. The server will show sourced KUCCPS subject minima separately.
     
     🚨 GRADE-BASED STRATEGY:
     - Grade status: {tier_status}. Guidance: {tier_guidance}
     - Student Total Points: {"%s/84" % calculated_points if has_complete_grades else "not calculated (fewer than seven valid grades supplied)"}.
-    - Guidance: {tier_guidance}
-    - If the student's grades in core subjects (Math/Science) are low, pivot level down (e.g., Degree to Diploma) but keep the interest.
+    - Do not downgrade the course level or claim qualification based on a single subject or partial grades.
+    - Keep the course matched to the stated interest and explain that overall admission has not been determined.
     """
     
     exclusion_rule = ""
@@ -574,12 +618,27 @@ def ask_hybrid_career_advice(student_name, interest, grades, calculated_points, 
     full_prompt = base_prompt + "\n" + json_structure
 
    # --- 5. EXECUTE GROQ CALL ---
-    final_data = fetch_from_groq(system_instruction, full_prompt, grades, expected_level)
+    final_data = fetch_from_groq(
+        system_instruction,
+        full_prompt,
+        grades,
+        expected_level,
+        allowed_courses=valid_courses,
+    )
     
     # If Groq failed OR if the validator stripped all universities due to grade mismatches
     if not final_data or not is_course_in_catalog(final_data.get("specific_course")):
         logging.error(f"❌ Engine Failure: No valid data or universities for {student_name}")
         return None
+
+    saved_course = canonical_saved_course(final_data.get("specific_course"), valid_courses)
+    if not saved_course:
+        logging.error("The recommendation did not resolve to a saved course-catalogue title.")
+        return None
+    final_data["specific_course"] = saved_course
+    for university in final_data.get("universities", []):
+        if isinstance(university, dict):
+            university["specific_course"] = saved_course
 
     # --- 6. METADATA & RETURN ---
     # Ensure these keys exist in the dictionary

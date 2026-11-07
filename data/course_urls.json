@@ -37097,6 +37097,3944 @@
         "1425542"
       ],
       "kuccps_pdf_page": 62
+    },
+    {
+      "university": "UNIVERSITY OF NAIROBI",
+      "domain": "uonbi.ac.ke",
+      "course": "BACHELOR OF ARTS (DESIGN)",
+      "target_type": "institution",
+      "url": "https://arts-design.uonbi.ac.ke/admission-content-type/bachelor-arts-design",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T13:05:26.906949+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Arts in Design | Department of Art & Design",
+        "matching_heading": "Bachelor of Arts in Design",
+        "useful_detail_signals": [
+          "admission",
+          "curriculum",
+          "kcse"
+        ]
+      }
+    },
+    {
+      "university": "UNIVERSITY OF NAIROBI",
+      "domain": "uonbi.ac.ke",
+      "course": "BACHELOR OF DENTAL SURGERY",
+      "target_type": "institution",
+      "url": "https://dental.uonbi.ac.ke/programs-content-type/bachelor-dental-surgery",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T13:05:26.906949+00:00",
+      "verification_evidence": {
+        "page_title": "BACHELOR OF DENTAL SURGERY |  Department of Dental Sciences",
+        "matching_heading": "BACHELOR OF DENTAL SURGERY",
+        "useful_detail_signals": [
+          "admission",
+          "course structure",
+          "curriculum",
+          "duration",
+          "kcse"
+        ]
+      }
+    },
+    {
+      "university": "UNIVERSITY OF NAIROBI",
+      "domain": "uonbi.ac.ke",
+      "course": "BACHELOR OF ECONOMICS",
+      "target_type": "institution",
+      "url": "https://economics.uonbi.ac.ke/index.php/programs-content-type/bachelor-economics",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T13:05:26.906949+00:00",
+      "verification_evidence": {
+        "page_title": "BACHELOR OF ECONOMICS | DEPARTMENT OF ECONOMICS AND DEVELOPMENT STUDIES",
+        "matching_heading": "BACHELOR OF ECONOMICS",
+        "useful_detail_signals": [
+          "admission",
+          "kcse"
+        ]
+      }
+    },
+    {
+      "university": "CATHOLIC UNIVERSITY OF EASTERN AFRICA",
+      "domain": "cuea.edu",
+      "course": "BACHELOR OF ARTS ( KISWAHILI AND COMMUNICATION)",
+      "target_type": "institution",
+      "url": "https://cuea.edu/all-courses/ba-kiswahili/",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T12:37:56.852980+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Arts in Kiswahili and Communication | CUEA",
+        "matching_heading": "Bachelor of Arts in Kiswahili and Communication",
+        "useful_detail_signals": [
+          "duration",
+          "entry requirement",
+          "kcse"
+        ]
+      }
+    },
+    {
+      "university": "CATHOLIC UNIVERSITY OF EASTERN AFRICA",
+      "domain": "cuea.edu",
+      "course": "BACHELOR OF ARTS (SOCIAL WORK)",
+      "target_type": "institution",
+      "url": "https://cuea.edu/all-courses/ba-social-work/",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T12:37:56.852980+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Arts in Social Work in Nairobi, Kenya | CUEA",
+        "matching_heading": "Bachelor of Arts in Social Work",
+        "useful_detail_signals": [
+          "duration",
+          "entry requirement",
+          "kcse"
+        ]
+      }
+    },
+    {
+      "university": "CATHOLIC UNIVERSITY OF EASTERN AFRICA",
+      "domain": "cuea.edu",
+      "course": "BACHELOR OF ARTS IN ANTHROPOLOGY",
+      "target_type": "institution",
+      "url": "https://cuea.edu/all-courses/ba-anthropology/",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T12:37:56.852980+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Arts in Anthropology in Nairobi, Kenya | CUEA",
+        "matching_heading": "Bachelor of Arts in Anthropology",
+        "useful_detail_signals": [
+          "duration",
+          "entry requirement",
+          "kcse"
+        ]
+      }
+    },
+    {
+      "university": "CATHOLIC UNIVERSITY OF EASTERN AFRICA",
+      "domain": "cuea.edu",
+      "course": "BACHELOR OF ARTS IN DEVELOPMENT STUDIES",
+      "target_type": "institution",
+      "url": "https://cuea.edu/all-courses/ba-dev-studies/",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T12:37:56.852980+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Arts in Development Studies in Kenya | CUEA",
+        "matching_heading": "Bachelor of Arts in Development Studies",
+        "useful_detail_signals": [
+          "duration",
+          "entry requirement",
+          "kcse"
+        ]
+      }
+    },
+    {
+      "university": "CATHOLIC UNIVERSITY OF EASTERN AFRICA",
+      "domain": "cuea.edu",
+      "course": "BACHELOR OF ARTS IN ECONOMICS",
+      "target_type": "institution",
+      "url": "https://cuea.edu/all-courses/ba-economics/",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T12:37:56.852980+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Arts in Economics in Nairobi, Kenya | CUEA",
+        "matching_heading": "Bachelor of Arts in Economics",
+        "useful_detail_signals": [
+          "duration",
+          "entry requirement",
+          "kcse"
+        ]
+      }
+    },
+    {
+      "university": "CATHOLIC UNIVERSITY OF EASTERN AFRICA",
+      "domain": "cuea.edu",
+      "course": "BACHELOR OF ARTS IN ENVIRONMENTAL PLANNING AND MANAGEMENT",
+      "target_type": "institution",
+      "url": "https://cuea.edu/all-courses/ba-env-planning/",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T12:37:56.852980+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Arts in Environmental Planning andâ¦ | CUEA",
+        "matching_heading": "Bachelor of Arts in Environmental Planning and Management",
+        "useful_detail_signals": [
+          "duration",
+          "entry requirement",
+          "kcse"
+        ]
+      }
+    },
+    {
+      "university": "CATHOLIC UNIVERSITY OF EASTERN AFRICA",
+      "domain": "cuea.edu",
+      "course": "BACHELOR OF ARTS IN GEOGRAPHY",
+      "target_type": "institution",
+      "url": "https://cuea.edu/all-courses/ba-geography/",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T12:37:56.852980+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Arts in Geography in Nairobi, Kenya | CUEA",
+        "matching_heading": "Bachelor of Arts in Geography",
+        "useful_detail_signals": [
+          "duration",
+          "entry requirement",
+          "kcse"
+        ]
+      }
+    },
+    {
+      "university": "CATHOLIC UNIVERSITY OF EASTERN AFRICA",
+      "domain": "cuea.edu",
+      "course": "BACHELOR OF ARTS IN INTERNATIONAL RELATIONS",
+      "target_type": "institution",
+      "url": "https://cuea.edu/all-courses/ba-int-relations/",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T12:37:56.852980+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Arts in International Relations in Kenya | CUEA",
+        "matching_heading": "Bachelor of Arts in International Relations",
+        "useful_detail_signals": [
+          "duration",
+          "entry requirement",
+          "kcse"
+        ]
+      }
+    },
+    {
+      "university": "CATHOLIC UNIVERSITY OF EASTERN AFRICA",
+      "domain": "cuea.edu",
+      "course": "BACHELOR OF ARTS IN PHILOSOPHY",
+      "target_type": "institution",
+      "url": "https://cuea.edu/all-courses/ba-philosophy/",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T12:37:56.852980+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Arts in Philosophy in Nairobi, Kenya | CUEA",
+        "matching_heading": "Bachelor of Arts in Philosophy",
+        "useful_detail_signals": [
+          "duration",
+          "entry requirement",
+          "kcse"
+        ]
+      }
+    },
+    {
+      "university": "CATHOLIC UNIVERSITY OF EASTERN AFRICA",
+      "domain": "cuea.edu",
+      "course": "BACHELOR OF ARTS IN POLITICAL SCIENCE",
+      "target_type": "institution",
+      "url": "https://cuea.edu/all-courses/ba-political-science/",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T12:37:56.852980+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Arts in Political Science in Kenya | CUEA",
+        "matching_heading": "Bachelor of Arts in Political Science",
+        "useful_detail_signals": [
+          "duration",
+          "entry requirement",
+          "kcse"
+        ]
+      }
+    },
+    {
+      "university": "CATHOLIC UNIVERSITY OF EASTERN AFRICA",
+      "domain": "cuea.edu",
+      "course": "BACHELOR OF COMMERCE",
+      "target_type": "institution",
+      "url": "https://cuea.edu/all-courses/b-commerce/",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T12:37:56.852980+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Commerce in Nairobi, Kenya | CUEA",
+        "matching_heading": "Bachelor of Commerce",
+        "useful_detail_signals": [
+          "duration",
+          "entry requirement",
+          "kcse"
+        ]
+      }
+    },
+    {
+      "university": "CATHOLIC UNIVERSITY OF EASTERN AFRICA",
+      "domain": "cuea.edu",
+      "course": "BACHELOR OF ECONOMICS & STATISTICS",
+      "target_type": "institution",
+      "url": "https://cuea.edu/all-courses/b-econ-statistics/",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T12:37:56.852980+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Economics and Statistics in Kenya | CUEA",
+        "matching_heading": "Bachelor of Economics and Statistics",
+        "useful_detail_signals": [
+          "duration",
+          "entry requirement",
+          "kcse"
+        ]
+      }
+    },
+    {
+      "university": "CATHOLIC UNIVERSITY OF EASTERN AFRICA",
+      "domain": "cuea.edu",
+      "course": "BACHELOR OF ECONOMICS AND FINANCE",
+      "target_type": "institution",
+      "url": "https://cuea.edu/all-courses/b-econ-finance/",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T12:37:56.852980+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Economics and Finance in Nairobi, Kenya | CUEA",
+        "matching_heading": "Bachelor of Economics and Finance",
+        "useful_detail_signals": [
+          "duration",
+          "entry requirement",
+          "kcse"
+        ]
+      }
+    },
+    {
+      "university": "CATHOLIC UNIVERSITY OF EASTERN AFRICA",
+      "domain": "cuea.edu",
+      "course": "BACHELOR OF LAWS (LLB)",
+      "target_type": "institution",
+      "url": "https://cuea.edu/all-courses/llb/",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T12:37:56.852980+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Laws in Nairobi, Kenya | CUEA",
+        "matching_heading": "Bachelor of Laws",
+        "useful_detail_signals": [
+          "duration",
+          "entry requirement",
+          "kcse"
+        ]
+      }
+    },
+    {
+      "university": "CATHOLIC UNIVERSITY OF EASTERN AFRICA",
+      "domain": "cuea.edu",
+      "course": "BACHELOR OF SCIENCE (PHYSICS)",
+      "target_type": "institution",
+      "url": "https://cuea.edu/all-courses/bsc-physics/",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T12:37:56.852980+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Science in Physics in Nairobi, Kenya | CUEA",
+        "matching_heading": "Bachelor of Science in Physics",
+        "useful_detail_signals": [
+          "duration",
+          "entry requirement",
+          "kcse"
+        ]
+      }
+    },
+    {
+      "university": "CATHOLIC UNIVERSITY OF EASTERN AFRICA",
+      "domain": "cuea.edu",
+      "course": "BACHELOR OF SCIENCE IN BIOLOGY",
+      "target_type": "institution",
+      "url": "https://cuea.edu/all-courses/bsc-biology/",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T12:37:56.852980+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Science in Biology in Nairobi, Kenya | CUEA",
+        "matching_heading": "Bachelor of Science in Biology",
+        "useful_detail_signals": [
+          "duration",
+          "entry requirement",
+          "kcse"
+        ]
+      }
+    },
+    {
+      "university": "CATHOLIC UNIVERSITY OF EASTERN AFRICA",
+      "domain": "cuea.edu",
+      "course": "BACHELOR OF SCIENCE IN COMMUNITY HEALTH AND DEVELOPMENT",
+      "target_type": "institution",
+      "url": "https://cuea.edu/all-courses/bsc-comm-health/",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T12:37:56.852980+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Science in Community Health andâ¦ | CUEA",
+        "matching_heading": "Bachelor of Science in Community Health and Development",
+        "useful_detail_signals": [
+          "duration",
+          "entry requirement",
+          "kcse"
+        ]
+      }
+    },
+    {
+      "university": "CHUKA UNIVERSITY",
+      "domain": "chuka.ac.ke",
+      "course": "BACHELOR OF LAWS (LL.B.)",
+      "target_type": "institution",
+      "url": "https://www.chuka.ac.ke/course/bachelor-of-laws/",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T12:38:48.570021+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Laws - Chuka Univeristy",
+        "matching_heading": "Bachelor of Laws",
+        "useful_detail_signals": [
+          "admission",
+          "duration",
+          "entry requirements",
+          "kcse",
+          "minimum grade",
+          "study mode"
+        ]
+      }
+    },
+    {
+      "university": "CHUKA UNIVERSITY",
+      "domain": "chuka.ac.ke",
+      "course": "BACHELOR OF SCIENCE IN HEALTH RECORDS AND INFORMATION MANAGEMENT",
+      "target_type": "institution",
+      "url": "https://www.chuka.ac.ke/course/bachelor-of-science-in-health-records-and-information-management/",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T12:38:48.570021+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Science in Health Records and Information Management - Chuka Univeristy",
+        "matching_heading": "Bachelor of Science in Health Records and Information Management",
+        "useful_detail_signals": [
+          "admission",
+          "duration",
+          "entry requirements",
+          "kcse",
+          "study mode"
+        ]
+      }
+    },
+    {
+      "university": "CHUKA UNIVERSITY",
+      "domain": "chuka.ac.ke",
+      "course": "BACHELOR OF SCIENCE IN HUMAN NUTRITION AND DIETETICS",
+      "target_type": "institution",
+      "url": "https://www.chuka.ac.ke/course/bachelor-of-science-in-human-nutrition-and-dietetics/",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T12:38:48.570021+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Science in Human Nutrition and Dietetics - Chuka Univeristy",
+        "matching_heading": "Bachelor of Science in Human Nutrition and Dietetics",
+        "useful_detail_signals": [
+          "admission",
+          "duration",
+          "entry requirements",
+          "kcse",
+          "study mode"
+        ]
+      }
+    },
+    {
+      "university": "DAYSTAR UNIVERSITY",
+      "domain": "daystar.ac.ke",
+      "course": "BACHELOR OF SCIENCE IN ACTUARIAL SCIENCE",
+      "target_type": "institution",
+      "url": "https://www.daystar.ac.ke/school-of-science-engineering/bsc-actuarial-science.html",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T12:39:24.793445+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Science in Actuarial Science",
+        "matching_heading": "Bachelor of Science in Actuarial Science",
+        "useful_detail_signals": [
+          "kcse"
+        ]
+      }
+    },
+    {
+      "university": "DAYSTAR UNIVERSITY",
+      "domain": "daystar.ac.ke",
+      "course": "BACHELOR OF SCIENCE IN APPLIED COMPUTER SCIENCE",
+      "target_type": "institution",
+      "url": "https://www.daystar.ac.ke/school-of-science-engineering/bsc-applied-computer-science.html",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T12:39:24.793445+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Science in Applied Computer Science",
+        "matching_heading": "Bachelor of Science in Applied Computer Science",
+        "useful_detail_signals": [
+          "kcse"
+        ]
+      }
+    },
+    {
+      "university": "DAYSTAR UNIVERSITY",
+      "domain": "daystar.ac.ke",
+      "course": "BACHELOR OF SCIENCE IN BIOMEDICAL SCIENCE",
+      "target_type": "institution",
+      "url": "https://www.daystar.ac.ke/school-of-science-engineering/bsc-biomedical-science.html",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T12:39:24.793445+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Science in Biomedical Science",
+        "matching_heading": "Bachelor of Science in Biomedical Science",
+        "useful_detail_signals": [
+          "kcse"
+        ]
+      }
+    },
+    {
+      "university": "DAYSTAR UNIVERSITY",
+      "domain": "daystar.ac.ke",
+      "course": "BACHELOR OF SCIENCE IN ENVIRONMENTAL HEALTH",
+      "target_type": "institution",
+      "url": "https://www.daystar.ac.ke/school-of-science-engineering/bsc-environmental-health.html",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T12:39:24.793445+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Science in Environmental Health",
+        "matching_heading": "Bachelor of Science in Environmental Health",
+        "useful_detail_signals": [
+          "kcse"
+        ]
+      }
+    },
+    {
+      "university": "EGERTON UNIVERSITY",
+      "domain": "egerton.ac.ke",
+      "course": "BACHELOR OF COMMERCE",
+      "target_type": "institution",
+      "url": "https://egerton.ac.ke/bachelor-of-commerce",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T12:40:05.977581+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Commerce",
+        "matching_heading": "Bachelor of Commerce",
+        "useful_detail_signals": [
+          "admission",
+          "course structure",
+          "duration"
+        ]
+      }
+    },
+    {
+      "university": "EGERTON UNIVERSITY",
+      "domain": "egerton.ac.ke",
+      "course": "BACHELOR OF SCIENCE (AGRICULTURE)",
+      "target_type": "institution",
+      "url": "https://egerton.ac.ke/bachelor-of-science-in-agriculture",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T12:40:05.977581+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Science in Agriculture",
+        "matching_heading": "Bachelor of Science in Agriculture",
+        "useful_detail_signals": [
+          "admission",
+          "course structure",
+          "duration",
+          "entry requirements",
+          "kcse"
+        ]
+      }
+    },
+    {
+      "university": "EGERTON UNIVERSITY",
+      "domain": "egerton.ac.ke",
+      "course": "BACHELOR OF SCIENCE (DAIRY TECHNOLOGY & MANAGEMENT)",
+      "target_type": "institution",
+      "url": "https://egerton.ac.ke/bachelor-of-science-in-dairy-technology-management",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T12:40:05.977581+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Science in Dairy Technology & Management",
+        "matching_heading": "Bachelor of Science in Dairy Technology & Management",
+        "useful_detail_signals": [
+          "admission",
+          "course structure",
+          "duration"
+        ]
+      }
+    },
+    {
+      "university": "EGERTON UNIVERSITY",
+      "domain": "egerton.ac.ke",
+      "course": "BACHELOR OF SCIENCE (FOOD SCIENCE & TECHNOLOGY)",
+      "target_type": "institution",
+      "url": "https://egerton.ac.ke/bachelor-of-science-in-food-science-technology",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T12:40:05.977581+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Science in Food Science & Technology",
+        "matching_heading": "Bachelor of Science in Food Science & Technology",
+        "useful_detail_signals": [
+          "admission",
+          "course structure",
+          "duration"
+        ]
+      }
+    },
+    {
+      "university": "EGERTON UNIVERSITY",
+      "domain": "egerton.ac.ke",
+      "course": "BACHELOR OF SCIENCE (HORTICULTURE)",
+      "target_type": "institution",
+      "url": "https://egerton.ac.ke/bachelor-of-science-in-horticulture",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T12:40:05.977581+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Science in Horticulture",
+        "matching_heading": "Bachelor of Science Horticulture",
+        "useful_detail_signals": [
+          "admission",
+          "course structure",
+          "duration"
+        ]
+      }
+    },
+    {
+      "university": "EGERTON UNIVERSITY",
+      "domain": "egerton.ac.ke",
+      "course": "BACHELOR OF SCIENCE IN SOIL ENVIRONMENT & LAND USE MANAGEMENT)",
+      "target_type": "institution",
+      "url": "https://egerton.ac.ke/bachelor-of-science-in-soil-environment-land-use-management",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T12:40:05.977581+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Science in Soil Environment & Land Use Management",
+        "matching_heading": "Bachelor Of Science In Soil Environment And Land Use Management",
+        "useful_detail_signals": [
+          "admission",
+          "career opportunities",
+          "course structure",
+          "curriculum",
+          "duration",
+          "entry requirements",
+          "kcse"
+        ]
+      }
+    },
+    {
+      "university": "JOMO KENYATTA UNIVERSITY OF AGRICULTURE AND TECHNOLOGY",
+      "domain": "jkuat.ac.ke",
+      "course": "BACHELOR OF ARCHITECTURAL STUDIES/BACHELOR OF ARCHITECTURE",
+      "target_type": "institution",
+      "url": "https://www.jkuat.ac.ke/bachelor-of-architectural-studies-bachelor-of-architecture-4-6-years/",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T12:42:46.892132+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Architectural Studies/Bachelor of Architecture – 4/6 years – Jomo Kenyatta University of Agriculture and Technology",
+        "matching_heading": "Bachelor of Architectural Studies/Bachelor of Architecture – 4/6 years",
+        "useful_detail_signals": [
+          "entry requirement",
+          "kcse",
+          "minimum grade"
+        ]
+      }
+    },
+    {
+      "university": "JOMO KENYATTA UNIVERSITY OF AGRICULTURE AND TECHNOLOGY",
+      "domain": "jkuat.ac.ke",
+      "course": "BACHELOR OF BUSINESS INFORMATION TECHNOLOGY",
+      "target_type": "institution",
+      "url": "https://www.jkuat.ac.ke/bachelor-of-business-information-technology/",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T12:42:46.892132+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Business Information Technology – Jomo Kenyatta University of Agriculture and Technology",
+        "matching_heading": "Bachelor of Business Information Technology",
+        "useful_detail_signals": [
+          "duration",
+          "entry requirements",
+          "kcse"
+        ]
+      }
+    },
+    {
+      "university": "JOMO KENYATTA UNIVERSITY OF AGRICULTURE AND TECHNOLOGY",
+      "domain": "jkuat.ac.ke",
+      "course": "BACHELOR OF COMMERCE",
+      "target_type": "institution",
+      "url": "https://www.jkuat.ac.ke/bachelor-of-commerce/",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T12:42:46.892132+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Commerce – Jomo Kenyatta University of Agriculture and Technology",
+        "matching_heading": "Bachelor of Commerce",
+        "useful_detail_signals": [
+          "duration",
+          "entry requirements",
+          "kcse"
+        ]
+      }
+    },
+    {
+      "university": "JOMO KENYATTA UNIVERSITY OF AGRICULTURE AND TECHNOLOGY",
+      "domain": "jkuat.ac.ke",
+      "course": "BACHELOR OF DEVELOPMENT STUDIES",
+      "target_type": "institution",
+      "url": "https://www.jkuat.ac.ke/bachelor-of-development-studies/",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T12:42:46.892132+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Development Studies – Jomo Kenyatta University of Agriculture and Technology",
+        "matching_heading": "Bachelor of Development Studies",
+        "useful_detail_signals": [
+          "duration",
+          "entry requirement",
+          "kcse"
+        ]
+      }
+    },
+    {
+      "university": "JOMO KENYATTA UNIVERSITY OF AGRICULTURE AND TECHNOLOGY",
+      "domain": "jkuat.ac.ke",
+      "course": "BACHELOR OF MASS COMMUNICATION",
+      "target_type": "institution",
+      "url": "https://www.jkuat.ac.ke/bachelor-of-mass-communication/",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T12:42:46.892132+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Mass Communication – Jomo Kenyatta University of Agriculture and Technology",
+        "matching_heading": "Bachelor of Mass Communication",
+        "useful_detail_signals": [
+          "duration",
+          "entry requirement",
+          "kcse"
+        ]
+      }
+    },
+    {
+      "university": "JOMO KENYATTA UNIVERSITY OF AGRICULTURE AND TECHNOLOGY",
+      "domain": "jkuat.ac.ke",
+      "course": "BACHELOR OF PHARMACY",
+      "target_type": "institution",
+      "url": "https://www.jkuat.ac.ke/bachelor-of-pharmacy/",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T12:42:46.892132+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Pharmacy – Jomo Kenyatta University of Agriculture and Technology",
+        "matching_heading": "Bachelor of Pharmacy",
+        "useful_detail_signals": [
+          "duration",
+          "entry requirement",
+          "kcse"
+        ]
+      }
+    },
+    {
+      "university": "JOMO KENYATTA UNIVERSITY OF AGRICULTURE AND TECHNOLOGY",
+      "domain": "jkuat.ac.ke",
+      "course": "BACHELOR OF RADIOGRAPHY",
+      "target_type": "institution",
+      "url": "https://www.jkuat.ac.ke/bachelor-of-radiography-81/",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T12:42:46.892132+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Radiography – Jomo Kenyatta University of Agriculture and Technology",
+        "matching_heading": "Bachelor of Radiography",
+        "useful_detail_signals": [
+          "duration",
+          "entry requirement"
+        ]
+      }
+    },
+    {
+      "university": "JOMO KENYATTA UNIVERSITY OF AGRICULTURE AND TECHNOLOGY",
+      "domain": "jkuat.ac.ke",
+      "course": "BACHELOR OF SCIENCE IN COMPUTER SCIENCE",
+      "target_type": "institution",
+      "url": "https://www.jkuat.ac.ke/bachelor-of-science-computer-science/",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T12:42:46.892132+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Science Computer Science – Jomo Kenyatta University of Agriculture and Technology",
+        "matching_heading": "Bachelor of Science Computer Science",
+        "useful_detail_signals": [
+          "duration",
+          "entry requirements",
+          "kcse"
+        ]
+      }
+    },
+    {
+      "university": "KABARAK UNIVERSITY",
+      "domain": "kabarak.ac.ke",
+      "course": "BACHELOR OF ARTS IN CHAPLAINCY",
+      "target_type": "institution",
+      "url": "https://kabarak.ac.ke/programme/bachelor-of-arts-in-chaplaincy-fully-online",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T12:43:33.125938+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Arts in Chaplaincy",
+        "matching_heading": "Bachelor of Arts in Chaplaincy",
+        "useful_detail_signals": [
+          "admission",
+          "duration",
+          "kcse"
+        ]
+      }
+    },
+    {
+      "university": "KABARAK UNIVERSITY",
+      "domain": "kabarak.ac.ke",
+      "course": "BACHELOR OF COMMERCE",
+      "target_type": "institution",
+      "url": "https://kabarak.ac.ke/programme/online-bachelor-of-commerce",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T12:43:33.125938+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Commerce",
+        "matching_heading": "Bachelor of Commerce",
+        "useful_detail_signals": [
+          "admission",
+          "duration",
+          "kcse"
+        ]
+      }
+    },
+    {
+      "university": "KABARAK UNIVERSITY",
+      "domain": "kabarak.ac.ke",
+      "course": "BACHELOR OF EDUCATION (ARTS)",
+      "target_type": "institution",
+      "url": "https://kabarak.ac.ke/programme/bachelor-of-education-arts-fully-online",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T12:43:33.125938+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Education (Arts)",
+        "matching_heading": "Bachelor of Education (Arts)",
+        "useful_detail_signals": [
+          "admission",
+          "duration",
+          "kcse"
+        ]
+      }
+    },
+    {
+      "university": "KABARAK UNIVERSITY",
+      "domain": "kabarak.ac.ke",
+      "course": "BACHELOR OF MUSIC THEORY AND COMPOSITION",
+      "target_type": "institution",
+      "url": "https://kabarak.ac.ke/programme/online-bachelor-of-music-theory-and-composition",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T12:43:33.125938+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Music Theory and Composition",
+        "matching_heading": "Bachelor of Music Theory and Composition",
+        "useful_detail_signals": [
+          "admission",
+          "duration",
+          "kcse"
+        ]
+      }
+    },
+    {
+      "university": "KABARAK UNIVERSITY",
+      "domain": "kabarak.ac.ke",
+      "course": "BACHELOR OF SCIENCE IN DATA SCIENCE AND ANALYTICS",
+      "target_type": "institution",
+      "url": "https://kabarak.ac.ke/programme/fo-bsc-in-data-science-and-analytics",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T12:43:33.125938+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Science in Data Science and Analytics",
+        "matching_heading": "Bachelor of Science in Data Science and Analytics",
+        "useful_detail_signals": [
+          "admission",
+          "curriculum",
+          "duration",
+          "kcse",
+          "learning outcomes"
+        ]
+      }
+    },
+    {
+      "university": "KABARAK UNIVERSITY",
+      "domain": "kabarak.ac.ke",
+      "course": "BACHELOR OF THEOLOGY",
+      "target_type": "institution",
+      "url": "https://kabarak.ac.ke/programme/bachelor-of-theology-fully-online",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T12:43:33.125938+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Theology",
+        "matching_heading": "Bachelor of Theology",
+        "useful_detail_signals": [
+          "admission",
+          "duration",
+          "kcse"
+        ]
+      }
+    },
+    {
+      "university": "KENYA ASSEMBLIES OF GOD EAST UNIVERSITY",
+      "domain": "east.university",
+      "course": "BACHELOR OF EDUCATION (ARTS)",
+      "target_type": "institution",
+      "url": "https://east.university/bachelor-of-arts-education/",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T12:44:17.682744+00:00",
+      "verification_evidence": {
+        "page_title": "BA Education admission requirements | KAG East University",
+        "matching_heading": "Bachelor of Arts Education",
+        "useful_detail_signals": [
+          "admission",
+          "curriculum",
+          "duration",
+          "learning outcomes"
+        ]
+      }
+    },
+    {
+      "university": "KENYATTA UNIVERSITY - MAMA NGINA UNIVERSITY COLLEGE",
+      "domain": "mnu.ac.ke",
+      "course": "BACHELOR OF ECONOMICS & STATISTICS",
+      "target_type": "institution",
+      "url": "https://mnu.ac.ke/undergraduate-courses/bachelor-of-economics-and-statistics/",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T12:46:34.930206+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Economics and Statistics - Mama Ngina University College",
+        "matching_heading": "Bachelor of Economics and Statistics",
+        "useful_detail_signals": [
+          "entry requirements",
+          "kcse"
+        ]
+      }
+    },
+    {
+      "university": "KENYATTA UNIVERSITY - MAMA NGINA UNIVERSITY COLLEGE",
+      "domain": "mnu.ac.ke",
+      "course": "BACHELOR OF ECONOMICS AND FINANCE",
+      "target_type": "institution",
+      "url": "https://mnu.ac.ke/undergraduate-courses/bachelor-of-economics-and-finance/",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T12:46:34.930206+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Economics and Finance - Mama Ngina University College",
+        "matching_heading": "Bachelor of Economics and Finance",
+        "useful_detail_signals": [
+          "entry requirements",
+          "kcse"
+        ]
+      }
+    },
+    {
+      "university": "KENYATTA UNIVERSITY - MAMA NGINA UNIVERSITY COLLEGE",
+      "domain": "mnu.ac.ke",
+      "course": "BACHELOR OF ENVIRONMENTAL SCIENCE",
+      "target_type": "institution",
+      "url": "https://mnu.ac.ke/undergraduate-courses/bachelor-of-environmental-science/",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T12:46:34.930206+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Environmental Science - Mama Ngina University College",
+        "matching_heading": "Bachelor of Environmental Science",
+        "useful_detail_signals": [
+          "entry requirements",
+          "kcse"
+        ]
+      }
+    },
+    {
+      "university": "KENYATTA UNIVERSITY - MAMA NGINA UNIVERSITY COLLEGE",
+      "domain": "mnu.ac.ke",
+      "course": "BACHELOR OF ENVIRONMENTAL STUDIES AND COMMUNITY DEVELOPMENT",
+      "target_type": "institution",
+      "url": "https://mnu.ac.ke/undergraduate-courses/bachelor-of-environmental-studies-and-community-development/",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T12:46:34.930206+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Environmental Studies and Community Development - Mama Ngina University College",
+        "matching_heading": "Bachelor of Environmental Studies and Community Development",
+        "useful_detail_signals": [
+          "entry requirements",
+          "kcse"
+        ]
+      }
+    },
+    {
+      "university": "KENYATTA UNIVERSITY - MAMA NGINA UNIVERSITY COLLEGE",
+      "domain": "mnu.ac.ke",
+      "course": "BACHELOR OF INFORMATION TECHNOLOGY",
+      "target_type": "institution",
+      "url": "https://mnu.ac.ke/undergraduate-courses/bachelor-of-information-technology/",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T12:46:34.930206+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Information Technology - Mama Ngina University College",
+        "matching_heading": "Bachelor of Information Technology",
+        "useful_detail_signals": [
+          "entry requirements",
+          "kcse"
+        ]
+      }
+    },
+    {
+      "university": "KENYATTA UNIVERSITY - MAMA NGINA UNIVERSITY COLLEGE",
+      "domain": "mnu.ac.ke",
+      "course": "BACHELOR OF LIBRARY AND INFORMATION SCIENCE",
+      "target_type": "institution",
+      "url": "https://mnu.ac.ke/undergraduate-courses/bachelor-of-library-and-information-science/",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T12:46:34.930206+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Library and Information Science - Mama Ngina University College",
+        "matching_heading": "Bachelor of Library and Information Science",
+        "useful_detail_signals": [
+          "entry requirements",
+          "kcse"
+        ]
+      }
+    },
+    {
+      "university": "KENYATTA UNIVERSITY - MAMA NGINA UNIVERSITY COLLEGE",
+      "domain": "mnu.ac.ke",
+      "course": "BACHELOR OF PUBLIC POLICY AND ADMINISTRATION",
+      "target_type": "institution",
+      "url": "https://mnu.ac.ke/undergraduate-courses/bachelor-of-public-policy-and-administration/",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T12:46:34.930206+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Public Policy and Administration - Mama Ngina University College",
+        "matching_heading": "Bachelor of Public Policy and Administration",
+        "useful_detail_signals": [
+          "entry requirements",
+          "kcse"
+        ]
+      }
+    },
+    {
+      "university": "KENYATTA UNIVERSITY - MAMA NGINA UNIVERSITY COLLEGE",
+      "domain": "mnu.ac.ke",
+      "course": "BACHELOR OF SCIENCE ( HEALTH RECORDS AND INFORMATION MANAGEMENT)",
+      "target_type": "institution",
+      "url": "https://mnu.ac.ke/undergraduate-courses/bachelor-of-science-health-records-and-information-management/",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T12:46:34.930206+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Science (Health Records and Information Management) - Mama Ngina University College",
+        "matching_heading": "Bachelor of Science (Health Records and Information Management)",
+        "useful_detail_signals": [
+          "entry requirements",
+          "kcse"
+        ]
+      }
+    },
+    {
+      "university": "KENYATTA UNIVERSITY - MAMA NGINA UNIVERSITY COLLEGE",
+      "domain": "mnu.ac.ke",
+      "course": "BACHELOR OF SCIENCE (COMMUNITY RESOURCE MANAGEMENT)",
+      "target_type": "institution",
+      "url": "https://mnu.ac.ke/undergraduate-courses/bachelor-of-science-community-resource-management/",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T12:46:34.930206+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Science (Community Resource Management) - Mama Ngina University College",
+        "matching_heading": "Bachelor of Science (Community Resource Management)",
+        "useful_detail_signals": [
+          "entry requirements",
+          "kcse"
+        ]
+      }
+    },
+    {
+      "university": "KENYATTA UNIVERSITY - MAMA NGINA UNIVERSITY COLLEGE",
+      "domain": "mnu.ac.ke",
+      "course": "BACHELOR OF SCIENCE (COMPUTER SCIENCE)",
+      "target_type": "institution",
+      "url": "https://mnu.ac.ke/undergraduate-courses/bachelor-of-science-in-computer-science/",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T12:46:34.930206+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Science in Computer Science - Mama Ngina University College",
+        "matching_heading": "Bachelor of Science in Computer Science",
+        "useful_detail_signals": [
+          "entry requirements",
+          "kcse"
+        ]
+      }
+    },
+    {
+      "university": "KENYATTA UNIVERSITY - MAMA NGINA UNIVERSITY COLLEGE",
+      "domain": "mnu.ac.ke",
+      "course": "BACHELOR OF SCIENCE (HOSPITALITY AND TOURISM MANAGEMENT)",
+      "target_type": "institution",
+      "url": "https://mnu.ac.ke/undergraduate-courses/bachelor-of-science-in-hospitality-and-tourism-management/",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T12:46:34.930206+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Science in Hospitality and Tourism Management - Mama Ngina University College",
+        "matching_heading": "Bachelor of Science in Hospitality and Tourism Management",
+        "useful_detail_signals": [
+          "entry requirements",
+          "kcse"
+        ]
+      }
+    },
+    {
+      "university": "KENYATTA UNIVERSITY - MAMA NGINA UNIVERSITY COLLEGE",
+      "domain": "mnu.ac.ke",
+      "course": "BACHELOR OF SCIENCE (MATHEMATICS AND COMPUTER SCIENCE)",
+      "target_type": "institution",
+      "url": "https://mnu.ac.ke/undergraduate-courses/bachelor-of-science-mathematics-and-computer-science/",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T12:46:34.930206+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Science (Mathematics and Computer Science) - Mama Ngina University College",
+        "matching_heading": "Bachelor of Science (Mathematics and Computer Science)",
+        "useful_detail_signals": [
+          "entry requirements",
+          "kcse"
+        ]
+      }
+    },
+    {
+      "university": "KENYATTA UNIVERSITY - MAMA NGINA UNIVERSITY COLLEGE",
+      "domain": "mnu.ac.ke",
+      "course": "BACHELOR OF SCIENCE (NURSING)",
+      "target_type": "institution",
+      "url": "https://mnu.ac.ke/undergraduate-courses/bachelor-of-science-in-nursing/",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T12:46:34.930206+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Science in Nursing - Mama Ngina University College",
+        "matching_heading": "Bachelor of Science in Nursing",
+        "useful_detail_signals": [
+          "curriculum",
+          "entry requirements",
+          "kcse"
+        ]
+      }
+    },
+    {
+      "university": "KENYATTA UNIVERSITY - MAMA NGINA UNIVERSITY COLLEGE",
+      "domain": "mnu.ac.ke",
+      "course": "BACHELOR OF SCIENCE (POPULATION HEALTH)",
+      "target_type": "institution",
+      "url": "https://mnu.ac.ke/undergraduate-courses/bachelor-of-science-population-health/",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T12:46:34.930206+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Science (Population Health) - Mama Ngina University College",
+        "matching_heading": "Bachelor of Science (Population Health)",
+        "useful_detail_signals": [
+          "entry requirements",
+          "kcse"
+        ]
+      }
+    },
+    {
+      "university": "MERU UNIVERSITY OF SCIENCE AND TECHNOLOGY",
+      "domain": "must.ac.ke",
+      "course": "BACHELOR OF SCIENCE (HUMAN NUTRITION AND DIETETICS)",
+      "target_type": "institution",
+      "url": "https://son.must.ac.ke/bachelor-of-science-in-human-nutrition-and-dietetics/",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T12:53:10.647878+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Science in Human Nutrition and Dietetics | Meru University School of Nursing",
+        "matching_heading": "Bachelor of Science in Human Nutrition and Dietetics",
+        "useful_detail_signals": [
+          "duration",
+          "minimum grade"
+        ]
+      }
+    },
+    {
+      "university": "MULTIMEDIA UNIVERSITY OF KENYA",
+      "domain": "mmu.ac.ke",
+      "course": "BACHELOR OF BUSINESS INFORMATION TECHNOLOGY",
+      "target_type": "institution",
+      "url": "https://www.mmu.ac.ke/bachelor-of-business-information-technology/",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T12:55:19.319638+00:00",
+      "verification_evidence": {
+        "page_title": "BACHELOR OF BUSINESS INFORMATION TECHNOLOGY - Multimedia University of Kenya",
+        "matching_heading": "BACHELOR OF BUSINESS INFORMATION TECHNOLOGY",
+        "useful_detail_signals": [
+          "career opportunities",
+          "duration",
+          "entry requirement",
+          "kcse"
+        ]
+      }
+    },
+    {
+      "university": "MULTIMEDIA UNIVERSITY OF KENYA",
+      "domain": "mmu.ac.ke",
+      "course": "BACHELOR OF COMMERCE",
+      "target_type": "institution",
+      "url": "https://www.mmu.ac.ke/bachelor-of-commerce/",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T12:55:19.319638+00:00",
+      "verification_evidence": {
+        "page_title": "BACHELOR OF COMMERCE - Multimedia University of Kenya",
+        "matching_heading": "BACHELOR OF COMMERCE",
+        "useful_detail_signals": [
+          "career opportunities",
+          "duration",
+          "entry requirements",
+          "kcse"
+        ]
+      }
+    },
+    {
+      "university": "MULTIMEDIA UNIVERSITY OF KENYA",
+      "domain": "mmu.ac.ke",
+      "course": "BACHELOR OF FILM PRODUCTION AND ANIMATION",
+      "target_type": "institution",
+      "url": "https://www.mmu.ac.ke/bachelor-of-film-production-and-animation/",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T12:55:19.319638+00:00",
+      "verification_evidence": {
+        "page_title": "BACHELOR OF FILM PRODUCTION AND ANIMATION - Multimedia University of Kenya",
+        "matching_heading": "BACHELOR OF FILM PRODUCTION AND ANIMATION",
+        "useful_detail_signals": [
+          "career opportunities",
+          "duration",
+          "entry requirement",
+          "kcse"
+        ]
+      }
+    },
+    {
+      "university": "MULTIMEDIA UNIVERSITY OF KENYA",
+      "domain": "mmu.ac.ke",
+      "course": "BACHELOR OF JOURNALISM",
+      "target_type": "institution",
+      "url": "https://www.mmu.ac.ke/bachelor-of-journalism/",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T12:55:19.319638+00:00",
+      "verification_evidence": {
+        "page_title": "BACHELOR OF JOURNALISM - Multimedia University of Kenya",
+        "matching_heading": "BACHELOR OF JOURNALISM",
+        "useful_detail_signals": [
+          "career opportunities",
+          "duration",
+          "entry requirement",
+          "kcse"
+        ]
+      }
+    },
+    {
+      "university": "MULTIMEDIA UNIVERSITY OF KENYA",
+      "domain": "mmu.ac.ke",
+      "course": "BACHELOR OF PROCUREMENT AND LOGISTICS MANAGEMENT",
+      "target_type": "institution",
+      "url": "https://www.mmu.ac.ke/bachelor-of-procurement-and-logistics-management/",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T12:55:19.319638+00:00",
+      "verification_evidence": {
+        "page_title": "BACHELOR OF PROCUREMENT AND LOGISTICS MANAGEMENT - Multimedia University of Kenya",
+        "matching_heading": "BACHELOR OF PROCUREMENT AND LOGISTICS MANAGEMENT",
+        "useful_detail_signals": [
+          "career opportunities",
+          "duration",
+          "entry requirement",
+          "kcse"
+        ]
+      }
+    },
+    {
+      "university": "MULTIMEDIA UNIVERSITY OF KENYA",
+      "domain": "mmu.ac.ke",
+      "course": "BACHELOR OF SCIENCE (COMPUTER TECHNOLOGY)",
+      "target_type": "institution",
+      "url": "https://www.mmu.ac.ke/bachelor-of-science-in-computer-technology/",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T12:55:19.319638+00:00",
+      "verification_evidence": {
+        "page_title": "BACHELOR OF SCIENCE IN COMPUTER TECHNOLOGY - Multimedia University of Kenya",
+        "matching_heading": "BACHELOR OF SCIENCE IN COMPUTER TECHNOLOGY",
+        "useful_detail_signals": [
+          "career opportunities",
+          "duration",
+          "entry requirement",
+          "kcse"
+        ]
+      }
+    },
+    {
+      "university": "MULTIMEDIA UNIVERSITY OF KENYA",
+      "domain": "mmu.ac.ke",
+      "course": "BACHELOR OF SCIENCE IN ACTUARIAL SCIENCE",
+      "target_type": "institution",
+      "url": "https://www.mmu.ac.ke/bachelor-of-science-in-actuarial-science/",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T12:55:19.319638+00:00",
+      "verification_evidence": {
+        "page_title": "BACHELOR OF SCIENCE IN ACTUARIAL SCIENCE - Multimedia University of Kenya",
+        "matching_heading": "BACHELOR OF SCIENCE IN ACTUARIAL SCIENCE",
+        "useful_detail_signals": [
+          "career opportunities",
+          "duration",
+          "entry requirement",
+          "kcse"
+        ]
+      }
+    },
+    {
+      "university": "MULTIMEDIA UNIVERSITY OF KENYA",
+      "domain": "mmu.ac.ke",
+      "course": "BACHELOR OF SCIENCE IN ANALYTICAL CHEMISTRY",
+      "target_type": "institution",
+      "url": "https://www.mmu.ac.ke/bachelor-of-science-in-analytical-chemistry/",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T12:55:19.319638+00:00",
+      "verification_evidence": {
+        "page_title": "BACHELOR OF SCIENCE IN ANALYTICAL CHEMISTRY - Multimedia University of Kenya",
+        "matching_heading": "BACHELOR OF SCIENCE IN ANALYTICAL CHEMISTRY",
+        "useful_detail_signals": [
+          "career opportunities",
+          "duration",
+          "entry requirements",
+          "kcse",
+          "minimum grade"
+        ]
+      }
+    },
+    {
+      "university": "MULTIMEDIA UNIVERSITY OF KENYA",
+      "domain": "mmu.ac.ke",
+      "course": "BACHELOR OF SCIENCE IN APPLIED OPTICS AND LASERS",
+      "target_type": "institution",
+      "url": "https://www.mmu.ac.ke/bachelor-of-science-in-applied-optics-and-lasers/",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T12:55:19.319638+00:00",
+      "verification_evidence": {
+        "page_title": "BACHELOR OF SCIENCE IN APPLIED OPTICS AND LASERS - Multimedia University of Kenya",
+        "matching_heading": "BACHELOR OF SCIENCE IN APPLIED OPTICS AND LASERS",
+        "useful_detail_signals": [
+          "career opportunities",
+          "duration",
+          "entry requirements",
+          "kcse",
+          "minimum grade",
+          "program structure"
+        ]
+      }
+    },
+    {
+      "university": "MULTIMEDIA UNIVERSITY OF KENYA",
+      "domain": "mmu.ac.ke",
+      "course": "BACHELOR OF SCIENCE IN APPLIED PHYSICS AND COMPUTER SCIENCE",
+      "target_type": "institution",
+      "url": "https://www.mmu.ac.ke/bachelor-of-science-in-applied-physics-and-computer-science/",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T12:55:19.319638+00:00",
+      "verification_evidence": {
+        "page_title": "BACHELOR OF SCIENCE IN APPLIED PHYSICS AND COMPUTER SCIENCE - Multimedia University of Kenya",
+        "matching_heading": "BACHELOR OF SCIENCE IN APPLIED PHYSICS AND COMPUTER SCIENCE",
+        "useful_detail_signals": [
+          "entry requirement",
+          "kcse",
+          "minimum grade"
+        ]
+      }
+    },
+    {
+      "university": "MULTIMEDIA UNIVERSITY OF KENYA",
+      "domain": "mmu.ac.ke",
+      "course": "BACHELOR OF SCIENCE IN CIVIL ENGINEERING",
+      "target_type": "institution",
+      "url": "https://www.mmu.ac.ke/bachelor-of-science-in-civil-engineering/",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T12:55:19.319638+00:00",
+      "verification_evidence": {
+        "page_title": "BACHELOR OF SCIENCE IN CIVIL ENGINEERING - Multimedia University of Kenya",
+        "matching_heading": "BACHELOR OF SCIENCE IN CIVIL ENGINEERING",
+        "useful_detail_signals": [
+          "duration",
+          "entry requirements",
+          "kcse"
+        ]
+      }
+    },
+    {
+      "university": "MULTIMEDIA UNIVERSITY OF KENYA",
+      "domain": "mmu.ac.ke",
+      "course": "BACHELOR OF SCIENCE IN COMPUTER SCIENCE",
+      "target_type": "institution",
+      "url": "https://www.mmu.ac.ke/bcs-in-computer-science/",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T12:55:19.319638+00:00",
+      "verification_evidence": {
+        "page_title": "BACHELOR OF SCIENCE IN COMPUTER SCIENCE - Multimedia University of Kenya",
+        "matching_heading": "BACHELOR OF SCIENCE IN COMPUTER SCIENCE",
+        "useful_detail_signals": [
+          "career opportunities",
+          "duration",
+          "entry requirements",
+          "kcse"
+        ]
+      }
+    },
+    {
+      "university": "TAITA TAVETA UNIVERSITY",
+      "domain": "ttu.ac.ke",
+      "course": "BACHELOR OF BUSINESS INFORMATION TECHNOLOGY",
+      "target_type": "institution",
+      "url": "https://ttu.ac.ke/programmes/bachelor-of-business-information-technology",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T12:58:42.022531+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Business Information Technology - Taita Taveta University",
+        "matching_heading": "Bachelor of Business Information Technology",
+        "useful_detail_signals": [
+          "admission",
+          "career opportunities",
+          "curriculum",
+          "duration",
+          "kcse",
+          "programme overview",
+          "programme structure"
+        ]
+      }
+    },
+    {
+      "university": "TAITA TAVETA UNIVERSITY",
+      "domain": "ttu.ac.ke",
+      "course": "BACHELOR OF ECONOMICS",
+      "target_type": "institution",
+      "url": "https://ttu.ac.ke/programmes/bachelor-of-economics",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T12:58:42.022531+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Economics - Taita Taveta University",
+        "matching_heading": "Bachelor of Economics",
+        "useful_detail_signals": [
+          "admission",
+          "career opportunities",
+          "curriculum",
+          "duration",
+          "kcse",
+          "programme overview",
+          "programme structure"
+        ]
+      }
+    },
+    {
+      "university": "TAITA TAVETA UNIVERSITY",
+      "domain": "ttu.ac.ke",
+      "course": "BACHELOR OF EDUCATION (ARTS)",
+      "target_type": "institution",
+      "url": "https://ttu.ac.ke/programmes/bachelor-of-education-(arts)",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T12:58:42.022531+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Education (Arts) - Taita Taveta University",
+        "matching_heading": "Bachelor of Education (Arts)",
+        "useful_detail_signals": [
+          "admission",
+          "career opportunities",
+          "curriculum",
+          "duration",
+          "kcse",
+          "programme overview",
+          "programme structure"
+        ]
+      }
+    },
+    {
+      "university": "TAITA TAVETA UNIVERSITY",
+      "domain": "ttu.ac.ke",
+      "course": "BACHELOR OF EDUCATION (SCIENCE)",
+      "target_type": "institution",
+      "url": "https://ttu.ac.ke/programmes/bachelor-of-education-(science)",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T12:58:42.022531+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Education (Science) - Taita Taveta University",
+        "matching_heading": "Bachelor of Education (Science)",
+        "useful_detail_signals": [
+          "admission",
+          "career opportunities",
+          "curriculum",
+          "duration",
+          "kcse",
+          "programme overview",
+          "programme structure"
+        ]
+      }
+    },
+    {
+      "university": "TAITA TAVETA UNIVERSITY",
+      "domain": "ttu.ac.ke",
+      "course": "BACHELOR OF MARITIME AND SHIPPING MANAGEMENT",
+      "target_type": "institution",
+      "url": "https://ttu.ac.ke/programmes/bachelor-of-maritime-and-shipping-management",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T12:58:42.022531+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Maritime and Shipping Management - Taita Taveta University",
+        "matching_heading": "Bachelor of Maritime and Shipping Management",
+        "useful_detail_signals": [
+          "admission",
+          "career opportunities",
+          "curriculum",
+          "duration",
+          "kcse",
+          "programme overview",
+          "programme structure"
+        ]
+      }
+    },
+    {
+      "university": "TAITA TAVETA UNIVERSITY",
+      "domain": "ttu.ac.ke",
+      "course": "BACHELOR OF PURCHASING AND SUPPLIES MANAGEMENT",
+      "target_type": "institution",
+      "url": "https://ttu.ac.ke/programmes/bachelor-of-purchasing-and-supplies-management",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T12:58:42.022531+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Purchasing and Supplies Management - Taita Taveta University",
+        "matching_heading": "Bachelor of Purchasing and Supplies Management",
+        "useful_detail_signals": [
+          "admission",
+          "career opportunities",
+          "curriculum",
+          "duration",
+          "kcse",
+          "programme overview",
+          "programme structure"
+        ]
+      }
+    },
+    {
+      "university": "TAITA TAVETA UNIVERSITY",
+      "domain": "ttu.ac.ke",
+      "course": "BACHELOR OF SCIENCE (CIVIL ENGINEERING)",
+      "target_type": "institution",
+      "url": "https://ttu.ac.ke/programmes/bachelor-of-science-in-civil-engineering",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T12:58:42.022531+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Science in Civil Engineering - Taita Taveta University",
+        "matching_heading": "Bachelor of Science in Civil Engineering",
+        "useful_detail_signals": [
+          "admission",
+          "career opportunities",
+          "curriculum",
+          "duration",
+          "kcse",
+          "programme overview",
+          "programme structure"
+        ]
+      }
+    },
+    {
+      "university": "TAITA TAVETA UNIVERSITY",
+      "domain": "ttu.ac.ke",
+      "course": "BACHELOR OF SCIENCE (HORTICULTURE)",
+      "target_type": "institution",
+      "url": "https://ttu.ac.ke/programmes/bachelor-of-science-(horticulture)",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T12:58:42.022531+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Science (Horticulture) - Taita Taveta University",
+        "matching_heading": "Bachelor of Science (Horticulture)",
+        "useful_detail_signals": [
+          "admission",
+          "career opportunities",
+          "curriculum",
+          "duration",
+          "kcse",
+          "programme overview",
+          "programme structure"
+        ]
+      }
+    },
+    {
+      "university": "TAITA TAVETA UNIVERSITY",
+      "domain": "ttu.ac.ke",
+      "course": "BACHELOR OF SCIENCE (INFORMATION TECHNOLOGY)",
+      "target_type": "institution",
+      "url": "https://ttu.ac.ke/programmes/bachelor-of-science-in-information-technology",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T12:58:42.022531+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Science in Information Technology - Taita Taveta University",
+        "matching_heading": "Bachelor of Science in Information Technology",
+        "useful_detail_signals": [
+          "admission",
+          "career opportunities",
+          "curriculum",
+          "duration",
+          "kcse",
+          "programme overview",
+          "programme structure"
+        ]
+      }
+    },
+    {
+      "university": "TAITA TAVETA UNIVERSITY",
+      "domain": "ttu.ac.ke",
+      "course": "BACHELOR OF SCIENCE (MATHEMATICS AND COMPUTER",
+      "target_type": "institution",
+      "url": "https://ttu.ac.ke/programmes/bachelor-of-science-in-mathematics-and-computer-science",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T12:58:42.022531+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Science in Mathematics and Computer Science - Taita Taveta University",
+        "matching_heading": "Bachelor of Science in Mathematics and Computer Science",
+        "useful_detail_signals": [
+          "admission",
+          "career opportunities",
+          "curriculum",
+          "duration",
+          "kcse",
+          "programme overview",
+          "programme structure"
+        ]
+      }
+    },
+    {
+      "university": "TAITA TAVETA UNIVERSITY",
+      "domain": "ttu.ac.ke",
+      "course": "BACHELOR OF SCIENCE (MECHANICAL ENGINEERING)",
+      "target_type": "institution",
+      "url": "https://ttu.ac.ke/programmes/bachelor-of-science-(mechanical-engineering)",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T12:58:42.022531+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Science (Mechanical Engineering) - Taita Taveta University",
+        "matching_heading": "Bachelor of Science (Mechanical Engineering)",
+        "useful_detail_signals": [
+          "admission",
+          "career opportunities",
+          "curriculum",
+          "duration",
+          "kcse",
+          "programme overview",
+          "programme structure"
+        ]
+      }
+    },
+    {
+      "university": "TAITA TAVETA UNIVERSITY",
+      "domain": "ttu.ac.ke",
+      "course": "BACHELOR OF SCIENCE (MINING AND MINERAL PROCESSING ENGINEERING)",
+      "target_type": "institution",
+      "url": "https://ttu.ac.ke/programmes/bachelor-of-science-in-mining-and-mineral-processing-engineering",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T12:58:42.022531+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Science in Mining and Mineral Processing Engineering - Taita Taveta University",
+        "matching_heading": "Bachelor of Science in Mining and Mineral Processing Engineering",
+        "useful_detail_signals": [
+          "admission",
+          "career opportunities",
+          "curriculum",
+          "duration",
+          "kcse",
+          "programme overview",
+          "programme structure"
+        ]
+      }
+    },
+    {
+      "university": "TAITA TAVETA UNIVERSITY",
+      "domain": "ttu.ac.ke",
+      "course": "BACHELOR OF SCIENCE (STATISTICS)",
+      "target_type": "institution",
+      "url": "https://ttu.ac.ke/programmes/bachelor-of-science-in-statistics",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T12:58:42.022531+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Science in Statistics - Taita Taveta University",
+        "matching_heading": "Bachelor of Science in Statistics",
+        "useful_detail_signals": [
+          "admission",
+          "career opportunities",
+          "curriculum",
+          "duration",
+          "kcse",
+          "programme overview",
+          "programme structure"
+        ]
+      }
+    },
+    {
+      "university": "TAITA TAVETA UNIVERSITY",
+      "domain": "ttu.ac.ke",
+      "course": "BACHELOR OF SCIENCE IN AGRIBUSINESS MANAGEMENT",
+      "target_type": "institution",
+      "url": "https://ttu.ac.ke/programmes/bachelor-of-science-in-agribusiness-management",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T12:58:42.022531+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Science in Agribusiness Management - Taita Taveta University",
+        "matching_heading": "Bachelor of Science in Agribusiness Management",
+        "useful_detail_signals": [
+          "admission",
+          "career opportunities",
+          "curriculum",
+          "duration",
+          "kcse",
+          "programme overview",
+          "programme structure"
+        ]
+      }
+    },
+    {
+      "university": "TAITA TAVETA UNIVERSITY",
+      "domain": "ttu.ac.ke",
+      "course": "BACHELOR OF SCIENCE IN AGRICULTURE",
+      "target_type": "institution",
+      "url": "https://ttu.ac.ke/programmes/bachelor-of-science-in-agriculture",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T12:58:42.022531+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Science in Agriculture - Taita Taveta University",
+        "matching_heading": "Bachelor of Science in Agriculture",
+        "useful_detail_signals": [
+          "admission",
+          "career opportunities",
+          "curriculum",
+          "duration",
+          "kcse",
+          "programme overview",
+          "programme structure"
+        ]
+      }
+    },
+    {
+      "university": "TAITA TAVETA UNIVERSITY",
+      "domain": "ttu.ac.ke",
+      "course": "BACHELOR OF SCIENCE IN AGRICULTURE EDUCATION & EXTENSION",
+      "target_type": "institution",
+      "url": "https://ttu.ac.ke/programmes/bachelor-of-science-in-agriculture-education-and-extension",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T12:58:42.022531+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Science in Agriculture Education & Extension - Taita Taveta University",
+        "matching_heading": "Bachelor of Science in Agriculture Education & Extension",
+        "useful_detail_signals": [
+          "admission",
+          "career opportunities",
+          "curriculum",
+          "duration",
+          "kcse",
+          "programme overview",
+          "programme structure"
+        ]
+      }
+    },
+    {
+      "university": "TAITA TAVETA UNIVERSITY",
+      "domain": "ttu.ac.ke",
+      "course": "BACHELOR OF SCIENCE IN ANALYTICAL CHEMISTRY",
+      "target_type": "institution",
+      "url": "https://ttu.ac.ke/programmes/bachelor-of-science-in-analytical-chemistry",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T12:58:42.022531+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Science in Analytical Chemistry - Taita Taveta University",
+        "matching_heading": "Bachelor of Science in Analytical Chemistry",
+        "useful_detail_signals": [
+          "admission",
+          "career opportunities",
+          "curriculum",
+          "duration",
+          "kcse",
+          "minimum grade",
+          "programme overview",
+          "programme structure"
+        ]
+      }
+    },
+    {
+      "university": "TAITA TAVETA UNIVERSITY",
+      "domain": "ttu.ac.ke",
+      "course": "BACHELOR OF SCIENCE IN APPLIED PHYSICS",
+      "target_type": "institution",
+      "url": "https://ttu.ac.ke/programmes/bachelor-of-science-(applied-physics)-%E2%80%93-bap",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T12:58:42.022531+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Science (Applied Physics) – BAP - Taita Taveta University",
+        "matching_heading": "Bachelor of Science (Applied Physics) – BAP",
+        "useful_detail_signals": [
+          "admission",
+          "career opportunities",
+          "curriculum",
+          "duration",
+          "kcse",
+          "minimum grade",
+          "programme overview",
+          "programme structure"
+        ]
+      }
+    },
+    {
+      "university": "TAITA TAVETA UNIVERSITY",
+      "domain": "ttu.ac.ke",
+      "course": "BACHELOR OF SCIENCE IN INDUSTRIAL CHEMISTRY",
+      "target_type": "institution",
+      "url": "https://ttu.ac.ke/programmes/bachelor-of-science-in-indistrial-chemistry",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T12:58:42.022531+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Science in Industrial Chemistry - Taita Taveta University",
+        "matching_heading": "Bachelor of Science in Industrial Chemistry",
+        "useful_detail_signals": [
+          "admission",
+          "career opportunities",
+          "curriculum",
+          "duration",
+          "kcse",
+          "programme overview",
+          "programme structure"
+        ]
+      }
+    },
+    {
+      "university": "TAITA TAVETA UNIVERSITY",
+      "domain": "ttu.ac.ke",
+      "course": "BACHELOR OF SCIENCE IN RANGELAND ECOSYSTEM MANAGEMENT",
+      "target_type": "institution",
+      "url": "https://ttu.ac.ke/programmes/bachelor-of-science-in-rangeland-ecosystem-management",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T12:58:42.022531+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Science in Rangeland Ecosystem Management - Taita Taveta University",
+        "matching_heading": "Bachelor of Science in Rangeland Ecosystem Management",
+        "useful_detail_signals": [
+          "admission",
+          "career opportunities",
+          "curriculum",
+          "duration",
+          "kcse",
+          "programme overview",
+          "programme structure"
+        ]
+      }
+    },
+    {
+      "university": "TECHNICAL UNIVERSITY OF KENYA",
+      "domain": "tukenya.ac.ke",
+      "course": "BACHELOR OF ARTS (INTERNATIONAL RELATIONS AND DIPLOMACY)",
+      "target_type": "institution",
+      "url": "https://intake.tukenya.ac.ke/index.php?r=courseApplication/default/home&prog=134",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T12:59:55.304890+00:00",
+      "verification_evidence": {
+        "page_title": "Welcome  :: Online Application Portal - The Technical University of Kenya",
+        "matching_heading": "BACHELOR OF ARTS IN INTERNATIONAL RELATIONS AND DIPLOMACY",
+        "useful_detail_signals": [
+          "admission",
+          "kcse"
+        ]
+      }
+    },
+    {
+      "university": "TECHNICAL UNIVERSITY OF KENYA",
+      "domain": "tukenya.ac.ke",
+      "course": "BACHELOR OF ECONOMICS",
+      "target_type": "institution",
+      "url": "https://intake.tukenya.ac.ke/index.php?r=courseApplication/default/home&prog=127",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T12:59:55.304890+00:00",
+      "verification_evidence": {
+        "page_title": "Welcome  :: Online Application Portal - The Technical University of Kenya",
+        "matching_heading": "BACHELOR OF ECONOMICS",
+        "useful_detail_signals": [
+          "admission",
+          "kcse"
+        ]
+      }
+    },
+    {
+      "university": "TECHNICAL UNIVERSITY OF KENYA",
+      "domain": "tukenya.ac.ke",
+      "course": "BACHELOR OF ENGINEERING (CHEMICAL ENGINEERING)",
+      "target_type": "institution",
+      "url": "https://intake.tukenya.ac.ke/index.php?r=courseApplication/default/home&prog=294",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T12:59:55.304890+00:00",
+      "verification_evidence": {
+        "page_title": "Welcome  :: Online Application Portal - The Technical University of Kenya",
+        "matching_heading": "BACHELOR OF ENGINEERING  (CHEMICAL ENGINEERING)",
+        "useful_detail_signals": [
+          "admission",
+          "kcse"
+        ]
+      }
+    },
+    {
+      "university": "TECHNICAL UNIVERSITY OF KENYA",
+      "domain": "tukenya.ac.ke",
+      "course": "BACHELOR OF ENGINEERING (ELECTRICAL AND ELECTRONIC ENGINEERING)",
+      "target_type": "institution",
+      "url": "https://intake.tukenya.ac.ke/index.php?r=courseApplication/default/home&prog=11",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T12:59:55.304890+00:00",
+      "verification_evidence": {
+        "page_title": "Welcome  :: Online Application Portal - The Technical University of Kenya",
+        "matching_heading": "BACHELOR OF PHILOSOPHY (ELECTRICAL & ELECTRONIC ENGINEERING)",
+        "useful_detail_signals": [
+          "admission",
+          "kcse"
+        ]
+      }
+    },
+    {
+      "university": "TECHNICAL UNIVERSITY OF KENYA",
+      "domain": "tukenya.ac.ke",
+      "course": "BACHELOR OF ENGINEERING (GEOSPATIAL ENGINEERING)",
+      "target_type": "institution",
+      "url": "https://intake.tukenya.ac.ke/index.php?r=courseApplication/default/home&prog=115",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T12:59:55.304890+00:00",
+      "verification_evidence": {
+        "page_title": "Welcome  :: Online Application Portal - The Technical University of Kenya",
+        "matching_heading": "BACHELOR OF ENGINEERING (GEOSPATIAL ENGINEERING)",
+        "useful_detail_signals": [
+          "admission",
+          "kcse"
+        ]
+      }
+    },
+    {
+      "university": "TECHNICAL UNIVERSITY OF KENYA",
+      "domain": "tukenya.ac.ke",
+      "course": "BACHELOR OF ENGINEERING (MECHANICAL ENGINEERING)",
+      "target_type": "institution",
+      "url": "https://intake.tukenya.ac.ke/index.php?r=courseApplication/default/home&prog=118",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T12:59:55.304890+00:00",
+      "verification_evidence": {
+        "page_title": "Welcome  :: Online Application Portal - The Technical University of Kenya",
+        "matching_heading": "BACHELOR OF ENGINEERING (MECHANICAL ENGINEERING)",
+        "useful_detail_signals": [
+          "admission",
+          "kcse"
+        ]
+      }
+    },
+    {
+      "university": "TECHNICAL UNIVERSITY OF KENYA",
+      "domain": "tukenya.ac.ke",
+      "course": "BACHELOR OF MUSIC",
+      "target_type": "institution",
+      "url": "https://intake.tukenya.ac.ke/index.php?r=courseApplication/default/home&prog=103",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T12:59:55.304890+00:00",
+      "verification_evidence": {
+        "page_title": "Welcome  :: Online Application Portal - The Technical University of Kenya",
+        "matching_heading": "BACHELOR OF MUSIC",
+        "useful_detail_signals": [
+          "admission",
+          "kcse"
+        ]
+      }
+    },
+    {
+      "university": "TECHNICAL UNIVERSITY OF KENYA",
+      "domain": "tukenya.ac.ke",
+      "course": "BACHELOR OF TECHNOLOGY (APPLIED BIOLOGY)",
+      "target_type": "institution",
+      "url": "https://intake.tukenya.ac.ke/index.php?r=courseApplication/default/home&prog=21",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T12:59:55.304890+00:00",
+      "verification_evidence": {
+        "page_title": "Welcome  :: Online Application Portal - The Technical University of Kenya",
+        "matching_heading": "BACHELOR OF PHILOSOPHY IN TECHNOLOGY (APPLIED BIOLOGY)",
+        "useful_detail_signals": [
+          "admission",
+          "kcse"
+        ]
+      }
+    },
+    {
+      "university": "TECHNICAL UNIVERSITY OF KENYA",
+      "domain": "tukenya.ac.ke",
+      "course": "BACHELOR OF TECHNOLOGY (CHEMICAL ENGINEERING)",
+      "target_type": "institution",
+      "url": "https://intake.tukenya.ac.ke/index.php?r=courseApplication/default/home&prog=296",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T12:59:55.304890+00:00",
+      "verification_evidence": {
+        "page_title": "Welcome  :: Online Application Portal - The Technical University of Kenya",
+        "matching_heading": "BACHELOR OF TECHNOLOGY (CHEMICAL ENGINEERING)",
+        "useful_detail_signals": [
+          "admission",
+          "kcse"
+        ]
+      }
+    },
+    {
+      "university": "TECHNICAL UNIVERSITY OF KENYA",
+      "domain": "tukenya.ac.ke",
+      "course": "BACHELOR OF TECHNOLOGY (GEOINFORMATION TECHNOLOGY)",
+      "target_type": "institution",
+      "url": "https://intake.tukenya.ac.ke/index.php?r=courseApplication/default/home&prog=5",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T12:59:55.304890+00:00",
+      "verification_evidence": {
+        "page_title": "Welcome  :: Online Application Portal - The Technical University of Kenya",
+        "matching_heading": "BACHELOR OF  TECHNOLOGY (GEOINFORMATION TECHNOLOGY)",
+        "useful_detail_signals": [
+          "admission",
+          "kcse"
+        ]
+      }
+    },
+    {
+      "university": "TECHNICAL UNIVERSITY OF KENYA",
+      "domain": "tukenya.ac.ke",
+      "course": "BACHELOR OF TECHNOLOGY (JOURNALISM AND MASS COMMUNICATION)",
+      "target_type": "institution",
+      "url": "https://intake.tukenya.ac.ke/index.php?r=courseApplication/default/home&prog=133",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T12:59:55.304890+00:00",
+      "verification_evidence": {
+        "page_title": "Welcome  :: Online Application Portal - The Technical University of Kenya",
+        "matching_heading": "BACHELOR IN TECHNOLOGY (JOURNALISM AND MASS COMMUNICATION)",
+        "useful_detail_signals": [
+          "admission",
+          "kcse"
+        ]
+      }
+    },
+    {
+      "university": "TECHNICAL UNIVERSITY OF KENYA",
+      "domain": "tukenya.ac.ke",
+      "course": "BACHELOR OF TECHNOLOGY (MECHANICAL ENGINEERING TECHNOLOGY)",
+      "target_type": "institution",
+      "url": "https://intake.tukenya.ac.ke/index.php?r=courseApplication/default/home&prog=12",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T12:59:55.304890+00:00",
+      "verification_evidence": {
+        "page_title": "Welcome  :: Online Application Portal - The Technical University of Kenya",
+        "matching_heading": "BACHELOR OF  PHILOSOPHY IN TECHNOLOGY(MECHANICAL ENGINEERING TECHNOLOGY )",
+        "useful_detail_signals": [
+          "admission",
+          "kcse"
+        ]
+      }
+    },
+    {
+      "university": "TECHNICAL UNIVERSITY OF MOMBASA",
+      "domain": "tum.ac.ke",
+      "course": "BACHELOR IN BUSINESS ADMINISTRATION",
+      "target_type": "institution",
+      "url": "https://tum.ac.ke/programmes/bachelor-of-business-administration",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T13:00:29.246528+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Business Administration",
+        "matching_heading": "Bachelor of Business Administration",
+        "useful_detail_signals": [
+          "admission",
+          "kcse",
+          "learning outcomes"
+        ]
+      }
+    },
+    {
+      "university": "TECHNICAL UNIVERSITY OF MOMBASA",
+      "domain": "tum.ac.ke",
+      "course": "BACHELOR OF ARTS IN CONFLICTS AND SECURITY STUDIES",
+      "target_type": "institution",
+      "url": "https://tum.ac.ke/programmes/bachelor-of-arts-in-conflicts-and-security-studies",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T13:00:29.246528+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Arts in Conflicts and Security Studies",
+        "matching_heading": "Bachelor of Arts in Conflicts and Security Studies",
+        "useful_detail_signals": [
+          "admission",
+          "kcse",
+          "learning outcomes"
+        ]
+      }
+    },
+    {
+      "university": "TECHNICAL UNIVERSITY OF MOMBASA",
+      "domain": "tum.ac.ke",
+      "course": "BACHELOR OF ARTS IN COUNSELLING PSYCHOLOGY",
+      "target_type": "institution",
+      "url": "https://tum.ac.ke/programmes/bachelor-of-arts-in-counselling-psychology",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T13:00:29.246528+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Arts in Counselling Psychology",
+        "matching_heading": "Bachelor of Arts in Counselling Psychology",
+        "useful_detail_signals": [
+          "admission",
+          "kcse",
+          "learning outcomes"
+        ]
+      }
+    },
+    {
+      "university": "TECHNICAL UNIVERSITY OF MOMBASA",
+      "domain": "tum.ac.ke",
+      "course": "BACHELOR OF ARTS IN DEVELOPMENT STUDIES",
+      "target_type": "institution",
+      "url": "https://tum.ac.ke/programmes/bachelor-of-arts-in-development-studies",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T13:00:29.246528+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Arts in Development Studies",
+        "matching_heading": "Bachelor of Arts in Development Studies",
+        "useful_detail_signals": [
+          "admission",
+          "kcse",
+          "learning outcomes"
+        ]
+      }
+    },
+    {
+      "university": "TECHNICAL UNIVERSITY OF MOMBASA",
+      "domain": "tum.ac.ke",
+      "course": "BACHELOR OF ARTS IN SOCIOLOGY",
+      "target_type": "institution",
+      "url": "https://tum.ac.ke/programmes/bachelor-of-arts-in-sociology",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T13:00:29.246528+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Arts in Sociology",
+        "matching_heading": "Bachelor of Arts in Sociology",
+        "useful_detail_signals": [
+          "admission",
+          "kcse",
+          "learning outcomes"
+        ]
+      }
+    },
+    {
+      "university": "TECHNICAL UNIVERSITY OF MOMBASA",
+      "domain": "tum.ac.ke",
+      "course": "BACHELOR OF BROADCAST JOURNALISM",
+      "target_type": "institution",
+      "url": "https://tum.ac.ke/programmes/bachelor-of-broadcast-journalism",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T13:00:29.246528+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Broadcast Journalism",
+        "matching_heading": "Bachelor of Broadcast Journalism",
+        "useful_detail_signals": [
+          "admission",
+          "kcse",
+          "learning outcomes"
+        ]
+      }
+    },
+    {
+      "university": "TECHNICAL UNIVERSITY OF MOMBASA",
+      "domain": "tum.ac.ke",
+      "course": "BACHELOR OF BUSINESS AND OFFICE MANAGEMENT",
+      "target_type": "institution",
+      "url": "https://tum.ac.ke/programmes/bachelor-of-business-and-office-management",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T13:00:29.246528+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Business and Office Management",
+        "matching_heading": "Bachelor of Business and Office Management",
+        "useful_detail_signals": [
+          "admission",
+          "kcse",
+          "learning outcomes"
+        ]
+      }
+    },
+    {
+      "university": "TECHNICAL UNIVERSITY OF MOMBASA",
+      "domain": "tum.ac.ke",
+      "course": "BACHELOR OF BUSINESS INFORMATION TECHNOLOGY",
+      "target_type": "institution",
+      "url": "https://tum.ac.ke/programmes/bachelor-of-business-and-information-technology",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T13:00:29.246528+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Business and Information Technology",
+        "matching_heading": "Bachelor of Business and Information Technology",
+        "useful_detail_signals": [
+          "admission",
+          "kcse",
+          "learning outcomes"
+        ]
+      }
+    },
+    {
+      "university": "TECHNICAL UNIVERSITY OF MOMBASA",
+      "domain": "tum.ac.ke",
+      "course": "BACHELOR OF COMMERCE",
+      "target_type": "institution",
+      "url": "https://tum.ac.ke/programmes/bachelor-of-commerce",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T13:00:29.246528+00:00",
+      "verification_evidence": {
+        "page_title": "BACHELOR OF COMMERCE",
+        "matching_heading": "BACHELOR OF COMMERCE",
+        "useful_detail_signals": [
+          "admission",
+          "learning outcomes"
+        ]
+      }
+    },
+    {
+      "university": "TECHNICAL UNIVERSITY OF MOMBASA",
+      "domain": "tum.ac.ke",
+      "course": "BACHELOR OF JOURNALISM & MASS COMMUNICATION",
+      "target_type": "institution",
+      "url": "https://tum.ac.ke/programmes/bachelor-of-journalism-and-mass-communication",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T13:00:29.246528+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Journalism and Mass Communication",
+        "matching_heading": "Bachelor of Journalism and Mass Communication",
+        "useful_detail_signals": [
+          "admission",
+          "kcse",
+          "learning outcomes"
+        ]
+      }
+    },
+    {
+      "university": "TECHNICAL UNIVERSITY OF MOMBASA",
+      "domain": "tum.ac.ke",
+      "course": "BACHELOR OF MEDICINE AND BACHELOR OF SURGERY",
+      "target_type": "institution",
+      "url": "https://tum.ac.ke/programmes/bachelor-of-medicine-and-bachelor-of-surgery",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T13:00:29.246528+00:00",
+      "verification_evidence": {
+        "page_title": "BACHELOR OF MEDICINE AND BACHELOR OF SURGERY",
+        "matching_heading": "BACHELOR OF MEDICINE AND BACHELOR OF SURGERY",
+        "useful_detail_signals": [
+          "admission",
+          "kcse",
+          "learning outcomes"
+        ]
+      }
+    },
+    {
+      "university": "TECHNICAL UNIVERSITY OF MOMBASA",
+      "domain": "tum.ac.ke",
+      "course": "BACHELOR OF QUANTITY SURVEYING",
+      "target_type": "institution",
+      "url": "https://tum.ac.ke/programmes/bachelor-of-quantity-surveying",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T13:00:29.246528+00:00",
+      "verification_evidence": {
+        "page_title": "BACHELOR OF QUANTITY SURVEYING",
+        "matching_heading": "BACHELOR OF QUANTITY SURVEYING",
+        "useful_detail_signals": [
+          "admission",
+          "kcse",
+          "learning outcomes"
+        ]
+      }
+    },
+    {
+      "university": "TECHNICAL UNIVERSITY OF MOMBASA",
+      "domain": "tum.ac.ke",
+      "course": "BACHELOR OF SCIENCE IN BIOCHEMISTRY",
+      "target_type": "institution",
+      "url": "https://tum.ac.ke/programmes/bachelor-of-science-in-biochemistry",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T13:00:29.246528+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Science in Biochemistry",
+        "matching_heading": "Bachelor of Science in Biochemistry",
+        "useful_detail_signals": [
+          "admission",
+          "kcse",
+          "learning outcomes"
+        ]
+      }
+    },
+    {
+      "university": "TECHNICAL UNIVERSITY OF MOMBASA",
+      "domain": "tum.ac.ke",
+      "course": "BACHELOR OF SCIENCE IN CIVIL ENGINEERING",
+      "target_type": "institution",
+      "url": "https://tum.ac.ke/programmes/bachelor-of-science-in-civil-engineering",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T13:00:29.246528+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Science in Civil Engineering",
+        "matching_heading": "Bachelor of Science in Civil Engineering",
+        "useful_detail_signals": [
+          "admission",
+          "kcse",
+          "learning outcomes"
+        ]
+      }
+    },
+    {
+      "university": "TECHNICAL UNIVERSITY OF MOMBASA",
+      "domain": "tum.ac.ke",
+      "course": "BACHELOR OF SCIENCE IN COMMUNITY HEALTH",
+      "target_type": "institution",
+      "url": "https://tum.ac.ke/programmes/bachelor-of-science-in-community-health",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T13:00:29.246528+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Science in Community Health",
+        "matching_heading": "Bachelor of Science in Community Health",
+        "useful_detail_signals": [
+          "admission",
+          "kcse",
+          "learning outcomes"
+        ]
+      }
+    },
+    {
+      "university": "TECHNICAL UNIVERSITY OF MOMBASA",
+      "domain": "tum.ac.ke",
+      "course": "BACHELOR OF SCIENCE IN INFORMATION SCIENCE",
+      "target_type": "institution",
+      "url": "https://tum.ac.ke/programmes/bachelor-of-information-science",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T13:00:29.246528+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Information Science",
+        "matching_heading": "Bachelor of Information Science",
+        "useful_detail_signals": [
+          "admission",
+          "kcse",
+          "learning outcomes"
+        ]
+      }
+    },
+    {
+      "university": "TOM MBOYA UNIVERSITY",
+      "domain": "tmu.ac.ke",
+      "course": "BACHELOR OF ARTS (BUSINESS STUDIES, WITH IT)",
+      "target_type": "institution",
+      "url": "https://tmu.ac.ke/courses/course_details.php?id=2831",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T13:02:28.556944+00:00",
+      "verification_evidence": {
+        "page_title": "BACHELOR OF ARTS (BUSINESS STUDIES, WITH I.T.) – Tom Mboya University",
+        "matching_heading": "BACHELOR OF ARTS (BUSINESS STUDIES, WITH I.T.)",
+        "useful_detail_signals": [
+          "kcse"
+        ]
+      }
+    },
+    {
+      "university": "TOM MBOYA UNIVERSITY",
+      "domain": "tmu.ac.ke",
+      "course": "BACHELOR OF ARTS (CRIMINOLOGY, WITH IT)",
+      "target_type": "institution",
+      "url": "https://tmu.ac.ke/courses/course_details.php?id=2832",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T13:02:28.556944+00:00",
+      "verification_evidence": {
+        "page_title": "BACHELOR OF ARTS (CRIMINOLOGY, WITH I.T.) – Tom Mboya University",
+        "matching_heading": "BACHELOR OF ARTS (CRIMINOLOGY, WITH I.T.)",
+        "useful_detail_signals": [
+          "kcse"
+        ]
+      }
+    },
+    {
+      "university": "TOM MBOYA UNIVERSITY",
+      "domain": "tmu.ac.ke",
+      "course": "BACHELOR OF ARTS (DEVELOPMENT STUDIES, WITH IT)",
+      "target_type": "institution",
+      "url": "https://tmu.ac.ke/courses/course_details.php?id=2833",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T13:02:28.556944+00:00",
+      "verification_evidence": {
+        "page_title": "BACHELOR OF ARTS (DEVELOPMENT STUDIES, WITH I.T.) – Tom Mboya University",
+        "matching_heading": "BACHELOR OF ARTS (DEVELOPMENT STUDIES, WITH I.T.)",
+        "useful_detail_signals": [
+          "kcse"
+        ]
+      }
+    },
+    {
+      "university": "TOM MBOYA UNIVERSITY",
+      "domain": "tmu.ac.ke",
+      "course": "BACHELOR OF ARTS (ECONOMICS, WITH IT)",
+      "target_type": "institution",
+      "url": "https://tmu.ac.ke/courses/course_details.php?id=208",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T13:02:28.556944+00:00",
+      "verification_evidence": {
+        "page_title": "BACHELOR OF ARTS (ECONOMICS, WITH I.T.) – Tom Mboya University",
+        "matching_heading": "BACHELOR OF ARTS (ECONOMICS, WITH I.T.)",
+        "useful_detail_signals": [
+          "kcse"
+        ]
+      }
+    },
+    {
+      "university": "TOM MBOYA UNIVERSITY",
+      "domain": "tmu.ac.ke",
+      "course": "BACHELOR OF ARTS (SOCIOLOGY AND ANTHROPOLOGY, WITH",
+      "target_type": "institution",
+      "url": "https://tmu.ac.ke/courses/course_details.php?id=205",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T13:02:28.556944+00:00",
+      "verification_evidence": {
+        "page_title": "BACHELOR OF ARTS (SOCIOLOGY & ANTHROPOLOGY, WITH I.T.) – Tom Mboya University",
+        "matching_heading": "BACHELOR OF ARTS (SOCIOLOGY & ANTHROPOLOGY, WITH I.T.)",
+        "useful_detail_signals": [
+          "kcse"
+        ]
+      }
+    },
+    {
+      "university": "TOM MBOYA UNIVERSITY",
+      "domain": "tmu.ac.ke",
+      "course": "BACHELOR OF ARTS (WITH IT)",
+      "target_type": "institution",
+      "url": "https://tmu.ac.ke/courses/course_details.php?id=2830",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T13:02:28.556944+00:00",
+      "verification_evidence": {
+        "page_title": "BACHELOR OF ARTS (WITH I.T.) – Tom Mboya University",
+        "matching_heading": "BACHELOR OF ARTS (WITH I.T.)",
+        "useful_detail_signals": [
+          "kcse"
+        ]
+      }
+    },
+    {
+      "university": "TOM MBOYA UNIVERSITY",
+      "domain": "tmu.ac.ke",
+      "course": "BACHELOR OF BUSINESS ADMINISTRATION ( WITH IT)",
+      "target_type": "institution",
+      "url": "https://tmu.ac.ke/courses/course_details.php?id=210",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T13:02:28.556944+00:00",
+      "verification_evidence": {
+        "page_title": "BACHELOR OF BUSINESS ADMINISTRATION (WITH I.T.) – Tom Mboya University",
+        "matching_heading": "BACHELOR OF BUSINESS ADMINISTRATION (WITH I.T.)",
+        "useful_detail_signals": [
+          "kcse"
+        ]
+      }
+    },
+    {
+      "university": "TOM MBOYA UNIVERSITY",
+      "domain": "tmu.ac.ke",
+      "course": "BACHELOR OF ECONOMICS AND FINANCE, WITH IT",
+      "target_type": "institution",
+      "url": "https://tmu.ac.ke/courses/course_details.php?id=215",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T13:02:28.556944+00:00",
+      "verification_evidence": {
+        "page_title": "BACHELOR OF ECONOMICS (ECONOMICS & FINANCE, WITH IT) – Tom Mboya University",
+        "matching_heading": "BACHELOR OF ECONOMICS (ECONOMICS & FINANCE, WITH IT)",
+        "useful_detail_signals": [
+          "kcse"
+        ]
+      }
+    },
+    {
+      "university": "TOM MBOYA UNIVERSITY",
+      "domain": "tmu.ac.ke",
+      "course": "BACHELOR OF EDUCATION (ARTS, WITH IT)",
+      "target_type": "institution",
+      "url": "https://tmu.ac.ke/courses/course_details.php?id=191",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T13:02:28.556944+00:00",
+      "verification_evidence": {
+        "page_title": "BACHELOR OF EDUCATION (ARTS, WITH I.T.) – Tom Mboya University",
+        "matching_heading": "BACHELOR OF EDUCATION (ARTS, WITH I.T.)",
+        "useful_detail_signals": [
+          "curriculum",
+          "kcse"
+        ]
+      }
+    },
+    {
+      "university": "TOM MBOYA UNIVERSITY",
+      "domain": "tmu.ac.ke",
+      "course": "BACHELOR OF EDUCATION (HOME SCIENCE , WITH IT)",
+      "target_type": "institution",
+      "url": "https://tmu.ac.ke/courses/course_details.php?id=2829",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T13:02:28.556944+00:00",
+      "verification_evidence": {
+        "page_title": "BACHELOR OF EDUCATION (HOME SCIENCE, WITH I.T.) – Tom Mboya University",
+        "matching_heading": "BACHELOR OF EDUCATION (HOME SCIENCE, WITH I.T.)",
+        "useful_detail_signals": [
+          "kcse"
+        ]
+      }
+    },
+    {
+      "university": "TOM MBOYA UNIVERSITY",
+      "domain": "tmu.ac.ke",
+      "course": "BACHELOR OF EDUCATION (SCIENCE, WITH IT)",
+      "target_type": "institution",
+      "url": "https://tmu.ac.ke/courses/course_details.php?id=194",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T13:02:28.556944+00:00",
+      "verification_evidence": {
+        "page_title": "BACHELOR OF EDUCATION (SCIENCE, WITH I.T.) – Tom Mboya University",
+        "matching_heading": "BACHELOR OF EDUCATION (SCIENCE, WITH I.T.)",
+        "useful_detail_signals": [
+          "curriculum",
+          "kcse"
+        ]
+      }
+    },
+    {
+      "university": "TOM MBOYA UNIVERSITY",
+      "domain": "tmu.ac.ke",
+      "course": "BACHELOR OF EDUCATION (SPECIAL NEEDS EDUCATION, WITH IT)",
+      "target_type": "institution",
+      "url": "https://tmu.ac.ke/courses/course_details.php?id=2828",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T13:02:28.556944+00:00",
+      "verification_evidence": {
+        "page_title": "BACHELOR OF EDUCATION (SPECIAL NEEDS EDUCATION, WITH I.T.) – Tom Mboya University",
+        "matching_heading": "BACHELOR OF EDUCATION (SPECIAL NEEDS EDUCATION, WITH I.T.)",
+        "useful_detail_signals": [
+          "kcse",
+          "minimum grade"
+        ]
+      }
+    },
+    {
+      "university": "TOM MBOYA UNIVERSITY",
+      "domain": "tmu.ac.ke",
+      "course": "BACHELOR OF LAND AND ESTATE MANAGEMENT",
+      "target_type": "institution",
+      "url": "https://tmu.ac.ke/courses/course_details.php?id=2834",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T13:02:28.556944+00:00",
+      "verification_evidence": {
+        "page_title": "BACHELOR OF LAND & ESTATE MANAGEMENT – Tom Mboya University",
+        "matching_heading": "BACHELOR OF LAND & ESTATE MANAGEMENT",
+        "useful_detail_signals": [
+          "kcse"
+        ]
+      }
+    },
+    {
+      "university": "TOM MBOYA UNIVERSITY",
+      "domain": "tmu.ac.ke",
+      "course": "BACHELOR OF LAWS (LLB)",
+      "target_type": "institution",
+      "url": "https://tmu.ac.ke/courses/course_details.php?id=1639",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T13:02:28.556944+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Laws (LLB) – Tom Mboya University",
+        "matching_heading": "Bachelor of Laws (LLB)",
+        "useful_detail_signals": [
+          "kcse"
+        ]
+      }
+    },
+    {
+      "university": "TOM MBOYA UNIVERSITY",
+      "domain": "tmu.ac.ke",
+      "course": "BACHELOR OF PROJECT DEVELOPMENT AND MANAGEMENT",
+      "target_type": "institution",
+      "url": "https://tmu.ac.ke/courses/course_details.php?id=2835",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T13:02:28.556944+00:00",
+      "verification_evidence": {
+        "page_title": "BACHELOR OF PROJECT DEVELOPMENT & MANAGEMENT – Tom Mboya University",
+        "matching_heading": "BACHELOR OF PROJECT DEVELOPMENT & MANAGEMENT",
+        "useful_detail_signals": [
+          "kcse"
+        ]
+      }
+    },
+    {
+      "university": "TOM MBOYA UNIVERSITY",
+      "domain": "tmu.ac.ke",
+      "course": "BACHELOR OF SCIENCE (AGRONOMY, WITH IT)",
+      "target_type": "institution",
+      "url": "https://tmu.ac.ke/courses/course_details.php?id=2836",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T13:02:28.556944+00:00",
+      "verification_evidence": {
+        "page_title": "BACHELOR OF SCIENCE (AGRONOMY, WITH I.T.) – Tom Mboya University",
+        "matching_heading": "BACHELOR OF SCIENCE (AGRONOMY, WITH I.T.)",
+        "useful_detail_signals": [
+          "kcse"
+        ]
+      }
+    },
+    {
+      "university": "TOM MBOYA UNIVERSITY",
+      "domain": "tmu.ac.ke",
+      "course": "BACHELOR OF SCIENCE (BASIC SCIENCE, WITH IT)",
+      "target_type": "institution",
+      "url": "https://tmu.ac.ke/courses/course_details.php?id=264",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T13:02:28.556944+00:00",
+      "verification_evidence": {
+        "page_title": "BACHELOR OF SCIENCE (BASIC SCIENCE, WITH I.T.) – Tom Mboya University",
+        "matching_heading": "BACHELOR OF SCIENCE (BASIC SCIENCE, WITH I.T.)",
+        "useful_detail_signals": [
+          "kcse"
+        ]
+      }
+    },
+    {
+      "university": "TOM MBOYA UNIVERSITY",
+      "domain": "tmu.ac.ke",
+      "course": "BACHELOR OF SCIENCE (ECO-TOURISM, HOTEL AND INSTITUTION MANAGEMENT, WITH IT)",
+      "target_type": "institution",
+      "url": "https://tmu.ac.ke/courses/course_details.php?id=2838",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T13:02:28.556944+00:00",
+      "verification_evidence": {
+        "page_title": "BACHELOR OF SCIENCE (ECO-TOURISM, HOTEL AND INSTITUTION MANAGEMENT, WITH I.T.) – Tom Mboya University",
+        "matching_heading": "BACHELOR OF SCIENCE (ECO-TOURISM, HOTEL AND INSTITUTION MANAGEMENT, WITH I.T.)",
+        "useful_detail_signals": [
+          "kcse"
+        ]
+      }
+    },
+    {
+      "university": "TOM MBOYA UNIVERSITY",
+      "domain": "tmu.ac.ke",
+      "course": "BACHELOR OF SCIENCE (ENVIRONMENTAL SCIENCE, WITH IT)",
+      "target_type": "institution",
+      "url": "https://tmu.ac.ke/courses/course_details.php?id=265",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T13:02:28.556944+00:00",
+      "verification_evidence": {
+        "page_title": "BACHELOR OF SCIENCE (ENVIRONMENTAL SCIENCE, WITH I.T.) – Tom Mboya University",
+        "matching_heading": "BACHELOR OF SCIENCE (ENVIRONMENTAL SCIENCE, WITH I.T.)",
+        "useful_detail_signals": [
+          "kcse"
+        ]
+      }
+    },
+    {
+      "university": "TOM MBOYA UNIVERSITY",
+      "domain": "tmu.ac.ke",
+      "course": "BACHELOR OF SCIENCE (GEOGRAPHY AND NATURAL RESOURCE MANAGEMENT, WITH IT)",
+      "target_type": "institution",
+      "url": "https://tmu.ac.ke/courses/course_details.php?id=260",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T13:02:28.556944+00:00",
+      "verification_evidence": {
+        "page_title": "BACHELOR OF SCIENCE (GEOGRAPHY & NATURAL RESOURCE MANAGEMENT, WITH I.T.) – Tom Mboya University",
+        "matching_heading": "BACHELOR OF SCIENCE (GEOGRAPHY & NATURAL RESOURCE MANAGEMENT, WITH I.T.)",
+        "useful_detail_signals": [
+          "curriculum",
+          "kcse"
+        ]
+      }
+    },
+    {
+      "university": "TOM MBOYA UNIVERSITY",
+      "domain": "tmu.ac.ke",
+      "course": "BACHELOR OF SCIENCE (INFORMATION TECHNOLOGY)",
+      "target_type": "institution",
+      "url": "https://tmu.ac.ke/courses/course_details.php?id=2840",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T13:02:28.556944+00:00",
+      "verification_evidence": {
+        "page_title": "BACHELOR OF SCIENCE (INFORMATION TECHNOLOGY) – Tom Mboya University",
+        "matching_heading": "BACHELOR OF SCIENCE (INFORMATION TECHNOLOGY)",
+        "useful_detail_signals": [
+          "kcse"
+        ]
+      }
+    },
+    {
+      "university": "TOM MBOYA UNIVERSITY",
+      "domain": "tmu.ac.ke",
+      "course": "BACHELOR OF SCIENCE (MATHEMATICS & BUSINESS STUDIES, WITH IT)",
+      "target_type": "institution",
+      "url": "https://tmu.ac.ke/courses/course_details.php?id=2841",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T13:02:28.556944+00:00",
+      "verification_evidence": {
+        "page_title": "BACHELOR OF SCIENCE (MATHEMATICS & BUSINESS STUDIES, WITH I.T.) – Tom Mboya University",
+        "matching_heading": "BACHELOR OF SCIENCE (MATHEMATICS & BUSINESS STUDIES, WITH I.T.)",
+        "useful_detail_signals": [
+          "kcse"
+        ]
+      }
+    },
+    {
+      "university": "TOM MBOYA UNIVERSITY",
+      "domain": "tmu.ac.ke",
+      "course": "BACHELOR OF SCIENCE (MEDICAL LABORATORY SCIENCE)",
+      "target_type": "institution",
+      "url": "https://tmu.ac.ke/courses/course_details.php?id=2843",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T13:02:28.556944+00:00",
+      "verification_evidence": {
+        "page_title": "BACHELOR OF SCIENCE (MEDICAL LABORATORY SCIENCE) – Tom Mboya University",
+        "matching_heading": "BACHELOR OF SCIENCE (MEDICAL LABORATORY SCIENCE)",
+        "useful_detail_signals": [
+          "kcse"
+        ]
+      }
+    },
+    {
+      "university": "TOM MBOYA UNIVERSITY",
+      "domain": "tmu.ac.ke",
+      "course": "BACHELOR OF SCIENCE (NUTRITION AND DIETETICS, WITH IT)",
+      "target_type": "institution",
+      "url": "https://tmu.ac.ke/courses/course_details.php?id=263",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T13:02:28.556944+00:00",
+      "verification_evidence": {
+        "page_title": "BACHELOR OF SCIENCE (NUTRITION & DIETETICS, WITH I.T.) – Tom Mboya University",
+        "matching_heading": "BACHELOR OF SCIENCE (NUTRITION & DIETETICS, WITH I.T.)",
+        "useful_detail_signals": [
+          "curriculum",
+          "kcse"
+        ]
+      }
+    },
+    {
+      "university": "TOM MBOYA UNIVERSITY",
+      "domain": "tmu.ac.ke",
+      "course": "BACHELOR OF SCIENCE (PHYSICS, WITH IT)",
+      "target_type": "institution",
+      "url": "https://tmu.ac.ke/courses/course_details.php?id=262",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T13:02:28.556944+00:00",
+      "verification_evidence": {
+        "page_title": "BACHELOR OF SCIENCE (PHYSICS, WITH I.T.) – Tom Mboya University",
+        "matching_heading": "BACHELOR OF SCIENCE (PHYSICS, WITH I.T.)",
+        "useful_detail_signals": [
+          "curriculum",
+          "kcse"
+        ]
+      }
+    },
+    {
+      "university": "TOM MBOYA UNIVERSITY",
+      "domain": "tmu.ac.ke",
+      "course": "BACHELOR OF SCIENCE IN EMPLOYMENT AND LABOUR STUDIES",
+      "target_type": "institution",
+      "url": "https://tmu.ac.ke/courses/course_details.php?id=2844",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T13:02:28.556944+00:00",
+      "verification_evidence": {
+        "page_title": "BACHELOR OF SCIENCE IN EMPLOYMENT & LABOUR STUDIES – Tom Mboya University",
+        "matching_heading": "BACHELOR OF SCIENCE IN EMPLOYMENT & LABOUR STUDIES",
+        "useful_detail_signals": [
+          "kcse"
+        ]
+      }
+    },
+    {
+      "university": "TOM MBOYA UNIVERSITY",
+      "domain": "tmu.ac.ke",
+      "course": "BACHELOR OF SCIENCE IN FINANCIAL ECONOMICS",
+      "target_type": "institution",
+      "url": "https://tmu.ac.ke/courses/course_details.php?id=2845",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T13:02:28.556944+00:00",
+      "verification_evidence": {
+        "page_title": "BACHELOR OF SCIENCE IN FINANCIAL ECONOMICS – Tom Mboya University",
+        "matching_heading": "BACHELOR OF SCIENCE IN FINANCIAL ECONOMICS",
+        "useful_detail_signals": [
+          "kcse"
+        ]
+      }
+    },
+    {
+      "university": "TOM MBOYA UNIVERSITY",
+      "domain": "tmu.ac.ke",
+      "course": "BACHELOR OF SCIENCE IN HUMAN RESOURCE MANAGEMENT, WITH IT",
+      "target_type": "institution",
+      "url": "https://tmu.ac.ke/courses/course_details.php?id=2846",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T13:02:28.556944+00:00",
+      "verification_evidence": {
+        "page_title": "BACHELOR OF SCIENCE (HUMAN RESOURCE MANAGEMENT) – Tom Mboya University",
+        "matching_heading": "BACHELOR OF SCIENCE (HUMAN RESOURCE MANAGEMENT)",
+        "useful_detail_signals": [
+          "kcse"
+        ]
+      }
+    },
+    {
+      "university": "UNIVERSITY OF EASTERN AFRICA, BARATON",
+      "domain": "ueab.ac.ke",
+      "course": "BACHELOR IN BUSINESS ADMINISTRATION IN MARKETING",
+      "target_type": "institution",
+      "url": "https://ueab.ac.ke/course/bachelor-of-business-administration-bba-in-marketing/",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T13:03:24.350695+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Business Administration (BBA) in Marketing – University of Eastern Africa, Baraton",
+        "matching_heading": "Bachelor of Business Administration (BBA) in Marketing",
+        "useful_detail_signals": [
+          "admission",
+          "career opportunities"
+        ]
+      }
+    },
+    {
+      "university": "UNIVERSITY OF EASTERN AFRICA, BARATON",
+      "domain": "ueab.ac.ke",
+      "course": "BACHELOR OF ARTS (MUSIC)",
+      "target_type": "institution",
+      "url": "https://ueab.ac.ke/course/bachelor-of-arts-in-music/",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T13:03:24.350695+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Arts in Music – University of Eastern Africa, Baraton",
+        "matching_heading": "Bachelor of Arts in Music",
+        "useful_detail_signals": [
+          "admission",
+          "career opportunities"
+        ]
+      }
+    },
+    {
+      "university": "UNIVERSITY OF EASTERN AFRICA, BARATON",
+      "domain": "ueab.ac.ke",
+      "course": "BACHELOR OF ARTS IN COUNSELING PSYCHOLOGY",
+      "target_type": "institution",
+      "url": "https://ueab.ac.ke/course/bachelor-of-arts-in-counseling-psychology/",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T13:03:24.350695+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Arts in Counseling Psychology – University of Eastern Africa, Baraton",
+        "matching_heading": "Bachelor of Arts in Counseling Psychology",
+        "useful_detail_signals": [
+          "admission",
+          "career opportunities"
+        ]
+      }
+    },
+    {
+      "university": "UNIVERSITY OF EASTERN AFRICA, BARATON",
+      "domain": "ueab.ac.ke",
+      "course": "BACHELOR OF ARTS IN DEVELOPMENT STUDIES",
+      "target_type": "institution",
+      "url": "https://ueab.ac.ke/course/bachelor-of-arts-in-development-studies/",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T13:03:24.350695+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Arts- in Development Studies – University of Eastern Africa, Baraton",
+        "matching_heading": "Bachelor of Arts- in Development Studies",
+        "useful_detail_signals": [
+          "admission",
+          "career opportunities"
+        ]
+      }
+    },
+    {
+      "university": "UNIVERSITY OF EASTERN AFRICA, BARATON",
+      "domain": "ueab.ac.ke",
+      "course": "BACHELOR OF ARTS IN JOURNALISM AND MASS COMMUNICATION",
+      "target_type": "institution",
+      "url": "https://ueab.ac.ke/course/bachelor-of-arts-in-journalism-and-mass-communication/",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T13:03:24.350695+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Arts in Journalism and Mass Communication – University of Eastern Africa, Baraton",
+        "matching_heading": "Bachelor of Arts in Journalism and Mass Communication",
+        "useful_detail_signals": [
+          "admission",
+          "career opportunities",
+          "kcse"
+        ]
+      }
+    },
+    {
+      "university": "UNIVERSITY OF EASTERN AFRICA, BARATON",
+      "domain": "ueab.ac.ke",
+      "course": "BACHELOR OF ARTS IN SOCIAL WORK",
+      "target_type": "institution",
+      "url": "https://ueab.ac.ke/course/bachelor-of-arts-in-social-work/",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T13:03:24.350695+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Arts in Social Work – University of Eastern Africa, Baraton",
+        "matching_heading": "Bachelor of Arts in Social Work",
+        "useful_detail_signals": [
+          "admission",
+          "career opportunities"
+        ]
+      }
+    },
+    {
+      "university": "UNIVERSITY OF EASTERN AFRICA, BARATON",
+      "domain": "ueab.ac.ke",
+      "course": "BACHELOR OF ARTS IN THEOLOGY",
+      "target_type": "institution",
+      "url": "https://ueab.ac.ke/course/bachelor-of-arts-in-theology/",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T13:03:24.350695+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Arts in Theology – University of Eastern Africa, Baraton",
+        "matching_heading": "Bachelor of Arts in Theology",
+        "useful_detail_signals": [
+          "admission",
+          "career opportunities",
+          "kcse",
+          "minimum grade"
+        ]
+      }
+    },
+    {
+      "university": "UNIVERSITY OF EASTERN AFRICA, BARATON",
+      "domain": "ueab.ac.ke",
+      "course": "BACHELOR OF BUSINESS ADMINISTRATION IN ACCOUNTING",
+      "target_type": "institution",
+      "url": "https://ueab.ac.ke/course/bachelor-of-business-administration-bba-in-accounting/",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T13:03:24.350695+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Business Administration (BBA) in Accounting – University of Eastern Africa, Baraton",
+        "matching_heading": "Bachelor of Business Administration (BBA) in Accounting",
+        "useful_detail_signals": [
+          "admission",
+          "career opportunities",
+          "kcse"
+        ]
+      }
+    },
+    {
+      "university": "UNIVERSITY OF EASTERN AFRICA, BARATON",
+      "domain": "ueab.ac.ke",
+      "course": "BACHELOR OF BUSINESS ADMINISTRATION IN FINANCE",
+      "target_type": "institution",
+      "url": "https://ueab.ac.ke/course/bachelor-of-business-administration-bba-in-finance/",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T13:03:24.350695+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Business Administration (BBA) in Finance – University of Eastern Africa, Baraton",
+        "matching_heading": "Bachelor of Business Administration (BBA) in Finance",
+        "useful_detail_signals": [
+          "admission",
+          "career opportunities",
+          "kcse"
+        ]
+      }
+    },
+    {
+      "university": "UNIVERSITY OF EASTERN AFRICA, BARATON",
+      "domain": "ueab.ac.ke",
+      "course": "BACHELOR OF BUSINESS ADMINISTRATION IN MANAGEMENT",
+      "target_type": "institution",
+      "url": "https://ueab.ac.ke/course/bachelor-of-business-administration-bba-in-management/",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T13:03:24.350695+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Business Administration (BBA) in Management – University of Eastern Africa, Baraton",
+        "matching_heading": "Bachelor of Business Administration (BBA) in Management",
+        "useful_detail_signals": [
+          "admission",
+          "career opportunities"
+        ]
+      }
+    },
+    {
+      "university": "UNIVERSITY OF EASTERN AFRICA, BARATON",
+      "domain": "ueab.ac.ke",
+      "course": "BACHELOR OF BUSINESS ADMINISTRATION IN OFFICE ADMINISTRATION",
+      "target_type": "institution",
+      "url": "https://ueab.ac.ke/course/bachelor-of-business-administration-bba-in-office-administration/",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T13:03:24.350695+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Business Administration (BBA) in Office Administration – University of Eastern Africa, Baraton",
+        "matching_heading": "Bachelor of Business Administration (BBA) in Office Administration",
+        "useful_detail_signals": [
+          "admission",
+          "career opportunities"
+        ]
+      }
+    },
+    {
+      "university": "UNIVERSITY OF EASTERN AFRICA, BARATON",
+      "domain": "ueab.ac.ke",
+      "course": "BACHELOR OF BUSINESS INFORMATION TECHNOLOGY",
+      "target_type": "institution",
+      "url": "https://ueab.ac.ke/course/bachelor-of-business-information-technology-bbit/",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T13:03:24.350695+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Business Information Technology (BBIT) – University of Eastern Africa, Baraton",
+        "matching_heading": "Bachelor of Business Information Technology (BBIT)",
+        "useful_detail_signals": [
+          "admission",
+          "career opportunities",
+          "entry requirement",
+          "kcse"
+        ]
+      }
+    },
+    {
+      "university": "UNIVERSITY OF EASTERN AFRICA, BARATON",
+      "domain": "ueab.ac.ke",
+      "course": "BACHELOR OF EDUCATION (ARTS)",
+      "target_type": "institution",
+      "url": "https://ueab.ac.ke/course/bachelor-of-education-arts/",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T13:03:24.350695+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Education (Arts) – University of Eastern Africa, Baraton",
+        "matching_heading": "Bachelor of Education (Arts)",
+        "useful_detail_signals": [
+          "admission",
+          "curriculum",
+          "kcse",
+          "minimum grade"
+        ]
+      }
+    },
+    {
+      "university": "UNIVERSITY OF EASTERN AFRICA, BARATON",
+      "domain": "ueab.ac.ke",
+      "course": "BACHELOR OF EDUCATION (SCIENCE)",
+      "target_type": "institution",
+      "url": "https://ueab.ac.ke/course/bachelor-of-education-science/",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T13:03:24.350695+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Education (Science) – University of Eastern Africa, Baraton",
+        "matching_heading": "Bachelor of Education (Science)",
+        "useful_detail_signals": [
+          "admission",
+          "curriculum",
+          "kcse",
+          "minimum grade"
+        ]
+      }
+    },
+    {
+      "university": "UNIVERSITY OF EASTERN AFRICA, BARATON",
+      "domain": "ueab.ac.ke",
+      "course": "BACHELOR OF SCIENCE (AGRIBUSINESS)",
+      "target_type": "institution",
+      "url": "https://ueab.ac.ke/course/bachelor-of-science-in-agribusiness/",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T13:03:24.350695+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Science in Agribusiness – University of Eastern Africa, Baraton",
+        "matching_heading": "Bachelor of Science in Agribusiness",
+        "useful_detail_signals": [
+          "admission",
+          "career opportunities",
+          "entry requirements",
+          "kcse",
+          "minimum grade"
+        ]
+      }
+    },
+    {
+      "university": "UNIVERSITY OF EASTERN AFRICA, BARATON",
+      "domain": "ueab.ac.ke",
+      "course": "BACHELOR OF SCIENCE IN AGRICULTURE",
+      "target_type": "institution",
+      "url": "https://ueab.ac.ke/course/bachelor-of-science-in-agriculture-2/",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T13:03:24.350695+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Science in Agriculture – University of Eastern Africa, Baraton",
+        "matching_heading": "Bachelor of Science in Agriculture",
+        "useful_detail_signals": [
+          "admission",
+          "career opportunities",
+          "entry requirements",
+          "kcse",
+          "minimum grade"
+        ]
+      }
+    },
+    {
+      "university": "UNIVERSITY OF EASTERN AFRICA, BARATON",
+      "domain": "ueab.ac.ke",
+      "course": "BACHELOR OF SCIENCE IN AVIATION MANAGEMENT",
+      "target_type": "institution",
+      "url": "https://ueab.ac.ke/course/bachelor-of-science-in-aviation-management/",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T13:03:24.350695+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Science in Aviation Management – University of Eastern Africa, Baraton",
+        "matching_heading": "Bachelor of Science in Aviation Management",
+        "useful_detail_signals": [
+          "admission",
+          "career opportunities",
+          "kcse",
+          "minimum grade"
+        ]
+      }
+    },
+    {
+      "university": "UNIVERSITY OF EASTERN AFRICA, BARATON",
+      "domain": "ueab.ac.ke",
+      "course": "BACHELOR OF SCIENCE IN BIOLOGY",
+      "target_type": "institution",
+      "url": "https://ueab.ac.ke/course/bachelor-of-science-in-biology/",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T13:03:24.350695+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Science in Biology – University of Eastern Africa, Baraton",
+        "matching_heading": "Bachelor of Science in Biology",
+        "useful_detail_signals": [
+          "admission",
+          "career opportunities",
+          "entry requirements",
+          "kcse",
+          "minimum grade"
+        ]
+      }
+    },
+    {
+      "university": "UNIVERSITY OF EASTERN AFRICA, BARATON",
+      "domain": "ueab.ac.ke",
+      "course": "BACHELOR OF SCIENCE IN BIOMEDICAL SCIENCE",
+      "target_type": "institution",
+      "url": "https://ueab.ac.ke/course/bachelor-of-science-in-biomedical-science/",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T13:03:24.350695+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Science in Biomedical Science – University of Eastern Africa, Baraton",
+        "matching_heading": "Bachelor of Science in Biomedical Science",
+        "useful_detail_signals": [
+          "admission",
+          "career opportunities",
+          "entry requirements",
+          "kcse",
+          "minimum grade"
+        ]
+      }
+    },
+    {
+      "university": "UNIVERSITY OF EASTERN AFRICA, BARATON",
+      "domain": "ueab.ac.ke",
+      "course": "BACHELOR OF SCIENCE IN CHEMISTRY",
+      "target_type": "institution",
+      "url": "https://ueab.ac.ke/course/bachelor-of-science-in-chemistry/",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T13:03:24.350695+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Science in Chemistry – University of Eastern Africa, Baraton",
+        "matching_heading": "Bachelor of Science in Chemistry",
+        "useful_detail_signals": [
+          "admission",
+          "career opportunities",
+          "kcse",
+          "minimum grade"
+        ]
+      }
+    },
+    {
+      "university": "UNIVERSITY OF EASTERN AFRICA, BARATON",
+      "domain": "ueab.ac.ke",
+      "course": "BACHELOR OF SCIENCE IN FASHION AND TEXTILE DESIGN",
+      "target_type": "institution",
+      "url": "https://ueab.ac.ke/course/bachelor-of-science-in-fashion-and-textile-design/",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T13:03:24.350695+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Science in Fashion and Textile Design – University of Eastern Africa, Baraton",
+        "matching_heading": "Bachelor of Science in Fashion and Textile Design",
+        "useful_detail_signals": [
+          "admission",
+          "career opportunities",
+          "kcse"
+        ]
+      }
+    },
+    {
+      "university": "UNIVERSITY OF EASTERN AFRICA, BARATON",
+      "domain": "ueab.ac.ke",
+      "course": "BACHELOR OF SCIENCE IN FOODS, NUTRITION AND DIETETICS",
+      "target_type": "institution",
+      "url": "https://ueab.ac.ke/course/bachelor-of-science-in-foods-nutrition-and-dietetics/",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T13:03:24.350695+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Science in Foods, Nutrition and Dietetics – University of Eastern Africa, Baraton",
+        "matching_heading": "Bachelor of Science in Foods, Nutrition and Dietetics",
+        "useful_detail_signals": [
+          "admission",
+          "career opportunities",
+          "kcse"
+        ]
+      }
+    },
+    {
+      "university": "UNIVERSITY OF EASTERN AFRICA, BARATON",
+      "domain": "ueab.ac.ke",
+      "course": "BACHELOR OF SCIENCE IN HOTEL AND HOSPITALITY MANAGEMENT",
+      "target_type": "institution",
+      "url": "https://ueab.ac.ke/course/bachelor-of-science-in-hotel-and-hospitality-management/",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T13:03:24.350695+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Science in Hotel and Hospitality Management – University of Eastern Africa, Baraton",
+        "matching_heading": "Bachelor of Science in Hotel and Hospitality Management",
+        "useful_detail_signals": [
+          "admission",
+          "career opportunities",
+          "kcse"
+        ]
+      }
+    },
+    {
+      "university": "UNIVERSITY OF EASTERN AFRICA, BARATON",
+      "domain": "ueab.ac.ke",
+      "course": "BACHELOR OF SCIENCE IN NETWORKS AND COMMUNICATION SYSTEMS",
+      "target_type": "institution",
+      "url": "https://ueab.ac.ke/course/bachelor-of-science-bsc-networks-and-communication-systems/",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T13:03:24.350695+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Science (BSc) Networks and Communication Systems – University of Eastern Africa, Baraton",
+        "matching_heading": "Bachelor of Science (BSc) Networks and Communication Systems",
+        "useful_detail_signals": [
+          "admission",
+          "career opportunities",
+          "entry requirement",
+          "kcse"
+        ]
+      }
+    },
+    {
+      "university": "UNIVERSITY OF EASTERN AFRICA, BARATON",
+      "domain": "ueab.ac.ke",
+      "course": "BACHELOR OF SCIENCE IN SOFTWARE ENGINEERING",
+      "target_type": "institution",
+      "url": "https://ueab.ac.ke/course/bachelor-of-science-bsc-software-engineering/",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T13:03:24.350695+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Science (BSc) Software Engineering – University of Eastern Africa, Baraton",
+        "matching_heading": "Bachelor of Science (BSc) Software Engineering",
+        "useful_detail_signals": [
+          "admission",
+          "career opportunities",
+          "entry requirement",
+          "kcse"
+        ]
+      }
+    },
+    {
+      "university": "UNIVERSITY OF EMBU",
+      "domain": "embuni.ac.ke",
+      "course": "BACHELOR OF SCIENCE (AGRIBUSINESS MANAGEMENT)",
+      "target_type": "institution",
+      "url": "https://aee.embuni.ac.ke/index.php/component/content/article/bachelor-of-science-in-agribusiness-management-an-overview?catid=2",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T13:04:04.074022+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Science in Agribusiness Management: An Overview",
+        "matching_heading": "Bachelor of Science in Agribusiness Management: An Overview",
+        "useful_detail_signals": [
+          "admission",
+          "curriculum",
+          "duration",
+          "kcse"
+        ]
+      }
+    },
+    {
+      "university": "UNIVERSITY OF KABIANGA",
+      "domain": "kabianga.ac.ke",
+      "course": "BACHELOR OF ARTS (ECONOMICS)",
+      "target_type": "institution",
+      "url": "https://kabianga.ac.ke/node/99",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T13:04:36.460333+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Arts in Economics | University of Kabianga",
+        "matching_heading": "Bachelor of Arts in Economics",
+        "useful_detail_signals": [
+          "admission",
+          "duration",
+          "kcse"
+        ]
+      }
+    },
+    {
+      "university": "UNIVERSITY OF KABIANGA",
+      "domain": "kabianga.ac.ke",
+      "course": "BACHELOR OF ARTS (HUMAN RIGHTS)",
+      "target_type": "institution",
+      "url": "https://kabianga.ac.ke/node/126",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T13:04:36.460333+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Arts in Human Rights | University of Kabianga",
+        "matching_heading": "Bachelor of Arts in Human Rights",
+        "useful_detail_signals": [
+          "admission",
+          "duration",
+          "kcse"
+        ]
+      }
+    },
+    {
+      "university": "UNIVERSITY OF KABIANGA",
+      "domain": "kabianga.ac.ke",
+      "course": "BACHELOR OF ARTS (PUBLIC ADMINISTRATION)",
+      "target_type": "institution",
+      "url": "https://kabianga.ac.ke/node/124",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T13:04:36.460333+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Arts in Public Administration | University of Kabianga",
+        "matching_heading": "Bachelor of Arts in Public Administration",
+        "useful_detail_signals": [
+          "admission",
+          "duration",
+          "kcse"
+        ]
+      }
+    },
+    {
+      "university": "UNIVERSITY OF KABIANGA",
+      "domain": "kabianga.ac.ke",
+      "course": "BACHELOR OF EDUCATION (ARTS)",
+      "target_type": "institution",
+      "url": "https://kabianga.ac.ke/node/120",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T13:04:36.460333+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Education (Arts) | University of Kabianga",
+        "matching_heading": "Bachelor of Education (Arts)",
+        "useful_detail_signals": [
+          "admission",
+          "duration",
+          "kcse"
+        ]
+      }
+    },
+    {
+      "university": "UNIVERSITY OF KABIANGA",
+      "domain": "kabianga.ac.ke",
+      "course": "BACHELOR OF EDUCATION (EARLY CHILDHOOD AND PRIMARY EDUCATION)",
+      "target_type": "institution",
+      "url": "https://kabianga.ac.ke/node/122",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T13:04:36.460333+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Education (Early Childhood and Primary Education) | University of Kabianga",
+        "matching_heading": "Bachelor of Education (Early Childhood and Primary Education)",
+        "useful_detail_signals": [
+          "admission",
+          "duration",
+          "kcse"
+        ]
+      }
+    },
+    {
+      "university": "UNIVERSITY OF KABIANGA",
+      "domain": "kabianga.ac.ke",
+      "course": "BACHELOR OF EDUCATION (SCIENCE)",
+      "target_type": "institution",
+      "url": "https://kabianga.ac.ke/node/121",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T13:04:36.460333+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Education (Science) | University of Kabianga",
+        "matching_heading": "Bachelor of Education (Science)",
+        "useful_detail_signals": [
+          "admission",
+          "duration",
+          "kcse"
+        ]
+      }
+    },
+    {
+      "university": "UNIVERSITY OF KABIANGA",
+      "domain": "kabianga.ac.ke",
+      "course": "BACHELOR OF SCIENCE (ACTUARIAL SCIENCE)",
+      "target_type": "institution",
+      "url": "https://kabianga.ac.ke/node/399",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T13:04:36.460333+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Science in Actuarial Science | University of Kabianga",
+        "matching_heading": "Bachelor of Science in Actuarial Science",
+        "useful_detail_signals": [
+          "admission",
+          "duration",
+          "kcse"
+        ]
+      }
+    },
+    {
+      "university": "UNIVERSITY OF KABIANGA",
+      "domain": "kabianga.ac.ke",
+      "course": "BACHELOR OF SCIENCE (AGROFORESTRY & RURAL DEVELOPMENT)",
+      "target_type": "institution",
+      "url": "https://kabianga.ac.ke/node/440",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T13:04:36.460333+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Science in Agroforestry and Rural Development | University of Kabianga",
+        "matching_heading": "Bachelor of Science in Agroforestry and Rural Development",
+        "useful_detail_signals": [
+          "admission",
+          "duration",
+          "kcse"
+        ]
+      }
+    },
+    {
+      "university": "UNIVERSITY OF KABIANGA",
+      "domain": "kabianga.ac.ke",
+      "course": "BACHELOR OF SCIENCE (APPLIED STATISTICS WITH COMPUTING)",
+      "target_type": "institution",
+      "url": "https://kabianga.ac.ke/node/395",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T13:04:36.460333+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Science in Applied Statistics with Computing | University of Kabianga",
+        "matching_heading": "Bachelor of Science in Applied Statistics with Computing",
+        "useful_detail_signals": [
+          "admission",
+          "duration",
+          "kcse",
+          "minimum grade"
+        ]
+      }
+    },
+    {
+      "university": "UNIVERSITY OF KABIANGA",
+      "domain": "kabianga.ac.ke",
+      "course": "BACHELOR OF SCIENCE (COMMUNICATION AND PUBLIC RELATIONS)",
+      "target_type": "institution",
+      "url": "https://kabianga.ac.ke/node/498",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T13:04:36.460333+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Science (Communication & Public Relations) | University of Kabianga",
+        "matching_heading": "Bachelor of Science (Communication & Public Relations)",
+        "useful_detail_signals": [
+          "admission",
+          "duration",
+          "kcse"
+        ]
+      }
+    },
+    {
+      "university": "UNIVERSITY OF KABIANGA",
+      "domain": "kabianga.ac.ke",
+      "course": "BACHELOR OF SCIENCE (COMPUTER SCIENCE)",
+      "target_type": "institution",
+      "url": "https://kabianga.ac.ke/node/396",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T13:04:36.460333+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Science in Computer Science | University of Kabianga",
+        "matching_heading": "Bachelor of Science in Computer Science",
+        "useful_detail_signals": [
+          "admission",
+          "duration",
+          "kcse"
+        ]
+      }
+    },
+    {
+      "university": "UNIVERSITY OF KABIANGA",
+      "domain": "kabianga.ac.ke",
+      "course": "BACHELOR OF SCIENCE (FORESTRY)",
+      "target_type": "institution",
+      "url": "https://kabianga.ac.ke/node/441",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T13:04:36.460333+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Science in Forestry | University of Kabianga",
+        "matching_heading": "Bachelor of Science in Forestry",
+        "useful_detail_signals": [
+          "admission",
+          "duration",
+          "kcse",
+          "study mode"
+        ]
+      }
+    },
+    {
+      "university": "UNIVERSITY OF KABIANGA",
+      "domain": "kabianga.ac.ke",
+      "course": "BACHELOR OF SCIENCE (HUMAN RESOURCE MANAGEMENT)",
+      "target_type": "institution",
+      "url": "https://kabianga.ac.ke/node/446",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T13:04:36.460333+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Science in Human Resource Management | University of Kabianga",
+        "matching_heading": "Bachelor of Science in Human Resource Management",
+        "useful_detail_signals": [
+          "admission",
+          "duration",
+          "kcse"
+        ]
+      }
+    },
+    {
+      "university": "UNIVERSITY OF KABIANGA",
+      "domain": "kabianga.ac.ke",
+      "course": "BACHELOR OF SCIENCE (INFORMATION TECHNOLOGY)",
+      "target_type": "institution",
+      "url": "https://kabianga.ac.ke/node/398",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T13:04:36.460333+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Science in Information Technology | University of Kabianga",
+        "matching_heading": "Bachelor of Science in Information Technology",
+        "useful_detail_signals": [
+          "admission",
+          "duration",
+          "kcse"
+        ]
+      }
+    },
+    {
+      "university": "UNIVERSITY OF KABIANGA",
+      "domain": "kabianga.ac.ke",
+      "course": "BACHELOR OF SCIENCE (MICROBIOLOGY)",
+      "target_type": "institution",
+      "url": "https://kabianga.ac.ke/node/397",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T13:04:36.460333+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Science in Microbiology | University of Kabianga",
+        "matching_heading": "Bachelor of Science in Microbiology",
+        "useful_detail_signals": [
+          "admission",
+          "duration",
+          "kcse"
+        ]
+      }
+    },
+    {
+      "university": "UNIVERSITY OF KABIANGA",
+      "domain": "kabianga.ac.ke",
+      "course": "BACHELOR OF SCIENCE (PUBLIC HEALTH)",
+      "target_type": "institution",
+      "url": "https://kabianga.ac.ke/node/388",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T13:04:36.460333+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Science in Public Health | University of Kabianga",
+        "matching_heading": "Bachelor of Science in Public Health",
+        "useful_detail_signals": [
+          "admission",
+          "duration",
+          "kcse"
+        ]
+      }
+    },
+    {
+      "university": "UNIVERSITY OF KABIANGA",
+      "domain": "kabianga.ac.ke",
+      "course": "BACHELOR OF SCIENCE CLINICAL MEDICINE",
+      "target_type": "institution",
+      "url": "https://kabianga.ac.ke/node/371",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T13:04:36.460333+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Science in Clinical Medicine | University of Kabianga",
+        "matching_heading": "Bachelor of Science in Clinical Medicine",
+        "useful_detail_signals": [
+          "admission",
+          "duration",
+          "kcse"
+        ]
+      }
+    },
+    {
+      "university": "UNIVERSITY OF KABIANGA",
+      "domain": "kabianga.ac.ke",
+      "course": "BACHELOR OF TOURISM MANAGEMENT",
+      "target_type": "institution",
+      "url": "https://kabianga.ac.ke/node/96",
+      "source": "programme_pages_verified_course_page",
+      "verified": true,
+      "status": "verified",
+      "last_checked_at": "2026-11-04T13:04:36.460333+00:00",
+      "verification_evidence": {
+        "page_title": "Bachelor of Tourism Management | University of Kabianga",
+        "matching_heading": "Bachelor of Tourism Management",
+        "useful_detail_signals": [
+          "admission",
+          "duration",
+          "kcse"
+        ]
+      }
     }
   ]
 }

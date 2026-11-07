@@ -34,6 +34,7 @@ from utils.ai_engines import (
     grade_to_int,
     is_course_in_catalog,
 )
+from utils.kuccps_requirements import assess_course_requirements
 from utils.web_scraper import get_course_url
 
 from .models import RecommendationUsage, StudentLog, User
@@ -856,6 +857,48 @@ def recommend(request):
                 "course page could be verified. No institution is shown as a confirmed match."
             )
         )
+        admission_requirements = assess_course_requirements(
+            course,
+            grades,
+            preferred_institutions=[university["name"] for university in universities],
+        )
+        verified_by_institution = {
+            re.sub(r"[^a-z0-9]", "", university["name"].casefold()): university
+            for university in universities
+        }
+        for record in admission_requirements["records"]:
+            key = re.sub(r"[^a-z0-9]", "", record["institution"].casefold())
+            university = verified_by_institution.get(key)
+            if university:
+                record["course_page_verified"] = True
+                record["course_page_url"] = university["website_url"]
+        insight["admission_requirements"] = admission_requirements
+        for university in universities:
+            university_key = re.sub(r"[^a-z0-9]", "", university["name"].casefold())
+            requirement_record = next(
+                (
+                    record for record in admission_requirements["records"]
+                    if re.sub(r"[^a-z0-9]", "", record["institution"].casefold()) == university_key
+                ),
+                None,
+            )
+            if requirement_record and requirement_record["requirements"]:
+                university["requirements_met"] = [
+                    {
+                        "subject": " or ".join(group["subjects"]),
+                        "required": group["minimum_grade"],
+                        "attained": ", ".join(
+                            f"{item['subject']}: {item['grade']}"
+                            for item in group["attained"]
+                        ) or "Not provided",
+                        "status": (
+                            "Not checked"
+                            if group["status"] == "Not provided"
+                            else group["status"]
+                        ),
+                    }
+                    for group in requirement_record["requirements"]
+                ]
         insight["validated_points"] = points if complete else None
 
         user.has_taken_test = True

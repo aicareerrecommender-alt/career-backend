@@ -874,6 +874,107 @@ def _save_inventory(institution_inventory, output_path, replace_existing=False):
             os.remove(temporary_path)
 
 
+def merge_verified_inventory_into_registry(
+    inventory_path=INVENTORY_FILE,
+    registry_path=REGISTRY_FILE,
+):
+    """Make specifically verified crawler pages available to runtime link lookup."""
+    inventory_path = Path(inventory_path)
+    registry_path = Path(registry_path)
+    with inventory_path.open("r", encoding="utf-8") as file:
+        inventory = json.load(file)
+    with registry_path.open("r", encoding="utf-8") as file:
+        registry = json.load(file)
+    if (
+        not isinstance(inventory, dict)
+        or inventory.get("schema_version") != 1
+        or not isinstance(inventory.get("institutions"), dict)
+        or not isinstance(registry, dict)
+        or registry.get("schema_version") != 1
+        or not isinstance(registry.get("entries"), list)
+    ):
+        raise ValueError("Unsupported programme inventory or course registry format.")
+
+    existing = {
+        (
+            _normalize(entry.get("university", "")),
+            _normalize(entry.get("course", "")),
+            _url_key(entry.get("url", "")),
+        )
+        for entry in registry["entries"]
+        if isinstance(entry, dict)
+        and entry.get("verified") is True
+        and entry.get("status") == "verified"
+        and isinstance(entry.get("url"), str)
+    }
+    additions = []
+    for institution in inventory["institutions"].values():
+        if not isinstance(institution, dict):
+            continue
+        university = str(institution.get("university") or "").strip()
+        domain = str(institution.get("official_domain") or "").strip().lower()
+        if not university or not domain:
+            continue
+        for link in institution.get("verified_course_links", []):
+            if (
+                not isinstance(link, dict)
+                or link.get("verification_status") != "verified_specific_course_page"
+            ):
+                continue
+            course = str(link.get("course") or "").strip()
+            url = link.get("url")
+            try:
+                parsed = urllib.parse.urlsplit(url)
+                valid_url = (
+                    parsed.scheme == "https"
+                    and parsed.username is None
+                    and parsed.password is None
+                    and parsed.port in (None, 443)
+                    and _same_domain(url, domain)
+                )
+            except (TypeError, ValueError):
+                valid_url = False
+            if not course or not valid_url:
+                continue
+            key = (_normalize(university), _normalize(course), _url_key(url))
+            if key in existing:
+                continue
+            additions.append({
+                "university": university,
+                "domain": domain,
+                "course": course,
+                "target_type": "institution",
+                "url": url,
+                "source": "programme_pages_verified_course_page",
+                "verified": True,
+                "status": "verified",
+                "last_checked_at": institution.get("discovered_at", ""),
+                "verification_evidence": link.get("verification_evidence", {}),
+            })
+            existing.add(key)
+
+    if not additions:
+        return 0
+    registry["entries"].extend(additions)
+    registry_path.parent.mkdir(parents=True, exist_ok=True)
+    handle, temporary_path = tempfile.mkstemp(
+        prefix=f".{registry_path.name}.",
+        suffix=".tmp",
+        dir=str(registry_path.parent),
+    )
+    try:
+        with os.fdopen(handle, "w", encoding="utf-8") as file:
+            json.dump(registry, file, ensure_ascii=False, indent=2)
+            file.write("\n")
+            file.flush()
+            os.fsync(file.fileno())
+        os.replace(temporary_path, registry_path)
+    finally:
+        if os.path.exists(temporary_path):
+            os.remove(temporary_path)
+    return len(additions)
+
+
 def _search_inventory(course, output_path, include_unverified=False):
     output_path = Path(output_path)
     if not output_path.exists():
@@ -1060,6 +1161,12 @@ def main(argv=None):
             except (OSError, ValueError, requests.RequestException) as exc:
                 logging.exception("Could not discover programmes for %s", institution)
                 failures.append({"university": institution, "error": str(exc)})
+        if not args.dry_run:
+            try:
+                merged_links = merge_verified_inventory_into_registry(args.output)
+                print(f"Merged {merged_links} verified inventory links into {REGISTRY_FILE}")
+            except (OSError, json.JSONDecodeError, ValueError) as exc:
+                parser.exit(1, f"Could not update the active course registry: {exc}\n")
         print(json.dumps({
             "universities_attempted": len(results) + len(failures),
             "universities_saved": len(results) if not args.dry_run else 0,
@@ -1103,6 +1210,11 @@ def main(argv=None):
             args.output,
             replace_existing=args.replace_institution
         )
+        try:
+            merged_links = merge_verified_inventory_into_registry(args.output)
+            print(f"Merged {merged_links} verified inventory links into {REGISTRY_FILE}")
+        except (OSError, json.JSONDecodeError, ValueError) as exc:
+            parser.exit(1, f"Could not update the active course registry: {exc}\n")
     print(json.dumps(inventory["crawl_summary"], indent=2))
     print(f"Inventory {'not written (dry run)' if args.dry_run else 'saved to ' + args.output}")
 

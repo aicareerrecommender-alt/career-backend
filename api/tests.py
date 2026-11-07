@@ -1,7 +1,9 @@
 import base64
 import json
+import tempfile
 import urllib.error
 import urllib.parse
+from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 from django.conf import settings
@@ -15,9 +17,15 @@ from utils.ai_engines import (
     calculate_total_points,
     fetch_from_groq,
     generate_chat_reply,
+    get_eligible_context,
     is_course_in_catalog,
     validate_ai_response,
 )
+from utils.kuccps_requirements import (
+    assess_course_requirements,
+    parse_subject_requirement_cell,
+)
+from utils.discover_program_catalogue import merge_verified_inventory_into_registry
 from utils.web_scraper import get_course_url
 
 from .models import RecommendationUsage, StudentLog, User
@@ -594,7 +602,11 @@ class ApiViewsTests(TestCase):
     @override_settings(AUTH_TOKEN_SECRET="unit-test-secret", AUTH_TOKEN_TTL_SECONDS=3600)
     @patch("api.views.get_course_url", return_value="https://example.edu/nursing")
     @patch("api.views.ask_hybrid_career_advice")
-    def test_recommendation_supports_missing_grades(self, ask_advice, get_course_url):
+    def test_recommendation_reports_remaining_requirements_for_one_grade(
+        self,
+        ask_advice,
+        get_course_url,
+    ):
         user = User.objects.create(
             name="Amina",
             email="amina@example.com",
@@ -603,7 +615,7 @@ class ApiViewsTests(TestCase):
             history=[],
         )
         ask_advice.return_value = {
-            "specific_course": "Bachelor of Nursing",
+            "specific_course": "BACHELOR OF SCIENCE (NURSING)",
             "universities": [{"name": "Example University"}],
         }
         token = URLSafeTimedSerializer(
@@ -612,13 +624,29 @@ class ApiViewsTests(TestCase):
         ).dumps({"sub": user.pk})
         response = self.client.post(
             "/recommend",
-            data=json.dumps({"name": "Amina", "interest": "nursing", "grades": {}}),
+            data=json.dumps({
+                "name": "Amina",
+                "interest": "nursing",
+                "grades": {"Biology": "B"},
+            }),
             content_type="application/json",
             HTTP_AUTHORIZATION=f"Bearer {token}",
         )
         self.assertEqual(response.status_code, 200)
         self.assertIsNone(response.json()["validated_points"])
         self.assertTrue(response.json()["universities"][0]["verified_offering"])
+        admission_requirements = response.json()["admission_requirements"]
+        self.assertEqual(admission_requirements["status"], "available")
+        self.assertTrue(any(
+            group["subjects"] == ["Biology"] and group["status"] == "Met"
+            for record in admission_requirements["records"]
+            for group in record["requirements"]
+        ))
+        self.assertTrue(any(
+            group["status"] == "Not provided"
+            for record in admission_requirements["records"]
+            for group in record["requirements"]
+        ))
         self.assertEqual(ask_advice.call_args.kwargs["profile_context"], "")
         get_course_url.assert_called_once()
         self.assertEqual(RecommendationUsage.objects.get(user=user).attempts, 1)
@@ -639,7 +667,7 @@ class ApiViewsTests(TestCase):
             history=[],
         )
         ask_advice.return_value = {
-            "specific_course": "Bachelor of Nursing",
+            "specific_course": "BACHELOR OF SCIENCE (NURSING)",
             "universities": [{"name": "Example University"}],
         }
         token = URLSafeTimedSerializer(
@@ -648,7 +676,7 @@ class ApiViewsTests(TestCase):
         ).dumps({"sub": user.pk})
         response = self.client.post(
             "/recommend",
-            data=json.dumps({"interest": "nursing", "grades": {}}),
+            data=json.dumps({"interest": "nursing", "grades": {"Biology": "B"}}),
             content_type="application/json",
             HTTP_AUTHORIZATION=f"Bearer {token}",
         )
@@ -657,6 +685,13 @@ class ApiViewsTests(TestCase):
         self.assertEqual(response.json()["universities"], [])
         self.assertEqual(response.json()["institution_match_status"], "not_verified")
         self.assertIn("no official institution", response.json()["institution_match_message"])
+        self.assertEqual(response.json()["admission_requirements"]["status"], "available")
+        self.assertTrue(response.json()["admission_requirements"]["records"])
+        self.assertTrue(any(
+            group["status"] == "Not provided"
+            for record in response.json()["admission_requirements"]["records"]
+            for group in record["requirements"]
+        ))
         get_course_url.assert_called_once()
 
     @override_settings(AUTH_TOKEN_SECRET="unit-test-secret", AUTH_TOKEN_TTL_SECONDS=3600)
@@ -708,7 +743,7 @@ class ApiViewsTests(TestCase):
     @patch("utils.ai_engines.fetch_from_groq")
     def test_recommendation_ai_accepts_interview_context_without_grades(self, fetch):
         fetch.return_value = {
-            "specific_course": "Bachelor of Nursing",
+            "specific_course": "BACHELOR OF SCIENCE IN NURSING",
             "level": "Degree",
             "universities": [{
                 "requirements_met": [{
@@ -773,6 +808,168 @@ class ApiViewsTests(TestCase):
         self.assertFalse(is_course_in_catalog("Bachelor of Science"))
         self.assertFalse(is_course_in_catalog("Interplanetary Tourism"))
 
+    @patch(
+        "utils.ai_engines._saved_course_catalog",
+        return_value=(
+            (
+                "BACHELOR OF SCIENCE (COMPUTER SCIENCE)",
+                "BACHELOR OF SCIENCE IN NURSING",
+            ),
+            (),
+        ),
+    )
+    def test_interest_matching_uses_saved_titles_without_filtering_partial_grades(self, _catalog):
+        matches = get_eligible_context("computing", {"Mathematics": "D"})
+
+        self.assertIn("BACHELOR OF SCIENCE (COMPUTER SCIENCE)", matches)
+        self.assertNotIn("BACHELOR OF SCIENCE IN NURSING", matches)
+
+    def test_kuccps_requirement_parser_preserves_or_groups_and_source_codes(self):
+        requirement = parse_subject_requirement_cell(
+            "ENG(101)/KIS(102):C+"
+        )
+
+        self.assertEqual(requirement["minimum_grade"], "C+")
+        self.assertEqual(
+            requirement["subjects"],
+            [
+                {"code": "101", "name": "English"},
+                {"code": "102", "name": "Kiswahili"},
+            ],
+        )
+        repaired_ocr = parse_subject_requirement_cell("CRE(3 13)/IRE(314):C")
+        self.assertEqual(
+            repaired_ocr["subjects"],
+            [
+                {"code": "313", "name": "Christian Religious Education"},
+                {"code": "314", "name": "Islamic Religious Education"},
+            ],
+        )
+
+    def test_single_subject_assessment_shows_remaining_requirements(self):
+        database = {
+            "source": "KUCCPS 2025/2026 DEGREE PROGRAMMES",
+            "entries": [{
+                "program_code": "1234567",
+                "institution": "Example University",
+                "course": "BACHELOR OF SCIENCE IN NURSING",
+                "source_page": 12,
+                "subject_requirements": [
+                    {
+                        "subjects": [{"code": "231", "name": "Biology"}],
+                        "minimum_grade": "C+",
+                    },
+                    {
+                        "subjects": [
+                            {"code": "101", "name": "English"},
+                            {"code": "102", "name": "Kiswahili"},
+                        ],
+                        "minimum_grade": "C",
+                    },
+                ],
+                "unparsed_subject_cells": [],
+            }],
+        }
+        with patch(
+            "utils.kuccps_requirements._load_requirements_database",
+            return_value=database,
+        ):
+            result = assess_course_requirements(
+                "Bachelor of Science (Nursing)",
+                {"Biology": "B"},
+            )
+
+        self.assertEqual(result["status"], "available")
+        self.assertEqual(
+            [group["status"] for group in result["records"][0]["requirements"]],
+            ["Met", "Not provided"],
+        )
+        self.assertEqual(
+            result["records"][0]["requirements"][1]["subjects"],
+            ["English", "Kiswahili"],
+        )
+        self.assertEqual(result["records"][0]["status"], "More subjects need assessment")
+
+    def test_failed_alternative_does_not_claim_course_ineligible_if_other_option_unchecked(self):
+        database = {
+            "source": "KUCCPS 2025/2026 DEGREE PROGRAMMES",
+            "entries": [{
+                "program_code": "1234567",
+                "institution": "Example University",
+                "course": "BACHELOR OF ARTS IN HISTORY",
+                "source_page": 1,
+                "subject_requirements": [{
+                    "subjects": [
+                        {"code": "101", "name": "English"},
+                        {"code": "102", "name": "Kiswahili"},
+                    ],
+                    "minimum_grade": "C+",
+                }],
+                "unparsed_subject_cells": [],
+            }],
+        }
+        with patch(
+            "utils.kuccps_requirements._load_requirements_database",
+            return_value=database,
+        ):
+            result = assess_course_requirements(
+                "Bachelor of Arts in History",
+                {"English": "D"},
+            )
+
+        group = result["records"][0]["requirements"][0]
+        self.assertEqual(group["status"], "Not fully assessed")
+        self.assertEqual(result["records"][0]["status"], "Partially assessed")
+
+    def test_verified_scraper_inventory_is_merged_without_losing_shared_pages(self):
+        with tempfile.TemporaryDirectory() as directory:
+            inventory_path = Path(directory) / "programme_pages.json"
+            registry_path = Path(directory) / "course_urls.json"
+            inventory_path.write_text(json.dumps({
+                "schema_version": 1,
+                "institutions": {
+                    "example university": {
+                        "university": "Example University",
+                        "official_domain": "example.ac.ke",
+                        "discovered_at": "2026-01-01T00:00:00Z",
+                        "verified_course_links": [
+                            {
+                                "course": "Bachelor of Arts in History",
+                                "url": "https://example.ac.ke/programmes",
+                                "verification_status": "verified_specific_course_page",
+                            },
+                            {
+                                "course": "Bachelor of Arts in Geography",
+                                "url": "https://example.ac.ke/programmes",
+                                "verification_status": "verified_specific_course_page",
+                            },
+                            {
+                                "course": "Bachelor of Arts in Law",
+                                "url": "https://external.example/programmes",
+                                "verification_status": "verified_specific_course_page",
+                            },
+                        ],
+                    },
+                },
+            }), encoding="utf-8")
+            registry_path.write_text(json.dumps({
+                "schema_version": 1,
+                "entries": [],
+            }), encoding="utf-8")
+
+            merged = merge_verified_inventory_into_registry(inventory_path, registry_path)
+            entries = json.loads(registry_path.read_text(encoding="utf-8"))["entries"]
+
+        self.assertEqual(merged, 2)
+        self.assertEqual(len(entries), 2)
+        self.assertEqual({entry["course"] for entry in entries}, {
+            "Bachelor of Arts in History",
+            "Bachelor of Arts in Geography",
+        })
+        self.assertEqual({entry["url"] for entry in entries}, {
+            "https://example.ac.ke/programmes",
+        })
+
     def test_ai_can_return_a_catalog_course_without_unverified_institutions(self):
         with patch("utils.ai_engines.fetch_from_groq") as fetch:
             fetch.return_value = {
@@ -813,8 +1010,41 @@ class ApiViewsTests(TestCase):
         self.assertFalse(candidate["verified_offering"])
         self.assertEqual(candidate["website_url"], "")
 
+    def test_ai_retries_when_course_is_not_an_exact_saved_catalogue_choice(self):
+        responses = []
+        for course in ("Invented Nursing Degree", "BACHELOR OF SCIENCE (NURSING)"):
+            response = MagicMock()
+            response.choices[0].message.content = json.dumps({
+                "specific_course": course,
+                "universities": [],
+            })
+            responses.append(response)
+        client = MagicMock()
+        client.chat.completions.create.side_effect = responses
+
+        with (
+            patch("utils.ai_engines.client_groq", client),
+            patch("utils.ai_engines.time.sleep"),
+        ):
+            result = fetch_from_groq(
+                "system",
+                "prompt",
+                {},
+                "Degree",
+                allowed_courses=["BACHELOR OF SCIENCE (NURSING)"],
+            )
+
+        self.assertEqual(result["specific_course"], "BACHELOR OF SCIENCE (NURSING)")
+        self.assertEqual(client.chat.completions.create.call_count, 2)
+
     def test_course_url_uses_local_official_course_mapping_first(self):
         url = "https://www.ku.ac.ke/programmes/nursing"
+        page = MagicMock(
+            status_code=200,
+            url=url,
+            headers={"Content-Type": "text/html"},
+            text="<title>Bachelor of Science in Nursing</title><h1>Bachelor of Science in Nursing</h1>",
+        )
         with (
             patch("utils.web_scraper.OFFICIAL_DOMAINS", {"kenyatta university": "ku.ac.ke"}),
             patch(
@@ -825,7 +1055,7 @@ class ApiViewsTests(TestCase):
                     },
                 },
             ),
-            patch("utils.web_scraper.requests.get") as get_page,
+            patch("utils.web_scraper.requests.get", return_value=page) as get_page,
         ):
             result = get_course_url(
                 "Kenyatta University",
@@ -833,10 +1063,16 @@ class ApiViewsTests(TestCase):
             )
 
         self.assertEqual(result, url)
-        get_page.assert_not_called()
+        get_page.assert_called_once()
 
-    def test_course_url_uses_saved_verified_registry_entry_without_search(self):
+    def test_course_url_revalidates_saved_verified_registry_entry(self):
         url = "https://cuea.edu/all-courses/bsc-computer-science/"
+        page = MagicMock(
+            status_code=200,
+            url=url,
+            headers={"Content-Type": "text/html"},
+            text="<title>Bachelor of Science in Computer Science</title><h1>Bachelor of Science in Computer Science</h1>",
+        )
         registry = {
             "schema_version": 1,
             "entries": [{
@@ -849,9 +1085,12 @@ class ApiViewsTests(TestCase):
             }],
         }
         with (
-            patch("utils.web_scraper.OFFICIAL_DOMAINS", {}),
+            patch(
+                "utils.web_scraper.OFFICIAL_DOMAINS",
+                {"catholic university of eastern africa": "cuea.edu"},
+            ),
             patch("utils.web_scraper.load_course_url_database", return_value=registry),
-            patch("utils.web_scraper.requests.get") as get_page,
+            patch("utils.web_scraper.requests.get", return_value=page) as get_page,
         ):
             result = get_course_url(
                 "Catholic University of Eastern Africa",
@@ -859,6 +1098,146 @@ class ApiViewsTests(TestCase):
             )
 
         self.assertEqual(result, url)
+        get_page.assert_called_once()
+
+    def test_course_url_tries_all_saved_verified_pages_before_searching(self):
+        stale_url = "https://cuea.edu/old-programmes"
+        verified_url = "https://cuea.edu/programmes/computer-science"
+        stale_page = MagicMock(
+            status_code=200,
+            url=stale_url,
+            headers={"Content-Type": "text/html"},
+            text="<title>Admissions</title><h1>Admissions</h1>",
+        )
+        verified_page = MagicMock(
+            status_code=200,
+            url=verified_url,
+            headers={"Content-Type": "text/html"},
+            text=(
+                "<title>Bachelor of Science in Computer Science</title>"
+                "<h1>Bachelor of Science in Computer Science</h1>"
+            ),
+        )
+        registry = {
+            "schema_version": 1,
+            "entries": [
+                {
+                    "university": "CATHOLIC UNIVERSITY OF EASTERN AFRICA",
+                    "domain": "cuea.edu",
+                    "course": "BACHELOR OF SCIENCE IN COMPUTER SCIENCE",
+                    "url": stale_url,
+                    "verified": True,
+                    "status": "verified",
+                },
+                {
+                    "university": "CATHOLIC UNIVERSITY OF EASTERN AFRICA",
+                    "domain": "cuea.edu",
+                    "course": "BACHELOR OF SCIENCE IN COMPUTER SCIENCE",
+                    "url": verified_url,
+                    "verified": True,
+                    "status": "verified",
+                },
+            ],
+        }
+        with (
+            patch(
+                "utils.web_scraper.OFFICIAL_DOMAINS",
+                {"catholic university of eastern africa": "cuea.edu"},
+            ),
+            patch("utils.web_scraper.load_course_url_database", return_value=registry),
+            patch(
+                "utils.web_scraper.requests.get",
+                side_effect=[stale_page, verified_page],
+            ) as get_page,
+        ):
+            result = get_course_url(
+                "Catholic University of Eastern Africa",
+                "BACHELOR OF SCIENCE IN COMPUTER SCIENCE",
+            )
+
+        self.assertEqual(result, verified_url)
+        self.assertEqual(get_page.call_count, 2)
+
+    def test_course_url_resolves_alias_and_preserves_a_specific_degree_major(self):
+        url = "https://application.tangaza.ac.ke/programmes"
+        page = MagicMock(
+            status_code=200,
+            url=url,
+            headers={"Content-Type": "text/html"},
+            text=(
+                "<title>Programmes</title><h1>Academic Programmes</h1>"
+                "<span class='prog-title'>Bachelor of Education (Arts)</span>"
+            ),
+        )
+        registry = {
+            "schema_version": 1,
+            "entries": [{
+                "university": "TANGAZA UNIVERSITY",
+                "domain": "tangaza.ac.ke",
+                "course": "BACHELOR OF EDUCATION (ARTS)",
+                "url": url,
+                "verified": True,
+                "status": "verified",
+            }],
+        }
+        with (
+            patch("utils.web_scraper.load_course_url_database", return_value=registry),
+            patch("utils.web_scraper.requests.get", return_value=page) as get_page,
+        ):
+            result = get_course_url("Tangaza University", "Bachelor of Education (Arts)")
+
+        self.assertEqual(result, url)
+        get_page.assert_called_once()
+
+    def test_course_url_rejects_saved_link_for_a_different_course(self):
+        wrong_url = "https://www.ku.ac.ke/departments/dept-civil-engineering.php"
+        page = MagicMock(
+            status_code=200,
+            url=wrong_url,
+            headers={"Content-Type": "text/html"},
+            text=(
+                "<title>Department of Civil Engineering</title>"
+                "<h1>Department of Civil Engineering</h1>"
+                "<table><tr><td>BSc Mechanical Engineering</td></tr></table>"
+            ),
+        )
+        search_page = MagicMock(status_code=200, text="<html></html>")
+        registry = {
+            "schema_version": 1,
+            "entries": [{
+                "university": "KENYATTA UNIVERSITY",
+                "domain": "ku.ac.ke",
+                "course": "BACHELOR OF SCIENCE (MECHANICAL ENGINEERING)",
+                "url": wrong_url,
+                "verified": True,
+                "status": "verified",
+            }],
+        }
+        with (
+            patch("utils.web_scraper.OFFICIAL_DOMAINS", {"kenyatta university": "ku.ac.ke"}),
+            patch("utils.web_scraper.load_course_url_database", return_value=registry),
+            patch("utils.web_scraper.requests.get", side_effect=[page, search_page]) as get_page,
+        ):
+            result = get_course_url(
+                "Kenyatta University",
+                "Bachelor of Science (Mechanical Engineering)",
+            )
+
+        self.assertIsNone(result)
+        self.assertEqual(get_page.call_count, 2)
+
+    def test_course_url_rejects_generic_degree_without_a_specific_subject(self):
+        with (
+            patch("utils.web_scraper.OFFICIAL_DOMAINS", {"kenyatta university": "ku.ac.ke"}),
+            patch("utils.web_scraper.load_course_url_database", return_value={}),
+            patch("utils.web_scraper.requests.get") as get_page,
+        ):
+            result = get_course_url(
+                "Kenyatta University",
+                "Bachelor of Science (B.Sc)",
+            )
+
+        self.assertIsNone(result)
         get_page.assert_not_called()
 
     def test_course_url_ignores_unverified_registry_entry(self):

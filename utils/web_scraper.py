@@ -54,13 +54,31 @@ def _course_title_words(value):
     text = re.sub(r"\bb\s*\.?\s*sc\.?\b", " bachelor of science ", text)
     text = re.sub(r"\bb\s*\.?\s*ed\.?\b", " bachelor of education ", text)
     text = re.sub(r"\bb\s*\.?\s*a\.?\b", " bachelor of arts ", text)
-    text = re.sub(r"\b(?:of|in|and|the|with|for)\b", " ", text)
-    return set(re.findall(r"[a-z0-9]+", text))
+    text = re.sub(
+        r"\b(?:bachelor|master)\s+(?:of|in)\s+(?:science|arts|education)\b",
+        " ",
+        text,
+    )
+    stop_words = {
+        "and", "bachelor", "certificate", "degree", "diploma", "doctor",
+        "for", "in", "master", "of", "phd", "the", "with",
+    }
+    return [
+        word for word in re.findall(r"[a-z0-9]+", text)
+        if word not in stop_words
+    ]
 
 
 def _course_title_is_present(course_name, text):
     course_words = _course_title_words(course_name)
-    return bool(course_words) and course_words.issubset(_course_title_words(text))
+    if not course_words:
+        return False
+    page_words = _course_title_words(text)
+    window_size = len(course_words)
+    return any(
+        page_words[index:index + window_size] == course_words
+        for index in range(len(page_words) - window_size + 1)
+    )
 
 
 def _official_domain(university_name):
@@ -111,12 +129,13 @@ def _search_result_url(url):
         return None
 
 
-def _local_course_url(university_name, course_name, domain=None):
+def _local_course_urls(university_name, course_name, domain=None):
     database = load_course_url_database()
     university_key = _normalized_key(university_name)
     entries = database.get("entries")
     if isinstance(entries, list):
         course_key = _normalized_key(course_name)
+        urls = []
         for entry in entries:
             if not isinstance(entry, dict):
                 continue
@@ -133,33 +152,81 @@ def _local_course_url(university_name, course_name, domain=None):
                 isinstance(saved_domain, str)
                 and _url_is_on_domain(url, saved_domain.strip().lower().removeprefix("www."))
                 and (domain is None or domain == saved_domain.strip().lower().removeprefix("www."))
+                and url not in urls
             ):
-                return url
-        return None
+                urls.append(url)
+        return urls
 
     if not domain:
-        return None
+        return []
+    urls = []
     for name, courses in database.items():
         if _normalized_key(name) != university_key or not isinstance(courses, dict):
             continue
         course_key = _normalized_key(course_name)
         for title, url in courses.items():
             if _normalized_key(title) == course_key and isinstance(url, str):
-                if _url_is_on_domain(url, domain):
-                    return url
-                logging.warning(
-                    "Ignoring non-official course URL for %s at %s.",
-                    course_name,
-                    university_name,
-                )
-    return None
+                if _url_is_on_domain(url, domain) and url not in urls:
+                    urls.append(url)
+                elif not _url_is_on_domain(url, domain):
+                    logging.warning(
+                        "Ignoring non-official course URL for %s at %s.",
+                        course_name,
+                        university_name,
+                    )
+    return urls
+
+
+def _course_page_soup(response):
+    soup = BeautifulSoup(response.text, "html.parser")
+    for element in soup(["script", "style", "noscript", "svg", "header", "nav", "footer", "aside"]):
+        element.decompose()
+    return soup
 
 
 def _page_heading(response):
-    soup = BeautifulSoup(response.text, "html.parser")
+    return _page_heading_from_soup(_course_page_soup(response))
+
+
+def _page_heading_from_soup(soup):
     headings = [soup.title.get_text(" ", strip=True)] if soup.title else []
-    headings.extend(heading.get_text(" ", strip=True) for heading in soup.find_all(["h1", "h2"]))
+    headings.extend(heading.get_text(" ", strip=True) for heading in soup.find_all(["h1", "h2", "h3"]))
     return " ".join(headings)
+
+
+def _verify_official_course_page(url, course_name, domain):
+    try:
+        response = requests.get(
+            url,
+            headers={"User-Agent": "CareerPath course-page verifier"},
+            timeout=8,
+            allow_redirects=True,
+        )
+    except requests.RequestException as error:
+        logging.warning("Could not re-verify saved course page %s: %s", url, error)
+        return None
+
+    final_url = response.url
+    if (
+        response.status_code != 200
+        or not _url_is_on_domain(final_url, domain)
+        or "application/pdf" in response.headers.get("Content-Type", "").lower()
+    ):
+        return None
+
+    soup = _course_page_soup(response)
+    titled_programmes = " ".join(
+        element.get_text(" ", strip=True)
+        for element in soup.select(
+            ".course-title, .programme-title, .program-title, .prog-title"
+        )
+    )
+    if _course_title_is_present(
+        course_name,
+        f"{_page_heading_from_soup(soup)} {titled_programmes}",
+    ):
+        return final_url
+    return None
 
 
 def _search_official_course_page(university_name, course_name, domain):
@@ -228,18 +295,18 @@ def get_course_url(university_name, course_name, target_type="institution"):
     if not isinstance(course_name, str) or not is_course_in_catalog(course_name):
         logging.info("Skipping course-page search for a course absent from the KUCCPS catalog.")
         return None
-
-    local_url = _local_course_url(university_name, course_name)
-    if local_url:
-        return local_url
+    if not _course_title_words(course_name):
+        logging.info("Skipping course-page search for a course without a specific subject.")
+        return None
 
     domain = _official_domain(university_name)
     if not domain:
         logging.info("No official domain is registered for institution %s.", university_name)
         return None
 
-    local_url = _local_course_url(university_name, course_name, domain)
-    if local_url:
-        return local_url
+    for local_url in _local_course_urls(university_name, course_name, domain):
+        verified_url = _verify_official_course_page(local_url, course_name, domain)
+        if verified_url:
+            return verified_url
 
     return _search_official_course_page(university_name, course_name, domain)

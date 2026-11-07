@@ -87,29 +87,71 @@ cap is on endpoint attempts, not internal LLM calls or retries.
 ### Course and institution verification
 
 The KUCCPS catalog in `utils/kuccps_courses.json` is used to validate course
-names; it does not contain institution-to-course relationships. The optional
-local offering index is `data/course_urls.json`, with this structure:
+names; it does not contain institution-to-course relationships. The verified
+offering index is `data/course_urls.json`, with entries such as:
 
 ```json
 {
-  "Kenyatta University": {
-    "Bachelor of Science (Nursing)": "https://www.ku.ac.ke/official-course-page"
-  }
+  "schema_version": 1,
+  "entries": [{
+    "university": "Kenyatta University",
+    "domain": "ku.ac.ke",
+    "course": "Bachelor of Science (Nursing)",
+    "url": "https://www.ku.ac.ke/official-course-page",
+    "verified": true,
+    "status": "verified"
+  }]
 }
 ```
 
-The checked-in offering index is currently empty, so local institution matches
-will not be returned until verified mappings are added.
+Saved links are fetched again before use. The response must remain on the
+institution's HTTPS domain from `data/school_domains.json`, return HTTP 200,
+and identify the specific course in its title, headings, or a dedicated
+course-title element. Mentions in navigation or unrelated page text do not
+count. Generic degree names without a specific subject are not linked. If a
+saved link fails those checks, the API tries other saved links for the same
+course before searching for a course-specific page on the official domain. It
+checks the search result and destination page. It
+does not treat an AI-suggested URL, a homepage, or a search-results page as a
+verified offering.
+If no page can be confirmed, `universities` is empty and
+`institution_match_status` is `not_verified`; the API does not invent a
+university match. Entry requirements are not validated by this page check and
+should be confirmed on the linked official page.
 
-Local links are accepted only when they use the institution's domain from
-`data/school_domains.json`. If there is no local entry, the API searches for a
-course-specific page on that official domain and checks the search result and
-the page heading. It does not treat an AI-suggested URL, a homepage, or a
-search-results page as a verified offering. If no page can be confirmed,
-`universities` is empty and `institution_match_status` is `not_verified`;
-the API does not invent a university match. Entry requirements are not
-validated by this page check and should be confirmed on the linked official
-page.
+Recommendation course selection is constrained to exact titles from the saved
+KUCCPS course registry. A student's entered grades do not remove a course from
+the matching choices; they are assessed separately so a partial test can still
+show the other listed subject requirements.
+
+The response includes `admission_requirements`, derived from the structured
+`data/course_requirements.json` extraction of
+`utils/DEGREE_PROGRAMMES_2025 (1).pdf`. Each programme record includes the
+institution, KUCCPS programme code, source PDF page, alternative subjects
+(`subjects` joined with “or”), minimum grade, and the assessment status for
+grades supplied by the student. The data retains unparsed source cells rather
+than guessing their meaning. These subject minima do not establish overall
+admission: mean grade, historical cutoffs, cluster points, current-year rules,
+and institution-specific requirements may also apply. Rebuild the extracted
+data with `python utils/kuccps_requirements.py`.
+
+For example, one recorded subject group has this shape:
+
+```json
+{
+  "subjects": ["English", "Kiswahili"],
+  "minimum_grade": "C+",
+  "attained": [{"subject": "English", "grade": "B"}],
+  "status": "Met"
+}
+```
+
+Subjects in one group are alternatives; separate groups are cumulative.
+
+When `discover_program_catalogue.py` saves specifically verified course pages,
+those links are also merged into `data/course_urls.json`; one official page can
+remain linked to multiple distinct courses. Runtime lookup still revalidates
+each page against the institution's official domain and course title.
 
 ## `GET|POST /data-consent`
 
