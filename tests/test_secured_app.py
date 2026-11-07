@@ -8,6 +8,7 @@ os.environ["GROQ_API_KEY"] = "unit-test-key"
 os.environ["GROQ_MODEL"] = "openai/gpt-oss-20b"
 
 from flask import jsonify, request
+from werkzeug.security import generate_password_hash
 
 import secured_app
 from app import User, app, db
@@ -92,6 +93,51 @@ class SecuredRecommendationTests(unittest.TestCase):
             response.status_code = 200
             hooked = secured_app.issue_sign_in_token(response)
         self.assertIn("access_token", hooked.get_json())
+
+    def test_multiple_users_receive_independent_tokens_and_recommendations(self):
+        users = [
+            User(
+                email="amina@example.test",
+                password_hash=generate_password_hash("correct horse"),
+                name="Amina",
+                is_verified=True,
+                history=[],
+            ),
+            User(
+                email="brian@example.test",
+                password_hash=generate_password_hash("correct horse"),
+                name="Brian",
+                is_verified=True,
+                history=[],
+            ),
+        ]
+        with app.app_context():
+            db.session.add_all(users)
+            db.session.commit()
+            user_ids = {user.email: user.id for user in users}
+
+        tokens = {}
+        for user in users:
+            login = self.client.post(
+                "/login",
+                json={"email": user.email, "password": "correct horse"},
+            )
+            self.assertEqual(login.status_code, 200)
+            token = login.get_json()["access_token"]
+            claims = secured_app.TOKEN_SERIALIZER.loads(token)
+            self.assertEqual(claims["sub"], user_ids[user.email])
+
+            recommendation = self.client.post(
+                "/recommend",
+                headers={"Authorization": f"Bearer {token}"},
+                json={"interest": user.name, "grades": {}},
+            )
+            self.assertEqual(recommendation.status_code, 200)
+            self.assertEqual(recommendation.get_json()["email"], user.email)
+            self.assertEqual(recommendation.get_json()["name"], user.name)
+            tokens[user.email] = token
+
+        self.assertNotEqual(tokens["amina@example.test"], tokens["brian@example.test"])
 
     def test_options_preflight_does_not_consume_quota(self):
         self.client.options("/recommend")
