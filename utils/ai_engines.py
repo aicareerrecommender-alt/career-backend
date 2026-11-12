@@ -586,7 +586,12 @@ def ask_hybrid_career_advice(student_name, interest, grades, calculated_points, 
     4. URL POLICY: Do not invent URLs. Output an empty website_url; the server will add only verified official course pages.
        Every university's "specific_course" value must exactly equal the recommendation's top-level "specific_course".
     5. INTERVIEW CONTEXT: Use stated interests and preferences; do not invent facts, offerings, or admission requirements.
-    6. REQUIREMENTS: Do not invent entry requirements or claim eligibility. The server will show sourced KUCCPS subject minima separately.
+    6. REQUIREMENTS: Do not invent entry requirements. Do not claim eligibility.
+       The server will show sourced KUCCPS subject minima separately.
+    7. REPORT QUALITY: Write "ai_roadmap" as a clear, student-specific report plan with short sections for
+       the study pathway, useful skills or experience, practical next steps, and important unknowns.
+       Base it on the student's stated needs and supplied grades. If information is missing, name what
+       remains unknown and how the student can confirm it; do not fill gaps with assumptions.
     
     🚨 GRADE-BASED STRATEGY:
     - Grade status: {tier_status}. Guidance: {tier_guidance}
@@ -609,7 +614,7 @@ def ask_hybrid_career_advice(student_name, interest, grades, calculated_points, 
     Respond ONLY with valid JSON:
     {
         "specific_course": "Name", "level": "Level", "ai_role": "Job", 
-        "interest_match_reason": "Reason", "ai_roadmap": "HTML steps", 
+        "interest_match_reason": "Reason", "ai_roadmap": "Student-specific report with clear sections",
         "career_exploration_url": "Search URL", 
         "universities": [{"name": "Institution candidate", "specific_course": "Course", "reason": "", "website_url": "", "verified_offering": false, "requirements_met": []}],
         "alternative_careers": [{"name": "Job", "title": "Job", "description": "Desc", "fit": "Why"}]

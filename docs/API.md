@@ -135,6 +135,22 @@ admission: mean grade, historical cutoffs, cluster points, current-year rules,
 and institution-specific requirements may also apply. Rebuild the extracted
 data with `python utils/kuccps_requirements.py`.
 
+The response also includes `kuccps_cutoff` on each university candidate and
+matching cutoff data on each `admission_requirements.records` item, derived
+from `data/course_cutoffs.json` and
+`utils/DEGREE_CUTOFFS_14-07-2025.pdf`. It reports the latest numeric historical
+cutoff and its year (up to 2024), programme code, and source PDF page. These
+historical cluster-point values are not current admission thresholds or
+guarantees. Rebuild the extracted data with `python -m utils.kuccps_cutoffs`.
+
+Successful recommendations are saved once to the signed-in user's history.
+They include `report_metadata` with the student's request, the provided grades,
+grade-assessment completeness, aggregate points when seven valid grades are
+available, data limitations, and source documents. An explicit chat request
+for a report uses the student's existing interest/profile to generate and save
+the standard recommendation report. If no interest has been shared yet, the AI
+continues the conversation to gather that missing context first.
+
 For example, one recorded subject group has this shape:
 
 ```json

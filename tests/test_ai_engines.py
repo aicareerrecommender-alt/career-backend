@@ -123,6 +123,8 @@ class CareerAdviceContextTests(unittest.TestCase):
         self.assertIn("No grades were provided", system_prompt)
         self.assertIn("leave eligibility unconfirmed", system_prompt)
         self.assertIn("Do not claim eligibility", system_prompt)
+        self.assertIn("student-specific report plan", system_prompt)
+        self.assertIn("remains unknown", system_prompt)
         self.assertIn("Points: not calculated", user_prompt)
 
     @patch.object(ai_engines, "client_groq")

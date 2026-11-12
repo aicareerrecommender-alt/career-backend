@@ -35,6 +35,7 @@ from utils.ai_engines import (
     is_course_in_catalog,
 )
 from utils.kuccps_requirements import assess_course_requirements
+from utils.kuccps_cutoffs import find_course_cutoff
 from utils.web_scraper import get_course_url
 
 from .models import RecommendationUsage, StudentLog, User
@@ -840,6 +841,10 @@ def recommend(request):
                 university["reason"] = (
                     "The official course page was verified. Check it for current entry requirements."
                 )
+                university["kuccps_cutoff"] = find_course_cutoff(
+                    course_name,
+                    university["name"],
+                )
                 university["requirements_met"] = [{
                     "subject": "Admission requirements",
                     "required": "See official course page",
@@ -862,9 +867,54 @@ def recommend(request):
             grades,
             preferred_institutions=[university["name"] for university in universities],
         )
+        for record in admission_requirements["records"]:
+            record["kuccps_cutoff"] = find_course_cutoff(course, record["institution"])
         verified_by_institution = {
             re.sub(r"[^a-z0-9]", "", university["name"].casefold()): university
             for university in universities
+        }
+        provided_grades = {
+            str(subject): (
+                str(value.get("grade", "")).strip()
+                if isinstance(value, dict)
+                else str(value).strip()
+            )
+            for subject, value in grades.items()
+            if str(subject).strip()
+            and (
+                str(value.get("grade", "")).strip()
+                if isinstance(value, dict)
+                else str(value).strip()
+            )
+        }
+        context = data.get("conversation_context")
+        context = context if isinstance(context, dict) else {}
+        insight["report_metadata"] = {
+            "version": 1,
+            "generated_at": timezone.now().isoformat(),
+            "prepared_for": user_name,
+            "student_request": interest,
+            "priorities": [
+                str(value).strip()[:80]
+                for value in context.get("priorities", [])[:8]
+                if str(value).strip()
+            ] if isinstance(context.get("priorities"), list) else [],
+            "preferred_level": preferred_level or "",
+            "constraints": str(context.get("constraints") or "").strip()[:500],
+            "grades": provided_grades,
+            "grade_status": (
+                "complete" if complete else "partial" if provided_grades else "not_provided"
+            ),
+            "aggregate_points": points if complete else None,
+            "assessment_note": (
+                "Overall points use the best seven valid grades. Partial grades do not establish eligibility."
+                if not complete
+                else "Historical cutoffs and listed subject minima are reference points, not admission guarantees."
+            ),
+            "sources": [
+                admission_requirements.get("source", "KUCCPS 2025/2026 DEGREE PROGRAMMES"),
+                "KUCCPS 2025/2026 DEGREE PROGRAMME CUT OFFS",
+            ],
         }
         for record in admission_requirements["records"]:
             key = re.sub(r"[^a-z0-9]", "", record["institution"].casefold())

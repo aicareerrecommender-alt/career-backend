@@ -25,6 +25,7 @@ from utils.kuccps_requirements import (
     assess_course_requirements,
     parse_subject_requirement_cell,
 )
+from utils.kuccps_cutoffs import find_course_cutoff
 from utils.discover_program_catalogue import merge_verified_inventory_into_registry
 from utils.web_scraper import get_course_url
 
@@ -601,10 +602,12 @@ class ApiViewsTests(TestCase):
 
     @override_settings(AUTH_TOKEN_SECRET="unit-test-secret", AUTH_TOKEN_TTL_SECONDS=3600)
     @patch("api.views.get_course_url", return_value="https://example.edu/nursing")
+    @patch("api.views.find_course_cutoff")
     @patch("api.views.ask_hybrid_career_advice")
     def test_recommendation_reports_remaining_requirements_for_one_grade(
         self,
         ask_advice,
+        find_cutoff,
         get_course_url,
     ):
         user = User.objects.create(
@@ -618,6 +621,20 @@ class ApiViewsTests(TestCase):
             "specific_course": "BACHELOR OF SCIENCE (NURSING)",
             "universities": [{"name": "Example University"}],
         }
+        cutoff_data = {
+            "status": "available",
+            "source": "KUCCPS 2025/2026 DEGREE PROGRAMME CUT OFFS",
+            "records": [{
+                "program_code": "1234567",
+                "institution": "Example University",
+                "course": "BACHELOR OF SCIENCE (NURSING)",
+                "source_page": 12,
+                "cutoffs": {"2024": 32.125},
+                "latest": {"year": 2024, "points": 32.125},
+            }],
+            "notice": "Historical values do not guarantee admission.",
+        }
+        find_cutoff.return_value = cutoff_data
         token = URLSafeTimedSerializer(
             settings.AUTH_TOKEN_SECRET,
             salt="career-backend-auth-v1",
@@ -635,6 +652,10 @@ class ApiViewsTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIsNone(response.json()["validated_points"])
         self.assertTrue(response.json()["universities"][0]["verified_offering"])
+        self.assertEqual(
+            response.json()["universities"][0]["kuccps_cutoff"],
+            cutoff_data,
+        )
         admission_requirements = response.json()["admission_requirements"]
         self.assertEqual(admission_requirements["status"], "available")
         self.assertTrue(any(
@@ -650,6 +671,17 @@ class ApiViewsTests(TestCase):
         self.assertEqual(ask_advice.call_args.kwargs["profile_context"], "")
         get_course_url.assert_called_once()
         self.assertEqual(RecommendationUsage.objects.get(user=user).attempts, 1)
+        user.refresh_from_db()
+        self.assertEqual(len(user.history), 1)
+        report_metadata = user.history[0]["report_metadata"]
+        self.assertEqual(report_metadata["student_request"], "nursing")
+        self.assertEqual(report_metadata["grade_status"], "partial")
+        self.assertIsNone(report_metadata["aggregate_points"])
+        self.assertEqual(report_metadata["grades"], {"Biology": "B"})
+        self.assertTrue(all(
+            record["kuccps_cutoff"] == cutoff_data
+            for record in response.json()["admission_requirements"]["records"]
+        ))
 
     @override_settings(AUTH_TOKEN_SECRET="unit-test-secret", AUTH_TOKEN_TTL_SECONDS=3600)
     @patch("api.views.get_course_url", return_value=None)
@@ -889,6 +921,63 @@ class ApiViewsTests(TestCase):
             ["English", "Kiswahili"],
         )
         self.assertEqual(result["records"][0]["status"], "More subjects need assessment")
+
+    def test_course_cutoff_uses_latest_available_historical_year(self):
+        database = {
+            "source": "KUCCPS 2025/2026 DEGREE PROGRAMME CUT OFFS",
+            "source_file": "DEGREE_CUTOFFS_14-07-2025.pdf",
+            "cutoff_years": list(range(2018, 2025)),
+            "entries": [{
+                "program_code": "1234567",
+                "institution": "KENYATTA UNIVERSITY",
+                "course": "BACHELOR OF SCIENCE IN NURSING",
+                "source_page": 12,
+                "cutoffs": {
+                    "2018": 25.25,
+                    "2019": 26.5,
+                    "2020": None,
+                    "2021": 27.125,
+                    "2022": None,
+                    "2023": None,
+                    "2024": None,
+                },
+            }],
+        }
+        with patch(
+            "utils.kuccps_cutoffs._load_cutoff_database",
+            return_value=database,
+        ):
+            result = find_course_cutoff(
+                "Bachelor of Science (Nursing)",
+                "Kenyatta University",
+            )
+
+        self.assertEqual(result["status"], "available")
+        self.assertEqual(result["records"][0]["latest"], {
+            "year": 2021,
+            "points": 27.125,
+        })
+        self.assertIn("not a guarantee", result["notice"])
+
+    def test_course_cutoff_does_not_match_another_institution_or_course(self):
+        database = {
+            "source": "KUCCPS 2025/2026 DEGREE PROGRAMME CUT OFFS",
+            "source_file": "DEGREE_CUTOFFS_14-07-2025.pdf",
+            "cutoff_years": list(range(2018, 2025)),
+            "entries": [{
+                "program_code": "1234567",
+                "institution": "KENYATTA UNIVERSITY",
+                "course": "BACHELOR OF SCIENCE IN NURSING",
+                "source_page": 12,
+                "cutoffs": {"2024": 30.0},
+            }],
+        }
+        with patch(
+            "utils.kuccps_cutoffs._load_cutoff_database",
+            return_value=database,
+        ):
+            self.assertIsNone(find_course_cutoff("Nursing", "Example University"))
+            self.assertIsNone(find_course_cutoff("Bachelor of Medicine", "Kenyatta University"))
 
     def test_failed_alternative_does_not_claim_course_ineligible_if_other_option_unchecked(self):
         database = {
