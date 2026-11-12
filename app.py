@@ -75,37 +75,27 @@ def send_async_email(app, msg):
         mail.send(msg)
         
 # --- POSTGRESQL DATABASE CONFIGURATION ---
-# Render provides the DATABASE_URL environment variable automatically,
-# but a flaky/stale remote DB should not crash the app startup.
-# Prefer PostgreSQL when available, otherwise fall back to SQLite for local/dev usage.
+# Render provides DATABASE_URL in production. Use SQLite only when it is unset
+# so a broken production database cannot silently split user accounts.
 from sqlalchemy import create_engine
 
 def resolve_database_url():
     configured_url = os.environ.get("DATABASE_URL")
-    candidate_urls = []
+    url = normalize_database_url(configured_url) if configured_url else "sqlite:///local_test.db"
+    engine_options = {} if url.startswith("sqlite") else {"pool_pre_ping": True}
 
-    if configured_url:
-        candidate_urls.append(normalize_database_url(configured_url))
+    try:
+        engine = create_engine(url, **engine_options)
+        with engine.connect():
+            pass
+    except Exception as exc:
+        if configured_url:
+            logging.exception("Could not connect to the configured database.")
+            raise RuntimeError("The configured DATABASE_URL is unavailable.") from exc
+        logging.exception("Could not connect to the local SQLite database.")
+        raise RuntimeError("The local SQLite database is unavailable.") from exc
 
-    candidate_urls.append("sqlite:///local_test.db")
-
-    for url in candidate_urls:
-        try:
-            if url.startswith("sqlite"):
-                sqlite_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "local_test.db")
-                sqlite_url = f"sqlite:///{sqlite_path}"
-                engine = create_engine(sqlite_url)
-            else:
-                engine = create_engine(url, pool_pre_ping=True)
-
-            with engine.connect() as connection:
-                # Validate the connection first so startup does not crash on a dead Render DB.
-                pass
-            return url
-        except Exception as exc:
-            logging.warning(f"Database connection failed for '{url}': {exc}")
-
-    return "sqlite:///local_test.db"
+    return url
 
 
 db_url = resolve_database_url()

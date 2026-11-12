@@ -4,14 +4,14 @@
 
 - Runtime: Python 3.11.
 - Build command: `pip install -r requirements.txt`.
-- Start command: configured in `Procfile`; it runs Django migrations and then
-  Gunicorn with `careerpath.wsgi:application`.
+- The live Render service currently overrides `Procfile` and starts the Flask
+  app with `gunicorn secured_app:app`. The `Procfile` still specifies the
+  Django WSGI app; align these entry points as part of an intentional runtime
+  migration, not as part of a database connection fix.
 - Health-check path: `/`.
-
-If the Render dashboard overrides the start command, use the Django WSGI
-application shown in the `Procfile`, not `secured_app:app` or `app:app`. The
-Flask entry point imports SQLAlchemy directly and is no longer the production
-server after the Django migration.
+- The service will not fall back to local SQLite if a configured
+  `DATABASE_URL` cannot be reached. Fix the PostgreSQL connection before
+  deploying; local SQLite is only selected when `DATABASE_URL` is unset.
 
 ## Environment variables
 

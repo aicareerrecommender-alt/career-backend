@@ -13,7 +13,7 @@ from flask import jsonify, request
 from werkzeug.security import check_password_hash, generate_password_hash
 
 import secured_app
-from app import User, app, db
+from app import User, app, db, resolve_database_url
 
 
 class SecuredRecommendationTests(unittest.TestCase):
@@ -47,6 +47,19 @@ class SecuredRecommendationTests(unittest.TestCase):
         with app.app_context():
             db.session.remove()
             db.drop_all()
+
+    @patch.dict(os.environ, {"DATABASE_URL": "postgresql://test:test@db.invalid/career"})
+    @patch("app.create_engine")
+    def test_configured_database_failure_does_not_fall_back_to_sqlite(self, create_engine):
+        create_engine.return_value.connect.side_effect = OSError("database unavailable")
+
+        with self.assertRaisesRegex(RuntimeError, "configured DATABASE_URL is unavailable"):
+            resolve_database_url()
+
+        create_engine.assert_called_once_with(
+            "postgresql://test:test@db.invalid/career",
+            pool_pre_ping=True,
+        )
 
     def post_recommend(self, payload=None):
         return self.client.post(
@@ -95,6 +108,41 @@ class SecuredRecommendationTests(unittest.TestCase):
             response.status_code = 200
             hooked = secured_app.issue_sign_in_token(response)
         self.assertIn("access_token", hooked.get_json())
+
+    @patch("app.mail.send")
+    def test_registered_user_can_verify_and_sign_in_with_email(self, send_email):
+        registration = self.client.post(
+            "/register",
+            json={
+                "name": "New Student",
+                "email": "new.student@example.test",
+                "password": " Password with spaces ",
+            },
+        )
+        self.assertEqual(registration.status_code, 201)
+        with app.app_context():
+            user = User.query.filter_by(email="new.student@example.test").one()
+            verification_code = user.verification_code
+
+        verification = self.client.post(
+            "/verify",
+            json={
+                "email": "NEW.STUDENT@example.test",
+                "code": verification_code,
+            },
+        )
+        self.assertEqual(verification.status_code, 200)
+
+        login = self.client.post(
+            "/login",
+            json={
+                "username": "NEW.STUDENT@example.test",
+                "password": " Password with spaces ",
+            },
+        )
+        self.assertEqual(login.status_code, 200)
+        self.assertEqual(login.get_json()["user"]["email"], "new.student@example.test")
+        self.assertTrue(login.get_json()["access_token"])
 
     @patch("app.mail.send")
     def test_forgot_password_sends_temporary_password_and_updates_hash(self, send_email):
