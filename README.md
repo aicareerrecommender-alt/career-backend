@@ -113,6 +113,14 @@ recommendations, quota enforcement, and upload validation. The `unittest`
 suite covers AI guidance and course catalogue utilities. Tests stub provider
 calls; they do not prove live credentials or provider availability.
 
+## License and third-party materials
+
+Original backend source code and project-authored documentation are licensed
+under the [MIT License](LICENSE). This license does not apply to third-party
+materials, KUCCPS publications or derived datasets, university website content,
+personal data, trademarks, or logos; those remain subject to their own rights
+and terms. Do not publish user records, local databases, or personal reports.
+
 ## Provider secrets and cost
 
 This application calls Groq's API; it does not use a ChatGPT account password.

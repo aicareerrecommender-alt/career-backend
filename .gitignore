@@ -11,6 +11,7 @@ student_logs.json
 local_test.db
 *.sqlite3
 db.sqlite3
+utils/*_Placement_Report.pdf
 university_portals/
 data/course_urls.json.lock
 data/course_urls.json.maintenance.lock
