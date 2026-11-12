@@ -137,11 +137,15 @@ data with `python utils/kuccps_requirements.py`.
 
 The response also includes `kuccps_cutoff` on each university candidate and
 matching cutoff data on each `admission_requirements.records` item, derived
-from `data/course_cutoffs.json` and
-`utils/DEGREE_CUTOFFS_14-07-2025.pdf`. It reports the latest numeric historical
-cutoff and its year (up to 2024), programme code, and source PDF page. These
-historical cluster-point values are not current admission thresholds or
-guarantees. Rebuild the extracted data with `python -m utils.kuccps_cutoffs`.
+from the latest official KUCCPS cutoff PDF fetched online at
+`https://statics.kuccps.net/uploads/globalFiles/DEGREE_CUTOFFS_14_07_2025.pdf`.
+The backend refreshes this source at most once per day, validates the HTTPS
+host and PDF contents, and falls back to `data/course_cutoffs.json` if the
+online source is unavailable. The current public document contains cutoff
+values through 2024; it does not provide current-cycle thresholds. Each cutoff
+includes its retrieval status and source URL where available. Values are
+historical reference points, not admission guarantees. Rebuild the offline
+snapshot with `python -m utils.kuccps_cutoffs`.
 
 Successful recommendations are saved once to the signed-in user's history.
 They include `report_metadata` with the student's request, the provided grades,

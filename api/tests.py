@@ -925,6 +925,9 @@ class ApiViewsTests(TestCase):
     def test_course_cutoff_uses_latest_available_historical_year(self):
         database = {
             "source": "KUCCPS 2025/2026 DEGREE PROGRAMME CUT OFFS",
+            "source_url": "https://statics.kuccps.net/uploads/globalFiles/cutoffs.pdf",
+            "retrieval_status": "online",
+            "retrieved_at": "2026-11-12T08:00:00+00:00",
             "source_file": "DEGREE_CUTOFFS_14-07-2025.pdf",
             "cutoff_years": list(range(2018, 2025)),
             "entries": [{
@@ -944,7 +947,7 @@ class ApiViewsTests(TestCase):
             }],
         }
         with patch(
-            "utils.kuccps_cutoffs._load_cutoff_database",
+            "utils.kuccps_cutoffs._get_latest_cutoff_database",
             return_value=database,
         ):
             result = find_course_cutoff(
@@ -957,6 +960,12 @@ class ApiViewsTests(TestCase):
             "year": 2021,
             "points": 27.125,
         })
+        self.assertEqual(result["retrieval_status"], "online")
+        self.assertEqual(result["source_url"], database["source_url"])
+        self.assertEqual(result["retrieved_at"], database["retrieved_at"])
+        self.assertEqual(result["latest_published_cutoff_year"], 2024)
+        self.assertIn("through 2024", result["notice"])
+        self.assertIn("not a current-cycle cutoff", result["notice"])
         self.assertIn("not a guarantee", result["notice"])
 
     def test_course_cutoff_does_not_match_another_institution_or_course(self):
@@ -973,11 +982,94 @@ class ApiViewsTests(TestCase):
             }],
         }
         with patch(
-            "utils.kuccps_cutoffs._load_cutoff_database",
+            "utils.kuccps_cutoffs._get_latest_cutoff_database",
             return_value=database,
         ):
             self.assertIsNone(find_course_cutoff("Nursing", "Example University"))
             self.assertIsNone(find_course_cutoff("Bachelor of Medicine", "Kenyatta University"))
+
+    @patch(
+        "utils.kuccps_cutoffs._extract_cutoff_document",
+        return_value=([{
+            "program_code": "1234567",
+            "institution": "KENYATTA UNIVERSITY",
+            "course": "BACHELOR OF SCIENCE IN NURSING",
+            "source_page": 6,
+            "cutoffs": {"2024": 41.935},
+        }] * 1000, "2025/2026 DEGREE PROGRAMME CUT OFFS", tuple(range(2018, 2025))),
+    )
+    @patch("utils.kuccps_cutoffs.requests.get")
+    def test_online_cutoff_refresh_uses_verified_official_pdf(self, get, extract_rows):
+        response = MagicMock()
+        response.url = (
+            "https://statics.kuccps.net/uploads/globalFiles/"
+            "DEGREE_CUTOFFS_14_07_2025.pdf"
+        )
+        response.content = b"%PDF-1.7 official KUCCPS cutoff document"
+        response.raise_for_status.return_value = None
+        get.return_value = response
+
+        from utils.kuccps_cutoffs import _fetch_online_cutoff_database
+
+        database = _fetch_online_cutoff_database()
+
+        self.assertEqual(database["retrieval_status"], "online")
+        self.assertEqual(database["source_url"], response.url)
+        self.assertEqual(database["source_file"], "DEGREE_CUTOFFS_14_07_2025.pdf")
+        self.assertTrue(database["retrieved_at"])
+        self.assertEqual(database["latest_published_cutoff_year"], 2024)
+        self.assertEqual(len(database["entries"]), 1000)
+        get.assert_called_once()
+        extract_rows.assert_called_once_with(response.content)
+
+    @patch("utils.kuccps_cutoffs._load_cutoff_database")
+    @patch("utils.kuccps_cutoffs._fetch_online_cutoff_database")
+    def test_first_cutoff_lookup_checks_online_before_using_snapshot(
+        self,
+        fetch_online,
+        load_snapshot,
+    ):
+        from utils import kuccps_cutoffs
+
+        online_database = {
+            "retrieval_status": "online",
+            "entries": [],
+        }
+        fetch_online.return_value = online_database
+        load_snapshot.return_value = {"retrieval_status": "offline_snapshot", "entries": []}
+        with (
+            patch.object(kuccps_cutoffs, "_online_checked_at", None),
+            patch.object(kuccps_cutoffs, "_online_cutoff_database", None),
+        ):
+            result = kuccps_cutoffs._get_latest_cutoff_database()
+
+        self.assertIs(result, online_database)
+        fetch_online.assert_called_once()
+        load_snapshot.assert_not_called()
+
+    @patch(
+        "utils.kuccps_cutoffs._load_cutoff_database",
+        return_value={"source": "Bundled KUCCPS cutoff snapshot", "entries": []},
+    )
+    @patch("utils.kuccps_cutoffs._fetch_online_cutoff_database", side_effect=OSError("offline"))
+    def test_failed_online_refresh_uses_explicit_offline_snapshot(
+        self,
+        fetch_online,
+        load_snapshot,
+    ):
+        from utils import kuccps_cutoffs
+
+        with (
+            patch.object(kuccps_cutoffs, "_online_checked_at", None),
+            patch.object(kuccps_cutoffs, "_online_cutoff_database", None),
+        ):
+            with self.assertLogs(level="WARNING"):
+                result = kuccps_cutoffs._get_latest_cutoff_database()
+
+        self.assertEqual(result["retrieval_status"], "offline_snapshot")
+        self.assertEqual(result["source"], "Bundled KUCCPS cutoff snapshot")
+        fetch_online.assert_called_once()
+        load_snapshot.assert_called_once()
 
     def test_failed_alternative_does_not_claim_course_ineligible_if_other_option_unchecked(self):
         database = {

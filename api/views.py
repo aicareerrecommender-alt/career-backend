@@ -889,6 +889,14 @@ def recommend(request):
         }
         context = data.get("conversation_context")
         context = context if isinstance(context, dict) else {}
+        cutoff_data = next(
+            (
+                record["kuccps_cutoff"]
+                for record in admission_requirements["records"]
+                if record.get("kuccps_cutoff")
+            ),
+            {},
+        )
         insight["report_metadata"] = {
             "version": 1,
             "generated_at": timezone.now().isoformat(),
@@ -909,11 +917,20 @@ def recommend(request):
             "assessment_note": (
                 "Overall points use the best seven valid grades. Partial grades do not establish eligibility."
                 if not complete
-                else "Historical cutoffs and listed subject minima are reference points, not admission guarantees."
+                else (
+                    f"The latest KUCCPS cutoff values published online are through "
+                    f"{cutoff_data.get('latest_published_cutoff_year', 2024)}; "
+                    "they are reference points, not current-cycle admission guarantees."
+                )
             ),
+            "cutoff_data_status": cutoff_data.get("retrieval_status", "offline_snapshot"),
+            "cutoff_data_retrieved_at": cutoff_data.get("retrieved_at"),
+            "cutoff_source_url": cutoff_data.get("source_url"),
+            "latest_published_cutoff_year": cutoff_data.get("latest_published_cutoff_year", 2024),
             "sources": [
                 admission_requirements.get("source", "KUCCPS 2025/2026 DEGREE PROGRAMMES"),
-                "KUCCPS 2025/2026 DEGREE PROGRAMME CUT OFFS",
+                cutoff_data.get("source_url")
+                or "KUCCPS 2025/2026 DEGREE PROGRAMME CUT OFFS (cutoff values through 2024)",
             ],
         }
         for record in admission_requirements["records"]:
