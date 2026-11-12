@@ -324,10 +324,14 @@ class ApiViewsTests(TestCase):
             is_verified=True,
             history=[],
         )
-        for field in ("email", "username"):
+        for field, identifier in (
+            ("email", user.email),
+            ("username", user.name),
+            ("email", user.email.upper()),
+        ):
             response = self.client.post(
                 "/login",
-                data=json.dumps({field: user.email if field == "email" else user.name, "password": "correct horse"}),
+                data=json.dumps({field: identifier, "password": "correct horse"}),
                 content_type="application/json",
             )
             self.assertEqual(response.status_code, 200)

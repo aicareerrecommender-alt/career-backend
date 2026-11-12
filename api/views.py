@@ -486,7 +486,11 @@ def login(request):
             {"message": "Username or email and password are required"}, status=400
         )
     try:
-        user = _user_by_email(identifier)
+        user = None
+        if "@" in identifier:
+            user = User.objects.filter(email=identifier).first()
+        if user is None:
+            user = _user_by_email(identifier)
         if user and user.password_hash != "GOOGLE_AUTH_USER":
             try:
                 password_matches = check_password_hash(user.password_hash, password)
