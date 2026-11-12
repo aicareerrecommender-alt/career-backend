@@ -4,6 +4,8 @@ import logging
 import concurrent.futures
 import json
 import re
+import secrets
+import string
 from collections import Counter
 from datetime import datetime
 import io                   # For creating the PDF in memory
@@ -433,6 +435,43 @@ def login():
             "history": user.history or []
         }
     }), 200
+
+@app.route('/forgot-password', methods=['POST'])
+def forgot_password():
+    data = request.get_json(silent=True)
+    if not isinstance(data, dict) or not data.get('email'):
+        return jsonify({"message": "Email is required."}), 400
+
+    email = str(data['email']).strip().lower()
+    user = User.query.filter(db.func.lower(User.email) == email).first()
+    if not user:
+        return jsonify({"message": "User not found."}), 404
+    if user.password_hash == "GOOGLE_AUTH_USER":
+        return jsonify({"message": "Google accounts must use Google for security."}), 403
+
+    temporary_password = ''.join(
+        secrets.choice(string.ascii_letters + string.digits) for _ in range(14)
+    )
+    message = Message(
+        "Your CareerPath AI temporary password",
+        sender=app.config['MAIL_USERNAME'],
+        recipients=[user.email],
+    )
+    message.body = (
+        f"Your temporary password is {temporary_password}. "
+        "Sign in and change it in Account Settings."
+    )
+
+    try:
+        mail.send(message)
+        user.password_hash = generate_password_hash(temporary_password)
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        logging.exception("Failed to send a password reset to %s.", user.email)
+        return jsonify({"message": "Could not send a password reset email."}), 503
+
+    return jsonify({"message": "A temporary password has been sent to your email."}), 200
 
 @app.route('/history', methods=['GET', 'POST'])
 def history():

@@ -1,5 +1,7 @@
 import os
+import re
 import unittest
+from unittest.mock import patch
 
 # Set isolated configuration before importing the application.
 os.environ["DATABASE_URL"] = "sqlite:///:memory:"
@@ -8,7 +10,7 @@ os.environ["GROQ_API_KEY"] = "unit-test-key"
 os.environ["GROQ_MODEL"] = "openai/gpt-oss-20b"
 
 from flask import jsonify, request
-from werkzeug.security import generate_password_hash
+from werkzeug.security import check_password_hash, generate_password_hash
 
 import secured_app
 from app import User, app, db
@@ -93,6 +95,40 @@ class SecuredRecommendationTests(unittest.TestCase):
             response.status_code = 200
             hooked = secured_app.issue_sign_in_token(response)
         self.assertIn("access_token", hooked.get_json())
+
+    @patch("app.mail.send")
+    def test_forgot_password_sends_temporary_password_and_updates_hash(self, send_email):
+        response = self.client.post(
+            "/forgot-password",
+            json={"email": "STUDENT@example.test"},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.get_json()["message"],
+            "A temporary password has been sent to your email.",
+        )
+
+        message = send_email.call_args.args[0]
+        temporary_password = re.search(
+            r"temporary password is ([A-Za-z0-9]+)\.", message.body
+        ).group(1)
+        with app.app_context():
+            user = User.query.filter_by(email="student@example.test").one()
+            self.assertTrue(check_password_hash(user.password_hash, temporary_password))
+
+    @patch("app.mail.send", side_effect=OSError("Mail service unavailable"))
+    def test_forgot_password_does_not_change_hash_when_email_fails(self, send_email):
+        with app.app_context():
+            original_hash = User.query.filter_by(email="student@example.test").one().password_hash
+
+        response = self.client.post(
+            "/forgot-password",
+            json={"email": "student@example.test"},
+        )
+        self.assertEqual(response.status_code, 503)
+        with app.app_context():
+            user = User.query.filter_by(email="student@example.test").one()
+            self.assertEqual(user.password_hash, original_hash)
 
     def test_multiple_users_receive_independent_tokens_and_recommendations(self):
         users = [
