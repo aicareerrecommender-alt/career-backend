@@ -85,6 +85,64 @@ class SecuredRecommendationTests(unittest.TestCase):
         self.assertEqual(response.get_json()["email"], "student@example.test")
         self.assertEqual(response.get_json()["name"], "Test Student")
 
+    @patch("utils.kuccps_cutoffs._get_latest_cutoff_database")
+    @patch("app.get_course_url", return_value=None)
+    @patch("app.ask_hybrid_career_advice")
+    def test_recommendation_includes_historical_cutoff_for_unverified_institution(
+        self,
+        generate_advice,
+        verify_course_page,
+        load_cutoffs,
+    ):
+        load_cutoffs.return_value = {
+            "source": "KUCCPS 2025/2026 DEGREE PROGRAMME CUT OFFS",
+            "source_file": "DEGREE_CUTOFFS_14-07-2025.pdf",
+            "source_url": "https://statics.kuccps.net/uploads/globalFiles/DEGREE_CUTOFFS_14_07_2025.pdf",
+            "retrieval_status": "online",
+            "retrieved_at": "2026-11-12T14:43:05+00:00",
+            "cutoff_years": list(range(2018, 2025)),
+            "entries": [{
+                "program_code": "1249232",
+                "institution": "JOMO KENYATTA UNIVERSITY OF AGRICULTURE AND TECHNOLOGY",
+                "course": "BACHELOR OF SCIENCE IN INFORMATION TECHNOLOGY",
+                "source_page": 17,
+                "cutoffs": {"2024": 38.307},
+            }],
+        }
+        generate_advice.return_value = {
+            "specific_course": "BACHELOR OF SCIENCE (INFORMATION TECHNOLOGY)",
+            "universities": [{
+                "name": "Jomo Kenyatta University of Agriculture and Technology",
+                "specific_course": "BACHELOR OF SCIENCE (INFORMATION TECHNOLOGY)",
+                "reason": "A suitable study option.",
+            }],
+            "ai_role": "Software Developer",
+            "alternative_careers": [],
+        }
+        original_recommend_view = app.view_functions["recommend"]
+        app.view_functions["recommend"] = type(self).original_recommend_view
+        try:
+            response = self.post_recommend({
+                "name": "Test Student",
+                "email": "student@example.test",
+                "interest": "computing and information technology",
+                "grades": {},
+            })
+        finally:
+            app.view_functions["recommend"] = original_recommend_view
+
+        self.assertEqual(response.status_code, 200)
+        university = response.get_json()["universities"][0]
+        self.assertFalse(university["verified_offering"])
+        self.assertEqual(
+            university["kuccps_cutoff"]["records"][0]["latest"],
+            {"year": 2024, "points": 38.307},
+        )
+        self.assertEqual(
+            university["kuccps_cutoff"]["source_url"],
+            load_cutoffs.return_value["source_url"],
+        )
+
     def test_recommendation_usage_has_no_lifetime_limit(self):
         for _ in range(5):
             self.assertEqual(self.post_recommend().status_code, 200)

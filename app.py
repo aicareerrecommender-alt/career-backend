@@ -32,6 +32,7 @@ from sqlalchemy.orm.attributes import flag_modified
 # Preserved student logs loading for historical JSON read fallback in Word Cloud
 from utils.database import db, init_db, normalize_database_url, save_json,load_json, USER_FILE, LOGS_FILE
 from utils.ai_engines import ask_hybrid_career_advice, calculate_total_points, generate_chat_reply, grade_to_int
+from utils.kuccps_cutoffs import find_course_cutoff
 
 
 from google.auth.transport import requests as google_requests
@@ -797,6 +798,13 @@ def recommend():
                 "verified_offering": False,
                 "requirements_met": [{"subject": "General Requirement", "required": "Check Website", "status": "Pending"}]
             }]
+
+        for university in final_ai_insight["universities"]:
+            university_course = university.get("specific_course") or recommended_course
+            university["kuccps_cutoff"] = find_course_cutoff(
+                university_course,
+                university.get("name", ""),
+            )
 
         ai_insight = final_ai_insight
         ai_insight["validated_points"] = calculated_points if has_complete_grades else None
