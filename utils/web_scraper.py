@@ -5,13 +5,16 @@ import io
 import logging
 import os
 import re
-from urllib.parse import parse_qs, urlparse
+from urllib.parse import parse_qs, urljoin, urlparse
 
 import requests
+import truststore
 from bs4 import BeautifulSoup
 
 from utils.ai_engines import is_course_in_catalog
 
+
+truststore.inject_into_ssl()
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA_FOLDER = os.path.join(PROJECT_ROOT, "data")
@@ -286,6 +289,202 @@ def _search_official_course_page(university_name, course_name, domain):
 
     logging.info("No official course page verified for %s at %s.", course_name, university_name)
     return None
+
+
+def _safe_application_url(url):
+    try:
+        parsed = urlparse(url)
+        port = parsed.port
+    except (TypeError, ValueError):
+        return False
+    return (
+        parsed.scheme == "https"
+        and parsed.hostname is not None
+        and parsed.username is None
+        and parsed.password is None
+        and port in (None, 443)
+    )
+
+
+def _application_link_from_official_page(
+    url,
+    domain,
+    university_name,
+    is_verified_course_page=False,
+):
+    try:
+        response = requests.get(
+            url,
+            headers={"User-Agent": "CareerPath official application-link verifier"},
+            timeout=8,
+            allow_redirects=True,
+        )
+    except requests.RequestException as error:
+        logging.warning("Could not inspect official admissions page %s: %s", url, error)
+        return None
+
+    final_url = response.url
+    if (
+        response.status_code != 200
+        or not _url_is_on_domain(final_url, domain)
+        or "application/pdf" in response.headers.get("Content-Type", "").lower()
+    ):
+        return None
+
+    soup = BeautifulSoup(response.text, "html.parser")
+    page_context = " ".join((
+        final_url,
+        soup.title.get_text(" ", strip=True) if soup.title else "",
+        " ".join(
+            heading.get_text(" ", strip=True)
+            for heading in soup.find_all(["h1", "h2", "h3"])
+        ),
+    )).casefold()
+    has_admissions_context = re.search(
+        r"\b(apply|application|admission|admissions|enrol|enroll)\b",
+        page_context,
+    )
+    if not has_admissions_context and not is_verified_course_page:
+        return None
+
+    application_actions = re.compile(
+        r"\b(apply\s*(?:online|now|courses?|programmes?|programs?)|"
+        r"online application|application portal|"
+        r"apply for admission|start (?:your )?application|submit application|"
+        r"student application portal)\b",
+        re.IGNORECASE,
+    )
+    application_links = []
+    for anchor in soup.select("a[href]"):
+        label = " ".join((
+            anchor.get_text(" ", strip=True),
+            str(anchor.get("aria-label") or ""),
+            str(anchor.get("title") or ""),
+        ))
+        href = anchor.get("href", "")
+        candidate_url = urljoin(final_url, href)
+        if not _safe_application_url(candidate_url):
+            continue
+        if not application_actions.search(f"{label} {href}"):
+            continue
+        if (
+            not _url_is_on_domain(candidate_url, domain)
+            and not application_actions.search(label)
+        ):
+            continue
+        application_links.append((candidate_url, label.casefold()))
+
+    if application_links:
+        application_links.sort(
+            key=lambda item: (
+                "application portal" in item[1],
+                "apply online" in item[1],
+                "apply now" in item[1],
+            ),
+            reverse=True,
+        )
+        return application_links[0][0]
+
+    logging.info(
+        "No direct application link was found on the official admissions page for %s.",
+        university_name,
+    )
+    return None
+
+
+def _search_official_application_page(university_name, course_name, domain):
+    query = (
+        f'site:{domain} "{course_name}" '
+        '(admissions OR admission OR "apply online" OR "application portal")'
+    )
+    try:
+        search_response = requests.get(
+            SEARCH_URL,
+            params={"q": query},
+            headers={
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124 Safari/537.36",
+                "Accept-Language": "en-US,en;q=0.9",
+            },
+            timeout=8,
+        )
+    except requests.RequestException as error:
+        logging.warning(
+            "Official application-page search failed for %s: %s",
+            university_name,
+            error,
+        )
+        return None
+
+    if search_response.status_code != 200:
+        logging.warning(
+            "Official application-page search returned HTTP %s for %s.",
+            search_response.status_code,
+            university_name,
+        )
+        return None
+
+    soup = BeautifulSoup(search_response.text, "html.parser")
+    candidates = []
+    for result in soup.select("li.b_algo"):
+        link = result.select_one("h2 a[href]")
+        if not link:
+            continue
+        url = _search_result_url(link.get("href"))
+        if not isinstance(url, str) or not _url_is_on_domain(url, domain):
+            continue
+        evidence = " ".join((
+            link.get_text(" ", strip=True),
+            result.get_text(" ", strip=True),
+            url,
+        ))
+        if re.search(r"\b(apply|application|admission|admissions|enrol|enroll)\b", evidence, re.I):
+            candidates.append(url)
+
+    for candidate_url in dict.fromkeys(candidates):
+        application_url = _application_link_from_official_page(
+            candidate_url,
+            domain,
+            university_name,
+        )
+        if application_url:
+            return application_url
+    logging.info("No official application portal was verified for %s.", university_name)
+    return None
+
+
+def get_official_application_url(university_name, course_name, course_url=None):
+    """Find an application link published on an institution's verified HTTPS site."""
+    if not isinstance(university_name, str) or not university_name.strip():
+        return None
+    if not isinstance(course_name, str) or not course_name.strip():
+        return None
+
+    domain = _official_domain(university_name)
+    if not domain:
+        logging.info("No official domain is registered for institution %s.", university_name)
+        return None
+
+    if isinstance(course_url, str) and _url_is_on_domain(course_url, domain):
+        application_url = _application_link_from_official_page(
+            course_url,
+            domain,
+            university_name,
+            is_verified_course_page=True,
+        )
+        if application_url:
+            return application_url
+
+    homepage_url = f"https://{domain}/"
+    application_url = _application_link_from_official_page(
+        homepage_url,
+        domain,
+        university_name,
+        is_verified_course_page=True,
+    )
+    if application_url:
+        return application_url
+
+    return _search_official_application_page(university_name, course_name, domain)
 
 
 def get_course_url(university_name, course_name, target_type="institution"):

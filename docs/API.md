@@ -119,6 +119,13 @@ If no page can be confirmed, `universities` is empty and
 university match. Entry requirements are not validated by this page check and
 should be confirmed on the linked official page.
 
+For verified university matches, `application_url` and
+`application_url_verified` are included when an application action is linked
+from the institution's verified HTTPS course or admissions page. The portal
+may use a separate HTTPS host, but it is only exposed when the university's
+official page links to it. When no application link can be verified, the
+fields are omitted and the course-page link remains available.
+
 Recommendation course selection is constrained to exact titles from the saved
 KUCCPS course registry. A student's entered grades do not remove a course from
 the matching choices; they are assessed separately so a partial test can still

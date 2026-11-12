@@ -36,7 +36,7 @@ from utils.ai_engines import (
 )
 from utils.kuccps_requirements import assess_course_requirements
 from utils.kuccps_cutoffs import find_course_cutoff
-from utils.web_scraper import get_course_url
+from utils.web_scraper import get_course_url, get_official_application_url
 
 from .models import RecommendationUsage, StudentLog, User
 
@@ -815,13 +815,34 @@ def recommend(request):
             for item in raw_candidates
             if isinstance(item, dict) and item.get("name")
         ][:5]
+
+        def verify_institution_pages(institution):
+            course_url = get_course_url(
+                institution["name"],
+                course,
+                target_type="institution",
+            )
+            if not course_url:
+                return None
+            try:
+                application_url = get_official_application_url(
+                    institution["name"],
+                    course,
+                    course_url,
+                )
+            except Exception:
+                logger.exception(
+                    "Could not verify an application portal for %s.",
+                    institution["name"],
+                )
+                application_url = None
+            return course_url, application_url
+
         with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
             futures = {
                 executor.submit(
-                    get_course_url,
-                    item["name"],
-                    course,
-                    target_type="institution",
+                    verify_institution_pages,
+                    item,
                 ): item
                 for item in candidates
             }
@@ -829,15 +850,19 @@ def recommend(request):
                 university = futures[future]
                 course_name = course
                 try:
-                    url = future.result()
+                    result = future.result()
                 except Exception:
                     logger.exception("Could not verify an offering at %s.", university["name"])
-                    url = None
-                if not url:
+                    result = None
+                if not result:
                     continue
+                url, application_url = result
                 university["specific_course"] = course_name
                 university["website_url"] = url
                 university["verified_offering"] = True
+                if application_url:
+                    university["application_url"] = application_url
+                    university["application_url_verified"] = True
                 university["reason"] = (
                     "The official course page was verified. Check it for current entry requirements."
                 )
@@ -939,6 +964,9 @@ def recommend(request):
             if university:
                 record["course_page_verified"] = True
                 record["course_page_url"] = university["website_url"]
+                if university.get("application_url_verified"):
+                    record["application_url"] = university["application_url"]
+                    record["application_url_verified"] = True
         insight["admission_requirements"] = admission_requirements
         for university in universities:
             university_key = re.sub(r"[^a-z0-9]", "", university["name"].casefold())

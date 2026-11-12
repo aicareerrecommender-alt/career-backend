@@ -27,7 +27,7 @@ from utils.kuccps_requirements import (
 )
 from utils.kuccps_cutoffs import find_course_cutoff
 from utils.discover_program_catalogue import merge_verified_inventory_into_registry
-from utils.web_scraper import get_course_url
+from utils.web_scraper import get_course_url, get_official_application_url
 
 from .models import RecommendationUsage, StudentLog, User
 from .views import _log_email_delivery_failure, _send_email
@@ -474,12 +474,14 @@ class ApiViewsTests(TestCase):
         self.assertIsNotNone(user.consent_updated_at)
 
     @override_settings(AUTH_TOKEN_SECRET="unit-test-secret", AUTH_TOKEN_TTL_SECONDS=3600)
+    @patch("api.views.get_official_application_url", return_value=None)
     @patch("api.views.get_course_url", return_value="https://example.edu/nursing")
     @patch("api.views.ask_hybrid_career_advice")
     def test_improvement_contribution_requires_consent_and_excludes_profile_data(
         self,
         ask_advice,
         get_course_url,
+        get_application_url,
     ):
         user = User.objects.create(
             name="Amina",
@@ -601,6 +603,10 @@ class ApiViewsTests(TestCase):
         self.assertEqual(response.json()["error"], "AI is unavailable")
 
     @override_settings(AUTH_TOKEN_SECRET="unit-test-secret", AUTH_TOKEN_TTL_SECONDS=3600)
+    @patch(
+        "api.views.get_official_application_url",
+        return_value="https://apply.example.edu/submit",
+    )
     @patch("api.views.get_course_url", return_value="https://example.edu/nursing")
     @patch("api.views.find_course_cutoff")
     @patch("api.views.ask_hybrid_career_advice")
@@ -609,6 +615,7 @@ class ApiViewsTests(TestCase):
         ask_advice,
         find_cutoff,
         get_course_url,
+        get_application_url,
     ):
         user = User.objects.create(
             name="Amina",
@@ -653,6 +660,11 @@ class ApiViewsTests(TestCase):
         self.assertIsNone(response.json()["validated_points"])
         self.assertTrue(response.json()["universities"][0]["verified_offering"])
         self.assertEqual(
+            response.json()["universities"][0]["application_url"],
+            "https://apply.example.edu/submit",
+        )
+        self.assertTrue(response.json()["universities"][0]["application_url_verified"])
+        self.assertEqual(
             response.json()["universities"][0]["kuccps_cutoff"],
             cutoff_data,
         )
@@ -682,14 +694,21 @@ class ApiViewsTests(TestCase):
             record["kuccps_cutoff"] == cutoff_data
             for record in response.json()["admission_requirements"]["records"]
         ))
+        self.assertTrue(all(
+            record["application_url"] == "https://apply.example.edu/submit"
+            for record in response.json()["admission_requirements"]["records"]
+            if record["institution"] == "Example University"
+        ))
 
     @override_settings(AUTH_TOKEN_SECRET="unit-test-secret", AUTH_TOKEN_TTL_SECONDS=3600)
+    @patch("api.views.get_official_application_url", return_value=None)
     @patch("api.views.get_course_url", return_value=None)
     @patch("api.views.ask_hybrid_career_advice")
     def test_recommendation_does_not_present_unverified_institutions(
         self,
         ask_advice,
         get_course_url,
+        get_application_url,
     ):
         user = User.objects.create(
             name="Amina",
@@ -1280,6 +1299,94 @@ class ApiViewsTests(TestCase):
 
         self.assertEqual(result, url)
         get_page.assert_called_once()
+
+    def test_application_url_uses_portal_link_published_on_verified_school_page(self):
+        admissions_url = "https://example.edu/admissions/nursing"
+        application_url = "https://apply.example.edu/undergraduate/start"
+        page = MagicMock(
+            status_code=200,
+            url=admissions_url,
+            headers={"Content-Type": "text/html"},
+            text=(
+                "<title>Undergraduate Admissions</title>"
+                "<h1>Admissions</h1>"
+                f'<a href="{application_url}">Apply Online</a>'
+            ),
+        )
+        with (
+            patch("utils.web_scraper.OFFICIAL_DOMAINS", {"example university": "example.edu"}),
+            patch("utils.web_scraper.requests.get", return_value=page) as get_page,
+        ):
+            result = get_official_application_url(
+                "Example University",
+                "Bachelor of Science (Nursing)",
+                "https://www.example.edu/programmes/nursing",
+            )
+
+        self.assertEqual(result, application_url)
+        get_page.assert_called_once()
+
+    def test_application_url_uses_apply_link_from_official_homepage(self):
+        application_url = "https://application.example.edu/"
+        page = MagicMock(
+            status_code=200,
+            url="https://example.edu/",
+            headers={"Content-Type": "text/html"},
+            text=f'<title>Example University</title><a href="{application_url}">Apply Course</a>',
+        )
+        with (
+            patch("utils.web_scraper.OFFICIAL_DOMAINS", {"example university": "example.edu"}),
+            patch("utils.web_scraper.requests.get", return_value=page) as get_page,
+        ):
+            result = get_official_application_url(
+                "Example University",
+                "Bachelor of Science (Nursing)",
+            )
+
+        self.assertEqual(result, application_url)
+        get_page.assert_called_once_with(
+            "https://example.edu/",
+            headers={"User-Agent": "CareerPath official application-link verifier"},
+            timeout=8,
+            allow_redirects=True,
+        )
+
+    def test_application_url_rejects_non_https_or_untrusted_source(self):
+        search_page = MagicMock(status_code=200, text="<html></html>")
+        with (
+            patch("utils.web_scraper.OFFICIAL_DOMAINS", {"example university": "example.edu"}),
+            patch("utils.web_scraper.requests.get", return_value=search_page) as get_page,
+        ):
+            result = get_official_application_url(
+                "Example University",
+                "Bachelor of Science (Nursing)",
+                "https://not-example.edu/admissions/nursing",
+            )
+
+        self.assertIsNone(result)
+        self.assertEqual(get_page.call_count, 2)
+        self.assertEqual(get_page.call_args_list[0].args[0], "https://example.edu/")
+        self.assertEqual(get_page.call_args_list[1].args[0], "https://www.bing.com/search")
+
+    def test_application_url_does_not_label_admissions_info_as_application_portal(self):
+        admissions_url = "https://example.edu/admissions"
+        page = MagicMock(
+            status_code=200,
+            url=admissions_url,
+            headers={"Content-Type": "text/html"},
+            text="<title>Admissions Information</title><h1>How to Apply</h1><p>Requirements</p>",
+        )
+        with (
+            patch("utils.web_scraper.OFFICIAL_DOMAINS", {"example university": "example.edu"}),
+            patch("utils.web_scraper.requests.get", return_value=page),
+        ):
+            result = get_official_application_url(
+                "Example University",
+                "Bachelor of Science (Nursing)",
+                admissions_url,
+            )
+
+        self.assertIsNone(result)
 
     def test_course_url_tries_all_saved_verified_pages_before_searching(self):
         stale_url = "https://cuea.edu/old-programmes"
