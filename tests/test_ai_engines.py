@@ -99,10 +99,13 @@ class CareerAdviceContextTests(unittest.TestCase):
             profile_context="Motivation: building useful apps\nLocation: Nairobi",
         )
 
-        prompt = fetch_from_groq.call_args.args[1]
-        self.assertIn("building useful apps", prompt)
-        self.assertIn("Location: Nairobi", prompt)
-        self.assertIn("Requested Tier: Diploma", prompt)
+        system_prompt, user_prompt = fetch_from_groq.call_args.args[:2]
+        self.assertIn("building useful apps", user_prompt)
+        self.assertIn("Location: Nairobi", user_prompt)
+        self.assertIn("Requested Tier: Diploma", user_prompt)
+        self.assertIn('using "you" and "your"', system_prompt)
+        self.assertIn("Do not use the reader's name", system_prompt)
+        self.assertNotIn("Test Student", user_prompt)
 
     @patch.object(ai_engines, "get_eligible_context", return_value=["Bachelor of Medicine"])
     @patch.object(ai_engines, "fetch_from_groq", return_value={"universities": [{"name": "Example University"}]})
@@ -123,7 +126,8 @@ class CareerAdviceContextTests(unittest.TestCase):
         self.assertIn("No grades were provided", system_prompt)
         self.assertIn("leave eligibility unconfirmed", system_prompt)
         self.assertIn("Do not claim eligibility", system_prompt)
-        self.assertIn("student-specific report plan", system_prompt)
+        self.assertIn("addressed directly to the reader", system_prompt)
+        self.assertIn('using "you" and "your"', system_prompt)
         self.assertIn("remains unknown", system_prompt)
         self.assertIn("Points: not calculated", user_prompt)
 

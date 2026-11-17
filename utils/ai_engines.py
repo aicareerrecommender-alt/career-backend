@@ -588,7 +588,10 @@ def ask_hybrid_career_advice(student_name, interest, grades, calculated_points, 
     5. INTERVIEW CONTEXT: Use stated interests and preferences; do not invent facts, offerings, or admission requirements.
     6. REQUIREMENTS: Do not invent entry requirements. Do not claim eligibility.
        The server will show sourced KUCCPS subject minima separately.
-    7. REPORT QUALITY: Write "ai_roadmap" as a clear, student-specific report plan with short sections for
+    7. REPORT QUALITY: Write "ai_roadmap" as a clear report plan addressed directly to the reader
+       using "you" and "your". Do not use the reader's name or refer to them as "the student" or
+       "the respondent". Apply this second-person voice to "interest_match_reason" as well.
+       Include short sections for
        the study pathway, useful skills or experience, practical next steps, and important unknowns.
        Base it on the student's stated needs and supplied grades. If information is missing, name what
        remains unknown and how the student can confirm it; do not fill gaps with assumptions.
@@ -606,7 +609,7 @@ def ask_hybrid_career_advice(student_name, interest, grades, calculated_points, 
 
     # --- 4. PREPARE THE PROMPT ---
     points_context = f"{calculated_points}/84" if has_complete_grades else "not calculated (fewer than seven valid grades supplied)"
-    base_prompt = f"Student: {student_name} | Points: {points_context} | Requested Tier: {expected_level} | Passion: {interest}\nSubject Grades: {json.dumps(grades)}{exclusion_rule}"
+    base_prompt = f"Student profile | Points: {points_context} | Requested Tier: {expected_level} | Passion: {interest}\nSubject Grades: {json.dumps(grades)}{exclusion_rule}"
     if profile_context:
         base_prompt += f"\nAdditional course-fit preferences from the student's interview:\n{profile_context}"
 
@@ -614,7 +617,7 @@ def ask_hybrid_career_advice(student_name, interest, grades, calculated_points, 
     Respond ONLY with valid JSON:
     {
         "specific_course": "Name", "level": "Level", "ai_role": "Job", 
-        "interest_match_reason": "Reason", "ai_roadmap": "Student-specific report with clear sections",
+        "interest_match_reason": "Reason addressed to you", "ai_roadmap": "Second-person report with clear sections",
         "career_exploration_url": "Search URL", 
         "universities": [{"name": "Institution candidate", "specific_course": "Course", "reason": "", "website_url": "", "verified_offering": false, "requirements_met": []}],
         "alternative_careers": [{"name": "Job", "title": "Job", "description": "Desc", "fit": "Why"}]
