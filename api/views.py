@@ -36,7 +36,11 @@ from utils.ai_engines import (
 )
 from utils.kuccps_requirements import assess_course_requirements
 from utils.kuccps_cutoffs import find_course_cutoff
-from utils.web_scraper import get_course_url, get_official_application_url
+from utils.web_scraper import (
+    get_course_url,
+    get_official_application_url,
+    get_verified_course_institutions,
+)
 
 from .models import RecommendationUsage, StudentLog, User
 
@@ -811,6 +815,7 @@ def recommend(request):
                     },
                     status=422,
                 )
+        insight["specific_course"] = course
         universities = []
         raw_candidates = insight.get("universities")
         raw_candidates = raw_candidates if isinstance(raw_candidates, list) else []
@@ -842,45 +847,65 @@ def recommend(request):
                 application_url = None
             return course_url, application_url
 
-        with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
-            futures = {
-                executor.submit(
-                    verify_institution_pages,
-                    item,
-                ): item
+        def verify_candidates(items):
+            verified_by_index = {}
+            with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+                futures = {
+                    executor.submit(verify_institution_pages, item): (index, item)
+                    for index, item in enumerate(items)
+                }
+                for future in concurrent.futures.as_completed(futures):
+                    index, institution = futures[future]
+                    try:
+                        result = future.result()
+                    except Exception:
+                        logger.exception(
+                            "Could not verify an offering at %s.",
+                            institution["name"],
+                        )
+                        result = None
+                    if not result:
+                        continue
+
+                    url, application_url = result
+                    university = dict(institution)
+                    university["specific_course"] = course
+                    university["website_url"] = url
+                    university["verified_offering"] = True
+                    if application_url:
+                        university["application_url"] = application_url
+                        university["application_url_verified"] = True
+                    university["reason"] = (
+                        "The official course page was verified. Check it for current entry requirements."
+                    )
+                    university["kuccps_cutoff"] = find_course_cutoff(
+                        course,
+                        university["name"],
+                    )
+                    university["requirements_met"] = [{
+                        "subject": "Admission requirements",
+                        "required": "See official course page",
+                        "attained": "Not verified",
+                        "status": "Not checked",
+                    }]
+                    verified_by_index[index] = university
+            return [
+                verified_by_index[index]
+                for index in sorted(verified_by_index)
+            ]
+
+        universities = verify_candidates(candidates)
+        if not universities:
+            attempted_names = {
+                re.sub(r"[^a-z0-9]", "", str(item.get("name", "")).casefold())
                 for item in candidates
             }
-            for future in concurrent.futures.as_completed(futures):
-                university = futures[future]
-                course_name = course
-                try:
-                    result = future.result()
-                except Exception:
-                    logger.exception("Could not verify an offering at %s.", university["name"])
-                    result = None
-                if not result:
-                    continue
-                url, application_url = result
-                university["specific_course"] = course_name
-                university["website_url"] = url
-                university["verified_offering"] = True
-                if application_url:
-                    university["application_url"] = application_url
-                    university["application_url_verified"] = True
-                university["reason"] = (
-                    "The official course page was verified. Check it for current entry requirements."
-                )
-                university["kuccps_cutoff"] = find_course_cutoff(
-                    course_name,
-                    university["name"],
-                )
-                university["requirements_met"] = [{
-                    "subject": "Admission requirements",
-                    "required": "See official course page",
-                    "attained": "Not verified",
-                    "status": "Not checked",
-                }]
-                universities.append(university)
+            fallback_candidates = [
+                {"name": name}
+                for name in get_verified_course_institutions(course, limit=10)
+                if re.sub(r"[^a-z0-9]", "", name.casefold()) not in attempted_names
+            ]
+            universities = verify_candidates(fallback_candidates)
         insight["universities"] = universities[:5]
         insight["institution_match_status"] = "verified" if universities else "not_verified"
         insight["institution_match_message"] = (

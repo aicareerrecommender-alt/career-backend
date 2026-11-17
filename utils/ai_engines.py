@@ -591,8 +591,8 @@ def ask_hybrid_career_advice(student_name, interest, grades, calculated_points, 
     7. REPORT QUALITY: Write "ai_roadmap" as a clear report plan addressed directly to the reader
        using "you" and "your". Do not use the reader's name or refer to them as "the student" or
        "the respondent". Apply this second-person voice to "interest_match_reason" as well.
-       Include short sections for
-       the study pathway, useful skills or experience, practical next steps, and important unknowns.
+       Include short sections for the study pathway, useful skills or experience, practical next steps,
+       and important unknowns.
        Base it on the student's stated needs and supplied grades. If information is missing, name what
        remains unknown and how the student can confirm it; do not fill gaps with assumptions.
     

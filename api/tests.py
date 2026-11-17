@@ -27,7 +27,11 @@ from utils.kuccps_requirements import (
 )
 from utils.kuccps_cutoffs import find_course_cutoff
 from utils.discover_program_catalogue import merge_verified_inventory_into_registry
-from utils.web_scraper import get_course_url, get_official_application_url
+from utils.web_scraper import (
+    get_course_url,
+    get_official_application_url,
+    get_verified_course_institutions,
+)
 
 from .models import RecommendationUsage, StudentLog, User
 from .views import _log_email_delivery_failure, _send_email
@@ -338,8 +342,13 @@ class ApiViewsTests(TestCase):
             self.assertEqual(response.json()["user"]["email"], user.email)
 
     @override_settings(AUTH_TOKEN_SECRET="unit-test-secret", AUTH_TOKEN_TTL_SECONDS=3600)
+    @patch("api.views.get_verified_course_institutions", return_value=[])
     @patch("api.views.ask_hybrid_career_advice")
-    def test_multiple_users_can_sign_in_and_get_independent_recommendations(self, ask_advice):
+    def test_multiple_users_can_sign_in_and_get_independent_recommendations(
+        self,
+        ask_advice,
+        get_verified_institutions,
+    ):
         ask_advice.side_effect = lambda name, *args, **kwargs: {
             "ai_role": f"{name} role",
             "specific_course": "Bachelor of Science (Nursing)",
@@ -707,10 +716,12 @@ class ApiViewsTests(TestCase):
     @override_settings(AUTH_TOKEN_SECRET="unit-test-secret", AUTH_TOKEN_TTL_SECONDS=3600)
     @patch("api.views.get_official_application_url", return_value=None)
     @patch("api.views.get_course_url", return_value=None)
+    @patch("api.views.get_verified_course_institutions", return_value=[])
     @patch("api.views.ask_hybrid_career_advice")
     def test_recommendation_does_not_present_unverified_institutions(
         self,
         ask_advice,
+        get_verified_institutions,
         get_course_url,
         get_application_url,
     ):
@@ -748,6 +759,63 @@ class ApiViewsTests(TestCase):
             for group in record["requirements"]
         ))
         get_course_url.assert_called_once()
+
+    @override_settings(AUTH_TOKEN_SECRET="unit-test-secret", AUTH_TOKEN_TTL_SECONDS=3600)
+    @patch("api.views.find_course_cutoff", return_value={})
+    @patch("api.views.get_official_application_url", return_value=None)
+    @patch("api.views.get_course_url")
+    @patch("api.views.ask_hybrid_career_advice")
+    def test_recommendation_uses_verified_course_catalog_when_ai_has_no_institutions(
+        self,
+        ask_advice,
+        get_course_url,
+        get_application_url,
+        find_cutoff,
+    ):
+        user = User.objects.create(
+            name="Amina",
+            email="amina-catalog-fallback@example.com",
+            password_hash="unused",
+            is_verified=True,
+            history=[],
+        )
+        course_url = (
+            "https://nursing.uonbi.ac.ke/index.php/"
+            "programs-content-type/bachelor-science-degree-nursing-bscn"
+        )
+        get_course_url.side_effect = lambda name, *args, **kwargs: (
+            course_url if name == "UNIVERSITY OF NAIROBI" else None
+        )
+        ask_advice.return_value = {
+            "specific_course": "BACHELOR OF SCIENCE (NURSING)",
+            "universities": [],
+        }
+        token = URLSafeTimedSerializer(
+            settings.AUTH_TOKEN_SECRET,
+            salt="career-backend-auth-v1",
+        ).dumps({"sub": user.pk})
+        response = self.client.post(
+            "/recommend",
+            data=json.dumps({"interest": "nursing", "grades": {"Biology": "B"}}),
+            content_type="application/json",
+            HTTP_AUTHORIZATION=f"Bearer {token}",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["specific_course"], "BACHELOR OF SCIENCE (NURSING)")
+        self.assertEqual(response.json()["institution_match_status"], "verified")
+        universities = response.json()["universities"]
+        self.assertEqual(len(universities), 1)
+        university = universities[0]
+        self.assertEqual(university["name"], "UNIVERSITY OF NAIROBI")
+        self.assertEqual(university["specific_course"], "BACHELOR OF SCIENCE (NURSING)")
+        self.assertEqual(university["website_url"], course_url)
+        self.assertTrue(university["verified_offering"])
+        self.assertTrue(university["requirements_met"])
+        self.assertTrue(any(
+            call.args[0] == "UNIVERSITY OF NAIROBI"
+            for call in get_course_url.call_args_list
+        ))
 
     @override_settings(AUTH_TOKEN_SECRET="unit-test-secret", AUTH_TOKEN_TTL_SECONDS=3600)
     def test_login_returns_bearer_token_for_verified_account(self):
@@ -1268,6 +1336,68 @@ class ApiViewsTests(TestCase):
 
         self.assertEqual(result, url)
         get_page.assert_called_once()
+
+    def test_verified_course_institutions_uses_only_exact_verified_official_entries(self):
+        registry = {
+            "entries": [
+                {
+                    "university": "Example University",
+                    "domain": "example.edu",
+                    "course": "BACHELOR OF SCIENCE (NURSING)",
+                    "target_type": "institution",
+                    "url": "https://example.edu/courses/nursing",
+                    "verified": True,
+                    "status": "verified",
+                },
+                {
+                    "university": "Example University",
+                    "domain": "example.edu",
+                    "course": "BACHELOR OF SCIENCE (NURSING)",
+                    "target_type": "institution",
+                    "url": "https://example.edu/courses/nursing-duplicate",
+                    "verified": True,
+                    "status": "verified",
+                },
+                {
+                    "university": "Unverified University",
+                    "domain": "unverified.edu",
+                    "course": "BACHELOR OF SCIENCE (NURSING)",
+                    "target_type": "institution",
+                    "url": "https://unverified.edu/nursing",
+                    "verified": False,
+                    "status": "not_found",
+                },
+                {
+                    "university": "Example University",
+                    "domain": "example.edu",
+                    "course": "BACHELOR OF SCIENCE (MIDWIFERY)",
+                    "target_type": "institution",
+                    "url": "https://example.edu/courses/midwifery",
+                    "verified": True,
+                    "status": "verified",
+                },
+                {
+                    "university": "Example University",
+                    "domain": "other.edu",
+                    "course": "BACHELOR OF SCIENCE (NURSING)",
+                    "target_type": "institution",
+                    "url": "https://other.edu/courses/nursing",
+                    "verified": True,
+                    "status": "verified",
+                },
+            ],
+        }
+        with (
+            patch("utils.web_scraper.load_course_url_database", return_value=registry),
+            patch(
+                "utils.web_scraper.OFFICIAL_DOMAINS",
+                {"Example University": "example.edu"},
+            ),
+            patch("utils.web_scraper.is_course_in_catalog", return_value=True),
+        ):
+            result = get_verified_course_institutions("BACHELOR OF SCIENCE (NURSING)")
+
+        self.assertEqual(result, ["Example University"])
 
     def test_course_url_revalidates_saved_verified_registry_entry(self):
         url = "https://cuea.edu/all-courses/bsc-computer-science/"

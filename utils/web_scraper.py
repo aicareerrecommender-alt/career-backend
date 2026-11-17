@@ -160,6 +160,7 @@ def _local_course_urls(university_name, course_name, domain=None):
                 urls.append(url)
         return urls
 
+
     if not domain:
         return []
     urls = []
@@ -178,6 +179,59 @@ def _local_course_urls(university_name, course_name, domain=None):
                         university_name,
                     )
     return urls
+
+
+def get_verified_course_institutions(course_name, limit=10):
+    if (
+        not isinstance(course_name, str)
+        or not is_course_in_catalog(course_name)
+        or not _course_title_words(course_name)
+        or not isinstance(limit, int)
+        or isinstance(limit, bool)
+        or limit < 1
+    ):
+        return []
+
+    entries = load_course_url_database().get("entries")
+    if not isinstance(entries, list):
+        return []
+
+    course_key = _normalized_key(course_name)
+    institutions = []
+    seen = set()
+    for entry in entries:
+        if (
+            not isinstance(entry, dict)
+            or entry.get("target_type") != "institution"
+            or entry.get("verified") is not True
+            or entry.get("status") != "verified"
+            or _normalized_key(entry.get("course", "")) != course_key
+        ):
+            continue
+
+        university = entry.get("university")
+        if not isinstance(university, str) or not university.strip():
+            continue
+        university = university.strip()
+        university_key = _normalized_key(university)
+        domain = _official_domain(university)
+        saved_domain = entry.get("domain")
+        if (
+            not university_key
+            or university_key in seen
+            or not domain
+            or not isinstance(saved_domain, str)
+            or saved_domain.strip().lower().removeprefix("www.") != domain
+            or not _url_is_on_domain(entry.get("url"), domain)
+        ):
+            continue
+
+        institutions.append(university)
+        seen.add(university_key)
+        if len(institutions) >= limit:
+            break
+
+    return institutions
 
 
 def _course_page_soup(response):
